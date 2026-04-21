@@ -3,7 +3,7 @@ import { env } from '../../src/core/env';
 import { test } from '../../src/fixtures/test.fixture';
 
 test.describe('add to cart', () => {
-  test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
+  // test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   test('can add a product to the mini cart', async ({ ctx, home, plp, pdp }) => {
     await home.goto('/');

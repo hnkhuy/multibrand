@@ -16,6 +16,15 @@ export class HeaderComponent {
     return this.page.locator(this.selectors.header.cartIcon).first();
   }
 
+  get logo(): Locator {
+    return this.page.locator(this.selectors.header.logo).first();
+  }
+
+  async clickLogo(): Promise<void> {
+    await this.logo.click();
+    await this.page.waitForLoadState('domcontentloaded');
+  }
+
   async openCart(): Promise<void> {
     await this.cartIcon.click();
   }
