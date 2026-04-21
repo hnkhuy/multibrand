@@ -1,0 +1,53 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result
+HP-001,Page Load,Verify homepage loads successfully,User is a guest; Homepage URL is accessible; Site environment is correctly configured,1. Open homepage URL,"Homepage loads without error, blank screen, or broken layout"
+HP-002,Page Load,Verify correct region-specific content is displayed,Same as above,1. Open homepage,Region-specific content such as currency and messaging is correct for AU/NZ
+HP-003,Page Load,Verify homepage loads over HTTPS,Same as above,1. Open homepage,Page loads securely without browser security warning
+HP-004,Page Load,Verify no visible application error is shown on homepage,Same as above,1. Open homepage,"No visible application error, exception page, or major JS crash UI is shown"
+HP-005,Stability,Verify homepage remains stable after refresh,Same as above,1. Open homepage 2. Refresh page multiple times,Homepage reloads consistently without layout or content breakage
+HP-006,Header,Verify brand logo is displayed,Same as above,1. Observe header,Logo is visible and rendered correctly
+HP-007,Header,Verify clicking logo redirects user to homepage,Same as above,1. Click logo,User is redirected to homepage
+HP-008,Navigation,Verify main navigation is displayed,Same as above,1. Observe header navigation,Main navigation items are visible and usable
+HP-009,Navigation,Verify top navigation links redirect correctly,Same as above,1. Click each top navigation item,Each navigation item opens the correct PLP or content page
+HP-010,Navigation,Verify submenu opens correctly on desktop,Desktop viewport; Menu item with submenu exists,1. Hover on a menu item with submenu,Submenu opens with expected links and layout
+HP-011,Search,Verify search entry point is available from homepage,Same as above,1. Observe or click search icon/input,Search icon or input is accessible
+HP-012,Search,Verify search with valid keyword redirects to search results,Same as above,1. Open search 2. Enter valid keyword 3. Submit,Search results page opens with relevant results
+HP-013,Search,Verify search with invalid keyword shows no-result state,Same as above,1. Open search 2. Enter invalid keyword 3. Submit,No-result state is shown without UI break
+HP-014,Header,Verify account entry point is displayed,Same as above,1. Observe header,Account icon or link is visible and usable
+HP-015,Header,Verify cart entry point and empty state for guest user,Guest user with empty cart,1. Observe cart icon,Cart icon is visible and default state is correct
+HP-016,Promo,Verify hero banner is displayed,Same as above,1. Observe homepage hero section,Hero banner loads correctly
+HP-017,Promo,Verify hero banner CTA redirects correctly,Hero banner has CTA,1. Click hero banner CTA,CTA opens the correct destination page
+HP-018,Promo,Verify hero banner image is rendered correctly,Same as above,1. Inspect hero banner image,"Banner image is not broken, stretched, or cropped incorrectly"
+HP-019,Promo,Verify promotional carousel can be navigated manually,Carousel exists,1. Click next/previous carousel controls,Carousel slides change correctly via controls
+HP-020,Promo,Verify promotional carousel auto-rotation if enabled,Auto-rotation enabled,1. Wait for carousel transition,Carousel rotates correctly when auto-rotation is enabled
+HP-021,Promo,Verify promotional tiles/cards are displayed,Same as above,1. Scroll through homepage,Promotional tiles are visible and aligned
+HP-022,Promo,Verify promotional tile CTA redirects correctly,Promo tile has CTA,1. Click promotional tile or CTA,Promotional tile opens the correct destination page
+HP-023,Category,Verify category entry points are displayed,Same as above,1. Observe category section,Category links or tiles are visible
+HP-024,Category,Verify category entry points redirect to correct PLP,Same as above,1. Click category link/tile,Selected category opens the correct PLP
+HP-025,Category,Verify destination category content is relevant,Category page accessible,1. Open category from homepage,Products/content on destination page match chosen category
+HP-026,Product,Verify featured product module is displayed,Same as above,1. Scroll to featured product section,Product module is visible
+HP-027,Product,Verify product card displays required elements,Product module exists,1. Inspect a product card,"Product card shows image, name, and price"
+HP-028,Product,Verify clicking product card redirects to PDP,Product module exists,1. Click product card,Correct PDP opens
+HP-029,Product,Verify product price format matches selected region,Same as above,1. Inspect product price,Currency and price format are correct for AU/NZ
+HP-030,Product,Verify sale price presentation is correct,Sale product exists,1. Inspect sale product card,Sale price and original price are shown correctly where applicable
+HP-031,Product,Verify product availability state is represented correctly,Product with availability state exists,1. Inspect product card,Availability status is shown correctly where applicable
+HP-032,Product,Verify quick action opens correctly if feature exists,Quick Add/Quick View feature exists,1. Click quick action,Quick Add or Quick View opens correctly
+HP-033,Footer,Verify footer is displayed,Same as above,1. Scroll to bottom of homepage,Footer is visible and rendered correctly
+HP-034,Footer,Verify footer links redirect correctly,Footer links exist,1. Click each footer link,Each footer link opens the correct destination
+HP-035,Footer,Verify social links redirect correctly,Social icons exist,1. Click each social icon,Each social icon opens the correct social destination
+HP-036,Footer,Verify legal text is displayed,Same as above,1. Inspect footer,Legal or copyright text is present
+HP-037,UI,Verify no overlapping UI elements on homepage,Same as above,1. Scroll through homepage,"No overlapping issue among sticky header, chat widget, banners, cards, or footer"
+HP-038,UI,Verify homepage text is readable,Same as above,1. Inspect homepage text across sections,"No text is truncated, hidden, or unreadable"
+HP-039,UI,Verify images are rendered without distortion,Same as above,1. Inspect homepage images,Images maintain expected aspect ratio and clarity
+HP-040,UI,Verify sticky header behavior on scroll,Sticky header enabled,1. Scroll up and down,Sticky header behaves correctly during scroll
+HP-041,Responsive,Verify homepage layout on desktop viewport,Desktop viewport,1. Open homepage in desktop viewport,Desktop layout is correct
+HP-042,Responsive,Verify homepage layout on tablet viewport,Tablet viewport,1. Open homepage in tablet viewport,Tablet layout adapts correctly
+HP-043,Responsive,Verify homepage layout on mobile viewport,Mobile viewport,1. Open homepage in mobile viewport,Mobile layout adapts correctly without horizontal overflow
+HP-044,Mobile,Verify hamburger menu opens correctly on mobile,Mobile viewport,1. Tap hamburger menu,Hamburger menu opens correctly
+HP-045,Mobile,Verify mobile navigation links redirect correctly,Mobile menu opened,1. Tap a mobile navigation item,Selected mobile navigation item redirects correctly
+HP-046,Performance,Verify homepage load performance is acceptable,Stable network,1. Open homepage,Homepage loads within acceptable threshold
+HP-047,Stability,Verify repeated navigation from homepage does not break page,Same as above,1. Navigate through multiple homepage links 2. Return to homepage,"No crash, freeze, or persistent broken state occurs"
+HP-048,Stability,Verify homepage visible links do not lead to broken pages,Same as above,1. Click visible homepage links,"No visible homepage link leads to 404, 500, or unexpected error page"
+HP-049,Analytics,Verify hero banner click tracking is fired,Analytics/debug tools available,1. Click hero banner CTA,Expected analytics event is triggered with correct metadata
+HP-050,Analytics,Verify category click tracking is fired,Analytics/debug tools available,1. Click category link/tile,Expected analytics event is triggered with correct metadata
+HP-051,Analytics,Verify product click tracking is fired,Analytics/debug tools available,1. Click product card,Expected analytics event is triggered with correct metadata
+HP-052,Analytics,Verify click-event metadata is correct,Analytics/debug tools available,1. Trigger homepage click events 2. Inspect payload,"Event metadata such as region, module, position, and destination are correct"
