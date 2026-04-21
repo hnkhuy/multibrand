@@ -28,6 +28,9 @@ export interface Selectors {
 
 export interface HeaderSelectors {
   logo: string;
+  navigation: string;
+  navigationLink: string;
+  submenu: string;
   searchInput: string;
   searchSubmit?: string;
   cartIcon: string;
