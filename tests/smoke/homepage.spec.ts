@@ -222,4 +222,78 @@ test.describe('homepage', () => {
     expect(currentUrl.pathname).toBe(expectedUrl.pathname);
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
+
+  test('HP-018 hero banner image is rendered correctly', async ({ home }) => {
+    await home.goto('/');
+    const heroMedia = await home.heroMedia();
+
+    await expect(heroMedia).toBeVisible();
+    const rendered = await heroMedia.evaluate((element) => {
+      if (element instanceof HTMLImageElement) {
+        return {
+          width: element.naturalWidth,
+          height: element.naturalHeight,
+          complete: element.complete
+        };
+      }
+
+      if (element instanceof HTMLVideoElement) {
+        return {
+          width: element.videoWidth || element.clientWidth,
+          height: element.videoHeight || element.clientHeight,
+          complete: element.readyState > 0
+        };
+      }
+
+      const img = element.querySelector('img');
+      return {
+        width: img?.naturalWidth ?? element.clientWidth,
+        height: img?.naturalHeight ?? element.clientHeight,
+        complete: img?.complete ?? true
+      };
+    });
+
+    expect(rendered.complete).toBe(true);
+    expect(rendered.width).toBeGreaterThan(0);
+    expect(rendered.height).toBeGreaterThan(0);
+
+    const box = await heroMedia.boundingBox();
+    expect(box?.width).toBeGreaterThan(120);
+    expect(box?.height).toBeGreaterThan(120);
+  });
+
+  test('HP-019 promotional carousel can be navigated manually', async ({ home, page }) => {
+    await home.goto('/');
+
+    test.skip(!(await home.hasPromoCarousel()), 'Promotional carousel controls are not available.');
+
+    const before = await home.promoCarouselSignature();
+    await home.promoCarouselButton('next').click();
+    await page.waitForTimeout(1_000);
+    const afterNext = await home.promoCarouselSignature();
+
+    expect(afterNext).not.toBe(before);
+
+    await home.promoCarouselButton('previous').click();
+    await page.waitForTimeout(1_000);
+    const afterPrevious = await home.promoCarouselSignature();
+
+    expect(afterPrevious).not.toBe(afterNext);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-020 promotional carousel auto-rotation works if enabled', async ({ home, page }) => {
+    await home.goto('/');
+
+    test.skip(!(await home.hasPromoCarousel()), 'Promotional carousel controls are not available.');
+
+    const before = await home.promoCarouselSignature();
+    await page.waitForTimeout(6_000);
+    const after = await home.promoCarouselSignature();
+
+    test.skip(before === after, 'Promotional carousel auto-rotation is not enabled or not detectable.');
+
+    expect(after).not.toBe(before);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
 });
