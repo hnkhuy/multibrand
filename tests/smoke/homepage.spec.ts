@@ -1,8 +1,11 @@
+import { searchData } from '../../config/testData';
 import { env } from '../../src/core/env';
 import { test, expect } from '../../src/fixtures/test.fixture';
 
 const ERROR_UI_PATTERN =
   /application error|something went wrong|service unavailable|page not found|this site can't be reached/i;
+const NO_RESULTS_PATTERN =
+  /no results|no products|0 results|couldn't find|did not match|sorry|try another search|take a look at the latest|search results for/i;
 
 test.describe('homepage', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
@@ -127,5 +130,96 @@ test.describe('homepage', () => {
     }
 
     expect(submenuOpened).toBe(true);
+  });
+
+  test('HP-011 search entry point is available from homepage', async ({ home }) => {
+    await home.goto('/');
+
+    await expect(home.header.searchInput).toBeVisible();
+    await expect(home.header.searchInput).toBeEnabled();
+  });
+
+  test('HP-012 search with valid keyword redirects to search results', async ({ ctx, home, page }) => {
+    const keyword = searchData[ctx.brand].keyword;
+
+    await home.goto('/');
+    await home.search(keyword);
+
+    await expect(page).toHaveURL(/search|q=|query=|\/s\//i);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(page.locator('body')).toContainText(keyword);
+  });
+
+  test('HP-013 search with invalid keyword shows no-result state', async ({ home, page }) => {
+    const invalidKeyword = `no-results-${Date.now()}-zzzxxy`;
+
+    await home.goto('/');
+    await home.search(invalidKeyword);
+
+    await expect(page).toHaveURL(/search|q=|query=|\/s\//i);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(page.locator('body')).toContainText(invalidKeyword);
+
+    const bodyText = await page.locator('body').innerText();
+    expect(bodyText).toMatch(NO_RESULTS_PATTERN);
+  });
+
+  test('HP-014 account entry point is displayed', async ({ home }) => {
+    await home.goto('/');
+
+    await expect(home.header.accountIcon).toBeVisible();
+    await expect(home.header.accountIcon).toBeEnabled();
+  });
+
+  test('HP-015 cart entry point and empty state for guest user', async ({ home }) => {
+    await home.goto('/');
+
+    await expect(home.header.cartIcon).toBeVisible();
+    await expect(home.header.cartIcon).toBeEnabled();
+
+    const cartLabel = [
+      await home.header.cartIcon.getAttribute('aria-label').catch(() => null),
+      await home.header.cartIcon.innerText().catch(() => null)
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    if (cartLabel.length > 0) {
+      expect(cartLabel).toMatch(/cart|bag|basket|0|empty/i);
+    }
+  });
+
+  test('HP-016 hero banner is displayed', async ({ home }) => {
+    await home.goto('/');
+    const heroCta = await home.heroCta();
+
+    await expect(heroCta).toBeVisible();
+    const box = await heroCta.boundingBox();
+    expect(box?.width).toBeGreaterThan(0);
+    expect(box?.height).toBeGreaterThan(0);
+  });
+
+  test('HP-017 hero banner CTA redirects correctly', async ({ home, page }) => {
+    await home.goto('/');
+    const heroCta = await home.heroCta();
+    const href = await heroCta.evaluate((element) => {
+      const anchor = element instanceof HTMLAnchorElement ? element : element.closest('a');
+      return anchor?.href ?? '';
+    });
+
+    expect(href).toBeTruthy();
+
+    const expectedUrl = new URL(href, page.url());
+    const previousUrl = page.url();
+
+    await Promise.all([
+      page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+      heroCta.click()
+    ]);
+    await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+    const currentUrl = new URL(page.url());
+    expect(currentUrl.pathname).toBe(expectedUrl.pathname);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 });

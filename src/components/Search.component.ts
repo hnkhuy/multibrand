@@ -8,6 +8,7 @@ export class SearchComponent {
   ) {}
 
   async search(keyword: string): Promise<void> {
+    const previousUrl = this.page.url();
     const input = this.page.locator(this.selectors.header.searchInput).first();
     await input.fill(keyword);
 
@@ -15,14 +16,25 @@ export class SearchComponent {
       const submit = this.page.locator(this.selectors.header.searchSubmit).first();
       if (await submit.isVisible().catch(() => false)) {
         await Promise.all([
-          this.page.waitForLoadState('domcontentloaded').catch(() => undefined),
+          this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
           submit.click()
         ]);
+        await this.page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
         return;
       }
     }
 
+    const siblingSubmit = input.locator('xpath=following-sibling::*[1]');
+    if (await siblingSubmit.isVisible().catch(() => false)) {
+      await Promise.all([
+        this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+        siblingSubmit.click()
+      ]);
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+      return;
+    }
+
     await input.press('Enter');
-    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
   }
 }

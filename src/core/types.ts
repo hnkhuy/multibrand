@@ -33,6 +33,7 @@ export interface HeaderSelectors {
   submenu: string;
   searchInput: string;
   searchSubmit?: string;
+  accountIcon: string;
   cartIcon: string;
   menuButton?: string;
 }

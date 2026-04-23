@@ -22,6 +22,14 @@ export class HeaderComponent {
     return this.page.locator(this.selectors.header.cartIcon).first();
   }
 
+  get accountIcon(): Locator {
+    return this.page.locator(this.selectors.header.accountIcon).first();
+  }
+
+  get searchInput(): Locator {
+    return this.page.locator(this.selectors.header.searchInput).first();
+  }
+
   get logo(): Locator {
     return this.page.locator(this.selectors.header.logo).first();
   }
