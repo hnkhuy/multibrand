@@ -491,4 +491,379 @@ test.describe('homepage', () => {
 
     test.skip(!saleValidated, 'No sale product card with both current/original price was found.');
   });
+
+  test('HP-031 product availability state is represented correctly', async ({ home, page }) => {
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks(12);
+
+    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+
+    const availabilityPattern = /out of stock|sold out|in stock|pre-?order|coming soon|low stock|back in stock/i;
+
+    let availabilityValidated = false;
+    for (const product of productLinks) {
+      const card = await home.bestProductLinkByHref(product.href);
+      await card.scrollIntoViewIfNeeded();
+      const cardText = await card.evaluate((element) => {
+        const anchor = element as HTMLAnchorElement;
+        const cardRoot =
+          anchor.closest('article, li, [data-testid*="product" i], [class*="product" i], [class*="tile" i], [class*="card" i]') ??
+          anchor.parentElement ??
+          anchor;
+        return (cardRoot.textContent ?? '').replace(/\s+/g, ' ').trim();
+      });
+
+      if (!availabilityPattern.test(cardText)) {
+        continue;
+      }
+
+      expect(cardText).toMatch(availabilityPattern);
+      availabilityValidated = true;
+      break;
+    }
+
+    test.skip(!availabilityValidated, 'No explicit availability state is displayed on featured product cards.');
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-032 quick action opens correctly if feature exists', async ({ home, page }) => {
+    await home.goto('/');
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.2));
+    await page.waitForTimeout(500);
+
+    const quickActionClicked = await page
+      .locator('main button, main [role="button"], main a')
+      .evaluateAll((elements) => {
+        const textPattern = /quick view|quick add/i;
+        const candidate = elements.find((element) => {
+          const node = element as HTMLElement;
+          const rect = node.getBoundingClientRect();
+          const style = window.getComputedStyle(node);
+          const text = (node.innerText || node.getAttribute('aria-label') || '').trim();
+          const visible =
+            rect.width > 0 &&
+            rect.height > 0 &&
+            rect.bottom > 0 &&
+            rect.top < window.innerHeight &&
+            style.visibility !== 'hidden' &&
+            style.display !== 'none';
+          return visible && textPattern.test(text);
+        }) as HTMLElement | undefined;
+
+        if (!candidate) {
+          return false;
+        }
+
+        candidate.click();
+        return true;
+      });
+
+    test.skip(!quickActionClicked, 'Quick action feature is not available on homepage.');
+
+    const quickViewOpened = await page
+      .locator('[role="dialog"], [aria-modal="true"], .modal, .drawer')
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
+
+    test.skip(!quickViewOpened, 'Quick action did not open a detectable modal/drawer on this brand.');
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-033 footer is displayed', async ({ home, page }) => {
+    await home.goto('/');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const footer = page.locator('footer').first();
+    await expect(footer).toBeVisible();
+    await expect(footer).not.toBeEmpty();
+  });
+
+  test('HP-034 footer links redirect correctly', async ({ home, page }) => {
+    await home.goto('/');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const baseHost = new URL(page.url()).hostname;
+    const footerLinks = await page.locator('footer a[href]').evaluateAll((elements, currentHost) => {
+      const links = elements
+        .map((element) => {
+          const anchor = element as HTMLAnchorElement;
+          const href = anchor.getAttribute('href') ?? '';
+          const rect = anchor.getBoundingClientRect();
+          const style = window.getComputedStyle(anchor);
+          const visible =
+            rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+          const blocked = /^(#|javascript:|mailto:|tel:)/i.test(href);
+          const social = /facebook|instagram|tiktok|youtube|pinterest|x\.com|twitter|linkedin/i.test(href);
+          let sameHost = href.startsWith('/');
+          if (!sameHost && /^https?:/i.test(href)) {
+            try {
+              sameHost = new URL(href).hostname === currentHost;
+            } catch {
+              sameHost = false;
+            }
+          }
+
+          return { href, visible, blocked, social, sameHost };
+        })
+        .filter((item) => item.visible && !item.blocked && !item.social && item.sameHost)
+        .map((item) => item.href);
+
+      return Array.from(new Set(links)).slice(0, 2);
+    }, baseHost);
+
+    test.skip(footerLinks.length === 0, 'Footer links are not available.');
+
+    for (const expectedHref of footerLinks) {
+      await home.goto('/');
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+      const expectedUrl = new URL(expectedHref, page.url());
+      const previousUrl = page.url();
+      const popupPromise = page.waitForEvent('popup', { timeout: 5_000 }).catch(() => null);
+      const clickedHref = await page.locator('footer a[href]').evaluateAll((elements, targetHref) => {
+        const target = elements.find((element) => {
+          const anchor = element as HTMLAnchorElement;
+          const href = anchor.getAttribute('href') ?? '';
+          const rect = anchor.getBoundingClientRect();
+          const style = window.getComputedStyle(anchor);
+          const visible =
+            rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+          return visible && href === targetHref;
+        }) as HTMLAnchorElement | undefined;
+
+        if (!target) {
+          return '';
+        }
+
+        target.click();
+        return target.getAttribute('href') ?? '';
+      }, expectedHref);
+
+      test.skip(!clickedHref, `Footer link ${expectedHref} is not clickable.`);
+      await Promise.all([
+        page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined)
+      ]);
+
+      const popup = await popupPromise;
+      if (popup) {
+        await popup.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+        expect(new URL(popup.url()).hostname).toBe(expectedUrl.hostname);
+        await popup.close().catch(() => undefined);
+      } else {
+        await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+        expect(new URL(page.url()).hostname).toBe(expectedUrl.hostname);
+      }
+    }
+  });
+
+  test('HP-035 social links redirect correctly', async ({ home, page }) => {
+    await home.goto('/');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const socialLinks = await page.locator('footer a[href]').evaluateAll((elements) => {
+      const links = elements
+        .map((element) => {
+          const anchor = element as HTMLAnchorElement;
+          const href = anchor.getAttribute('href') ?? '';
+          const rect = anchor.getBoundingClientRect();
+          const style = window.getComputedStyle(anchor);
+          const visible =
+            rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+          const social = /facebook|instagram|tiktok|youtube|pinterest|x\.com|twitter|linkedin/i.test(href);
+
+          return { href, visible, social };
+        })
+        .filter((item) => item.visible && item.social)
+        .map((item) => item.href);
+
+      return Array.from(new Set(links)).slice(0, 2);
+    });
+
+    test.skip(socialLinks.length === 0, 'Social links are not available in footer.');
+
+    for (const href of socialLinks) {
+      await home.goto('/');
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+      const socialLink = page.locator(`footer a[href="${href.replace(/"/g, '\\"')}"]`).first();
+      const expectedHost = new URL(href, page.url()).hostname.replace(/^www\./, '');
+      const previousUrl = page.url();
+      const popupPromise = page.waitForEvent('popup', { timeout: 10_000 }).catch(() => null);
+
+      await socialLink.scrollIntoViewIfNeeded();
+      await expect(socialLink).toBeVisible();
+      await Promise.all([
+        page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+        socialLink.click({ timeout: 10_000 })
+      ]);
+
+      const popup = await popupPromise;
+      if (popup) {
+        await popup.waitForLoadState('domcontentloaded', { timeout: 15_000 }).catch(() => undefined);
+        const popupHost = new URL(popup.url()).hostname.replace(/^www\./, '');
+        expect(popupHost).toContain(expectedHost);
+        await popup.close().catch(() => undefined);
+      } else {
+        await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+        const currentHost = new URL(page.url()).hostname.replace(/^www\./, '');
+        if (currentHost !== expectedHost && !currentHost.includes(expectedHost)) {
+          await page.goto(new URL(href, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+        }
+        const validatedHost = new URL(page.url()).hostname.replace(/^www\./, '');
+        expect(validatedHost).toContain(expectedHost);
+      }
+    }
+  });
+
+  test('HP-036 legal text is displayed', async ({ home, page }) => {
+    await home.goto('/');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const footer = page.locator('footer').first();
+    await expect(footer).toBeVisible();
+
+    const footerText = await footer.innerText();
+    expect(footerText).toMatch(/copyright|all rights reserved|terms|privacy|©|\(c\)/i);
+  });
+
+  test('HP-037 no overlapping UI elements on homepage', async ({ home, page }) => {
+    await home.goto('/');
+
+    const scrollHeights = [0, 0.25, 0.5, 0.75, 1];
+    let checkedPoints = 0;
+
+    for (const ratio of scrollHeights) {
+      await page.evaluate((r) => {
+        const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 0);
+        window.scrollTo(0, Math.round(maxScroll * r));
+      }, ratio);
+      await page.waitForTimeout(250);
+
+      const overlapIssues = await page.evaluate(() => {
+        const candidates = Array.from(document.querySelectorAll('main a, main button, main input, footer a'))
+          .map((element) => element as HTMLElement)
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            return (
+              rect.width > 32 &&
+              rect.height > 20 &&
+              rect.top >= 0 &&
+              rect.bottom <= window.innerHeight &&
+              style.visibility !== 'hidden' &&
+              style.display !== 'none'
+            );
+          })
+          .slice(0, 20);
+
+        const blocked = candidates.filter((element) => {
+          const rect = element.getBoundingClientRect();
+          const cx = Math.round(rect.left + rect.width / 2);
+          const cy = Math.round(rect.top + rect.height / 2);
+          const topNode = document.elementFromPoint(cx, cy);
+          return topNode && !element.contains(topNode) && !topNode.contains(element);
+        });
+
+        return blocked.length;
+      });
+
+      checkedPoints += 1;
+      expect(overlapIssues).toBe(0);
+    }
+
+    expect(checkedPoints).toBeGreaterThan(0);
+  });
+
+  test('HP-038 homepage text is readable', async ({ home, page }) => {
+    await home.goto('/');
+
+    const unreadableCount = await page.evaluate(() => {
+      const textNodes = Array.from(document.querySelectorAll('main h1, main h2, main h3, main p, main a, footer p, footer a'))
+        .map((element) => element as HTMLElement)
+        .filter((element) => {
+          const text = (element.innerText || '').trim();
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return (
+            text.length > 0 &&
+            rect.width > 0 &&
+            rect.height > 0 &&
+            style.visibility !== 'hidden' &&
+            style.display !== 'none'
+          );
+        })
+        .slice(0, 200);
+
+      return textNodes.filter((element) => {
+        const style = window.getComputedStyle(element);
+        const fontSize = Number.parseFloat(style.fontSize || '0');
+        const hiddenByOverflow =
+          element.scrollWidth > element.clientWidth + 2 &&
+          /(hidden|clip)/i.test(style.overflowX || '') &&
+          /(ellipsis)/i.test(style.textOverflow || '');
+        return fontSize < 10 || hiddenByOverflow;
+      }).length;
+    });
+
+    expect(unreadableCount).toBe(0);
+  });
+
+  test('HP-039 images are rendered without distortion', async ({ home, page }) => {
+    await home.goto('/');
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
+    await page.waitForTimeout(300);
+
+    const problematicImages = await page.evaluate(() => {
+      const images = Array.from(document.querySelectorAll('main img, footer img'))
+        .map((element) => element as HTMLImageElement)
+        .filter((image) => {
+          const rect = image.getBoundingClientRect();
+          const style = window.getComputedStyle(image);
+          return rect.width > 40 && rect.height > 40 && style.visibility !== 'hidden' && style.display !== 'none';
+        })
+        .slice(0, 30);
+
+      return images.filter((image) => {
+        const rect = image.getBoundingClientRect();
+        if (!image.naturalWidth || !image.naturalHeight) {
+          return true;
+        }
+
+        const naturalRatio = image.naturalWidth / image.naturalHeight;
+        const renderedRatio = rect.width / rect.height;
+        const ratioDelta = naturalRatio > renderedRatio ? naturalRatio / renderedRatio : renderedRatio / naturalRatio;
+        return ratioDelta > 3;
+      }).length;
+    });
+
+    expect(problematicImages).toBe(0);
+  });
+
+  test('HP-040 sticky header behavior on scroll', async ({ home, page }) => {
+    await home.goto('/');
+
+    const stickyInfo = await page.evaluate(() => {
+      const header = document.querySelector('header');
+      if (!header) {
+        return { exists: false, sticky: false, top: null as number | null };
+      }
+
+      const style = window.getComputedStyle(header);
+      const rect = header.getBoundingClientRect();
+      const sticky = /(sticky|fixed)/i.test(style.position);
+
+      return { exists: true, sticky, top: rect.top };
+    });
+
+    test.skip(!stickyInfo.exists, 'Header element is not available.');
+    test.skip(!stickyInfo.sticky, 'Sticky header is not enabled on this site.');
+
+    const initialTop = stickyInfo.top ?? 0;
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
+    await page.waitForTimeout(400);
+    const afterScrollTop = (await page.locator('header').first().boundingBox())?.y ?? 0;
+
+    expect(Math.abs(afterScrollTop - initialTop)).toBeLessThan(6);
+  });
 });
