@@ -296,4 +296,199 @@ test.describe('homepage', () => {
     expect(after).not.toBe(before);
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
+
+  test('HP-021 promotional tiles/cards are displayed', async ({ home, page }) => {
+    await home.goto('/');
+    const promoLinks = await home.getPromoTileLinks();
+
+    expect(promoLinks.length).toBeGreaterThan(0);
+    await page.locator('main a[href]').nth(promoLinks[0].index).scrollIntoViewIfNeeded();
+    await expect(page.locator('main a[href]').nth(promoLinks[0].index)).toBeVisible();
+  });
+
+  test('HP-022 promotional tile CTA redirects correctly', async ({ home, page }) => {
+    await home.goto('/');
+    const promoLinks = await home.getPromoTileLinks(3);
+
+    test.skip(promoLinks.length === 0, 'Promotional tile CTA is not available.');
+
+    for (const link of promoLinks) {
+      await home.goto('/');
+      const tile = page.locator('main a[href]').nth(link.index);
+      const expectedUrl = new URL(link.href, page.url());
+      const previousUrl = page.url();
+
+      await tile.scrollIntoViewIfNeeded();
+      await expect(tile).toBeVisible();
+      await Promise.all([
+        page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+        tile.click()
+      ]);
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+      const currentUrl = new URL(page.url());
+      expect(currentUrl.pathname).toBe(expectedUrl.pathname);
+      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    }
+  });
+
+  test('HP-023 category entry points are displayed', async ({ home }) => {
+    await home.goto('/');
+    const categoryLinks = await home.getCategoryEntryLinks();
+
+    expect(categoryLinks.length).toBeGreaterThan(0);
+  });
+
+  test('HP-024 category entry points redirect to correct PLP', async ({ home, page }) => {
+    await home.goto('/');
+    const categoryLinks = await home.getCategoryEntryLinks(3);
+
+    test.skip(categoryLinks.length === 0, 'Category entry links are not available.');
+
+    for (const category of categoryLinks) {
+      await home.goto('/');
+      const entry = page.locator('main a[href]').nth(category.index);
+      const expectedUrl = new URL(category.href, page.url());
+      const previousUrl = page.url();
+
+      await entry.scrollIntoViewIfNeeded();
+      await expect(entry).toBeVisible();
+      await Promise.all([
+        page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+        entry.click()
+      ]);
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+      const currentUrl = new URL(page.url());
+      expect(currentUrl.pathname).toBe(expectedUrl.pathname);
+      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    }
+  });
+
+  test('HP-025 destination category content is relevant', async ({ home, page }) => {
+    await home.goto('/');
+    const categoryLinks = await home.getCategoryEntryLinks(2);
+
+    test.skip(categoryLinks.length === 0, 'Category entry links are not available.');
+
+    for (const category of categoryLinks) {
+      await home.goto('/');
+      const entry = page.locator('main a[href]').nth(category.index);
+      const previousUrl = page.url();
+      const categoryKeyword = category.text.split(/\s+/)[0];
+
+      await entry.scrollIntoViewIfNeeded();
+      await expect(entry).toBeVisible();
+      await Promise.all([
+        page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+        entry.click()
+      ]);
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      if (categoryKeyword.length >= 3) {
+        await expect(page.locator('body')).toContainText(new RegExp(categoryKeyword, 'i'));
+      }
+    }
+  });
+
+  test('HP-026 featured product module is displayed', async ({ home }) => {
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks();
+
+    expect(productLinks.length).toBeGreaterThan(0);
+    const firstCard = await home.bestProductLinkByHref(productLinks[0].href);
+    await firstCard.scrollIntoViewIfNeeded();
+    await expect(firstCard).toBeVisible();
+  });
+
+  test('HP-027 product card displays required elements', async ({ home }) => {
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks();
+
+    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+
+    const first = productLinks[0];
+    const firstCard = await home.bestProductLinkByHref(first.href);
+    await firstCard.scrollIntoViewIfNeeded();
+    const snapshot = await home.productCardSnapshotByHref(first.href);
+
+    expect(snapshot.hasImage).toBe(true);
+    expect(snapshot.name.length).toBeGreaterThan(0);
+    expect(snapshot.prices.length).toBeGreaterThan(0);
+  });
+
+  test('HP-028 clicking product card redirects to PDP', async ({ home, page }) => {
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks(3);
+
+    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+
+    const target = productLinks[0];
+    const card = await home.bestProductLinkByHref(target.href);
+    const expectedUrl = new URL(target.href, page.url());
+    const previousUrl = page.url();
+
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toBeVisible();
+    await Promise.all([
+      page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+      card.click()
+    ]);
+    await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+    const currentUrl = new URL(page.url());
+    expect(currentUrl.pathname).toBe(expectedUrl.pathname);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-029 product price format matches selected region', async ({ home }) => {
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks();
+
+    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+
+    const first = productLinks[0];
+    const firstCard = home.productLinkByHref(first.href).first();
+    await firstCard.scrollIntoViewIfNeeded();
+    const snapshot = await home.productCardSnapshotByHref(first.href);
+
+    expect(snapshot.prices.length).toBeGreaterThan(0);
+    for (const price of snapshot.prices.slice(0, 3)) {
+      expect(price).toMatch(/^\$\s?\d{1,3}(,\d{3})*(\.\d{1,2})?$/);
+    }
+  });
+
+  test('HP-030 sale price presentation is correct', async ({ home }) => {
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks(8);
+
+    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+
+    let saleValidated = false;
+    for (const product of productLinks) {
+      const card = await home.bestProductLinkByHref(product.href);
+      await card.scrollIntoViewIfNeeded();
+      const snapshot = await home.productCardSnapshotByHref(product.href);
+      if (snapshot.prices.length < 2) {
+        continue;
+      }
+
+      const numbers = snapshot.prices
+        .map((price) => Number(price.replace(/\$/g, '').replace(/,/g, '').trim()))
+        .filter((price) => Number.isFinite(price));
+
+      if (numbers.length < 2) {
+        continue;
+      }
+
+      const minPrice = Math.min(...numbers);
+      const maxPrice = Math.max(...numbers);
+      expect(minPrice).toBeLessThan(maxPrice);
+      saleValidated = true;
+      break;
+    }
+
+    test.skip(!saleValidated, 'No sale product card with both current/original price was found.');
+  });
 });
