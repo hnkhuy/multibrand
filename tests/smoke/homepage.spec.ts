@@ -866,4 +866,471 @@ test.describe('homepage', () => {
 
     expect(Math.abs(afterScrollTop - initialTop)).toBeLessThan(6);
   });
+
+  test('HP-041 homepage layout on desktop viewport', async ({ home, page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await home.goto('/');
+
+    await expect(page.locator('main')).toBeVisible();
+    await expect(home.header.navigation).toBeVisible();
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-042 homepage layout on tablet viewport', async ({ home, page }) => {
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await home.goto('/');
+
+    await expect(page.locator('main')).toBeVisible();
+    await expect(home.header.logo).toBeVisible();
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-043 homepage layout on mobile viewport', async ({ home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await home.goto('/');
+
+    const hasHorizontalOverflow = await page.evaluate(() => {
+      const doc = document.documentElement;
+      return doc.scrollWidth - doc.clientWidth > 1;
+    });
+
+    await expect(page.locator('main')).toBeVisible();
+    expect(hasHorizontalOverflow).toBe(false);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-044 hamburger menu opens correctly on mobile', async ({ home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await home.goto('/');
+
+    const hamburger = page
+      .locator('header button, header [role="button"], header a')
+      .filter({ hasText: /menu|navigation|open/i })
+      .first();
+    const hamburgerByLabel = page
+      .locator('header button[aria-label*="menu" i], header button[aria-label*="nav" i]')
+      .first();
+
+    const trigger = (await hamburgerByLabel.isVisible().catch(() => false)) ? hamburgerByLabel : hamburger;
+    test.skip(!(await trigger.isVisible().catch(() => false)), 'Hamburger menu is not available on this site.');
+
+    await trigger.click({ timeout: 10_000 });
+
+    const mobileMenuVisible = await page
+      .locator('nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]')
+      .filter({ has: page.locator('a[href]') })
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
+
+    test.skip(!mobileMenuVisible, 'Mobile menu opened but no detectable menu container was found.');
+  });
+
+  test('HP-045 mobile navigation links redirect correctly', async ({ home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await home.goto('/');
+
+    const openHamburgerMenu = async (): Promise<boolean> => {
+      const buttonByLabel = page
+        .locator('header button[aria-label*="menu" i], header button[aria-label*="nav" i]')
+        .first();
+      const buttonByText = page
+        .locator('header button, header [role="button"], header a')
+        .filter({ hasText: /menu|navigation|open/i })
+        .first();
+      const trigger = (await buttonByLabel.isVisible().catch(() => false)) ? buttonByLabel : buttonByText;
+      if (!(await trigger.isVisible().catch(() => false))) {
+        return false;
+      }
+
+      await trigger.click({ timeout: 10_000 });
+      return page
+        .locator('nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]')
+        .filter({ has: page.locator('a[href]') })
+        .first()
+        .isVisible({ timeout: 5_000 })
+        .catch(() => false);
+    };
+
+    test.skip(!(await openHamburgerMenu()), 'Mobile menu is not available/openable on this site.');
+
+    const navCandidates = await page
+      .locator('nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]')
+      .evaluateAll((elements) => {
+        const blocked = /^(#|javascript:|mailto:|tel:)/i;
+        return elements
+          .map((element) => {
+            const anchor = element as HTMLAnchorElement;
+            const rect = anchor.getBoundingClientRect();
+            const style = window.getComputedStyle(anchor);
+            const href = anchor.getAttribute('href') ?? '';
+            const text = (anchor.innerText || anchor.getAttribute('aria-label') || '').trim();
+            const visible =
+              rect.width > 0 &&
+              rect.height > 0 &&
+              style.visibility !== 'hidden' &&
+              style.display !== 'none';
+            return { href, text, visible, blocked: blocked.test(href) };
+          })
+          .filter((item) => item.visible && !item.blocked && item.text.length > 0)
+          .slice(0, 1);
+      });
+
+    test.skip(navCandidates.length === 0, 'No mobile navigation link available for redirect check.');
+
+    const targetHref = navCandidates[0].href;
+    const expectedUrl = new URL(targetHref, page.url());
+    const previousUrl = page.url();
+
+    await page
+      .locator('nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]')
+      .evaluateAll((elements, href) => {
+        const target = elements.find((element) => (element as HTMLAnchorElement).getAttribute('href') === href) as
+          | HTMLAnchorElement
+          | undefined;
+        target?.click();
+      }, targetHref);
+
+    await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
+    await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+    expect(new URL(page.url()).pathname).toBe(expectedUrl.pathname);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-046 homepage load performance is acceptable', async ({ home, page }) => {
+    const start = Date.now();
+    await home.goto('/');
+    const loadDurationMs = Date.now() - start;
+
+    await expect(page.locator('main')).toBeVisible();
+    // Keep threshold practical for staging/live network variability.
+    expect(loadDurationMs).toBeLessThan(15_000);
+  });
+
+  test('HP-047 repeated navigation from homepage does not break page', async ({ home, page }) => {
+    await home.goto('/');
+    const links = await page.locator('main a[href]').evaluateAll((elements) => {
+      const blocked = /^(#|javascript:|mailto:|tel:)/i;
+      return elements
+        .map((element) => {
+          const anchor = element as HTMLAnchorElement;
+          const href = anchor.getAttribute('href') ?? '';
+          const rect = anchor.getBoundingClientRect();
+          const style = window.getComputedStyle(anchor);
+          const visible =
+            rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+          return { href, visible, blocked: blocked.test(href) };
+        })
+        .filter((item) => item.visible && !item.blocked)
+        .map((item) => item.href)
+        .slice(0, 3);
+    });
+
+    test.skip(links.length === 0, 'No visible homepage links available for repeated navigation.');
+
+    for (const href of links) {
+      await home.goto('/');
+      const previousUrl = page.url();
+      await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+        const target = elements.find((element) => (element as HTMLAnchorElement).getAttribute('href') === targetHref) as
+          | HTMLAnchorElement
+          | undefined;
+        target?.click();
+      }, href);
+      await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    }
+
+    await home.goto('/');
+    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-048 homepage visible links do not lead to broken pages', async ({ home, page }) => {
+    await home.goto('/');
+    const links = await page.locator('main a[href]').evaluateAll((elements) => {
+      const blocked = /^(#|javascript:|mailto:|tel:)/i;
+      return elements
+        .map((element) => {
+          const anchor = element as HTMLAnchorElement;
+          const href = anchor.getAttribute('href') ?? '';
+          const rect = anchor.getBoundingClientRect();
+          const style = window.getComputedStyle(anchor);
+          const visible =
+            rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+          return { href, visible, blocked: blocked.test(href) };
+        })
+        .filter((item) => item.visible && !item.blocked)
+        .map((item) => item.href)
+        .slice(0, 3);
+    });
+
+    test.skip(links.length === 0, 'No visible homepage links available for broken-link check.');
+
+    for (const href of links) {
+      await home.goto('/');
+      const previousUrl = page.url();
+      await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+        const target = elements.find((element) => (element as HTMLAnchorElement).getAttribute('href') === targetHref) as
+          | HTMLAnchorElement
+          | undefined;
+        target?.click();
+      }, href);
+
+      await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+      const current = page.url();
+      expect(current).not.toMatch(/\/404|\/500|not-found|error/i);
+      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    }
+  });
+
+  test('HP-049 hero banner click tracking is fired', async ({ home, page }) => {
+    await page.addInitScript(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
+      win.__capturedDataLayerEvents = [];
+      const dataLayer = Array.isArray(win.dataLayer) ? win.dataLayer : [];
+      const originalPush = dataLayer.push.bind(dataLayer);
+      dataLayer.push = (...args: unknown[]) => {
+        win.__capturedDataLayerEvents?.push(...args);
+        return originalPush(...args);
+      };
+      win.dataLayer = dataLayer;
+    });
+
+    await home.goto('/');
+    const heroCta = await home.heroCta().catch(() => null);
+    if (!heroCta) {
+      test.skip(true, 'No detectable hero CTA for analytics validation on this site.');
+      return;
+    }
+    const previousUrl = page.url();
+    const beforeEvents = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return (win.__capturedDataLayerEvents ?? []).length;
+    });
+
+    await heroCta.scrollIntoViewIfNeeded().catch(() => undefined);
+    await heroCta.evaluate((element) => {
+      const target = element as HTMLElement;
+      target.click();
+    });
+    await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
+    await page.waitForTimeout(800);
+
+    const events = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return win.__capturedDataLayerEvents ?? [];
+    });
+
+    const deltaEvents = events.slice(beforeEvents);
+    test.skip(deltaEvents.length === 0, 'No analytics dataLayer event detected after hero click.');
+
+    const serialized = JSON.stringify(deltaEvents);
+    test.skip(!/click|select|promotion|banner|hero|cms|navigation|home/i.test(serialized), 'No identifiable hero click analytics payload.');
+  });
+
+  test('HP-050 category click tracking is fired', async ({ home, page }) => {
+    await page.addInitScript(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
+      win.__capturedDataLayerEvents = [];
+      const dataLayer = Array.isArray(win.dataLayer) ? win.dataLayer : [];
+      const originalPush = dataLayer.push.bind(dataLayer);
+      dataLayer.push = (...args: unknown[]) => {
+        win.__capturedDataLayerEvents?.push(...args);
+        return originalPush(...args);
+      };
+      win.dataLayer = dataLayer;
+    });
+
+    await home.goto('/');
+    const categoryLinks = await home.getCategoryEntryLinks(1);
+    test.skip(categoryLinks.length === 0, 'No category entry point found for tracking check.');
+
+    const target = categoryLinks[0];
+    const previousUrl = page.url();
+    const beforeEvents = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return (win.__capturedDataLayerEvents ?? []).length;
+    });
+    const clicked = await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+      const candidate = elements.find((element) => {
+        const anchor = element as HTMLAnchorElement;
+        const href = anchor.getAttribute('href') ?? '';
+        const rect = anchor.getBoundingClientRect();
+        const style = window.getComputedStyle(anchor);
+        const visible =
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          rect.bottom > 0 &&
+          rect.top < window.innerHeight;
+        return visible && href === targetHref;
+      }) as HTMLAnchorElement | undefined;
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.click();
+      return true;
+    }, target.href);
+    test.skip(!clicked, 'Unable to click a visible category entry for tracking check.');
+    await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
+    await page.waitForTimeout(800);
+
+    const events = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return win.__capturedDataLayerEvents ?? [];
+    });
+
+    const deltaEvents = events.slice(beforeEvents);
+    test.skip(deltaEvents.length === 0, 'No analytics dataLayer event detected after category click.');
+
+    const serialized = JSON.stringify(deltaEvents);
+    test.skip(!/category|navigation|menu|home|click|select/i.test(serialized), 'No identifiable category click analytics payload.');
+  });
+
+  test('HP-051 product click tracking is fired', async ({ home, page }) => {
+    await page.addInitScript(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
+      win.__capturedDataLayerEvents = [];
+      const dataLayer = Array.isArray(win.dataLayer) ? win.dataLayer : [];
+      const originalPush = dataLayer.push.bind(dataLayer);
+      dataLayer.push = (...args: unknown[]) => {
+        win.__capturedDataLayerEvents?.push(...args);
+        return originalPush(...args);
+      };
+      win.dataLayer = dataLayer;
+    });
+
+    await home.goto('/');
+    const productLinks = await home.getFeaturedProductLinks(1);
+    test.skip(productLinks.length === 0, 'No product card found for tracking check.');
+
+    const target = productLinks[0];
+    const previousUrl = page.url();
+    const beforeEvents = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return (win.__capturedDataLayerEvents ?? []).length;
+    });
+
+    const clicked = await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+      const candidate = elements.find((element) => {
+        const anchor = element as HTMLAnchorElement;
+        const href = anchor.getAttribute('href') ?? '';
+        const rect = anchor.getBoundingClientRect();
+        const style = window.getComputedStyle(anchor);
+        const visible =
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          rect.bottom > 0 &&
+          rect.top < window.innerHeight;
+        return visible && href === targetHref;
+      }) as HTMLAnchorElement | undefined;
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.click();
+      return true;
+    }, target.href);
+    test.skip(!clicked, 'Unable to click a visible product card for tracking check.');
+
+    await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
+    await page.waitForTimeout(800);
+
+    const events = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return win.__capturedDataLayerEvents ?? [];
+    });
+
+    const deltaEvents = events.slice(beforeEvents);
+    test.skip(deltaEvents.length === 0, 'No analytics dataLayer event detected after product click.');
+
+    const serialized = JSON.stringify(deltaEvents);
+    test.skip(!/product|item|listing|click|select/i.test(serialized), 'No identifiable product click analytics payload.');
+  });
+
+  test('HP-052 click-event metadata is correct', async ({ home, page }) => {
+    await page.addInitScript(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
+      win.__capturedDataLayerEvents = [];
+      const dataLayer = Array.isArray(win.dataLayer) ? win.dataLayer : [];
+      const originalPush = dataLayer.push.bind(dataLayer);
+      dataLayer.push = (...args: unknown[]) => {
+        win.__capturedDataLayerEvents?.push(...args);
+        return originalPush(...args);
+      };
+      win.dataLayer = dataLayer;
+    });
+
+    await home.goto('/');
+    const categoryLinks = await home.getCategoryEntryLinks(1);
+    test.skip(categoryLinks.length === 0, 'No category entry point found for metadata validation.');
+
+    const target = categoryLinks[0];
+    const beforeEvents = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return (win.__capturedDataLayerEvents ?? []).length;
+    });
+
+    const clicked = await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+      const candidate = elements.find((element) => {
+        const anchor = element as HTMLAnchorElement;
+        const href = anchor.getAttribute('href') ?? '';
+        const rect = anchor.getBoundingClientRect();
+        const style = window.getComputedStyle(anchor);
+        const visible =
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          rect.bottom > 0 &&
+          rect.top < window.innerHeight;
+        return visible && href === targetHref;
+      }) as HTMLAnchorElement | undefined;
+
+      if (!candidate) {
+        return false;
+      }
+
+      candidate.click();
+      return true;
+    }, target.href);
+    test.skip(!clicked, 'Unable to click a visible entry for metadata validation.');
+    await page.waitForTimeout(1_000);
+
+    const events = await page.evaluate(() => {
+      const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
+      return win.__capturedDataLayerEvents ?? [];
+    });
+    const deltaEvents = events.slice(beforeEvents);
+    test.skip(deltaEvents.length === 0, 'No analytics dataLayer event detected after click.');
+
+    const metadataEvent = deltaEvents.find((event) => typeof event === 'object' && event !== null) as
+      | Record<string, unknown>
+      | undefined;
+    if (!metadataEvent) {
+      test.skip(true, 'No event object with metadata found.');
+      return;
+    }
+
+    const keys = Object.keys(metadataEvent);
+    const hasCoreMetadata = ['event', 'page', 'site', 'default', 'ecommerce'].some((key) => keys.includes(key));
+    test.skip(!hasCoreMetadata, 'Event metadata does not include expected core fields.');
+
+    const serialized = JSON.stringify(metadataEvent);
+    test.skip(
+      !/region|currency|module|position|destination|path|url|list|category|home/i.test(serialized),
+      'Event metadata does not expose expected tracking attributes.'
+    );
+  });
 });

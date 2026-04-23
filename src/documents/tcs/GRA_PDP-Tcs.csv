@@ -1,0 +1,73 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+PDP-001,Page Load,Verify PDP loads successfully,Product URL is accessible; Product is active and available in current region,1. Open a valid PDP URL,"PDP loads without error, blank page, or broken layout",High
+PDP-002,Page Load,Verify correct product is displayed on PDP,Same as above,1. Open PDP URL 2. Observe product details,Product details match the selected product,High
+PDP-003,Page Load,Verify correct region-specific content is displayed on PDP,Site environment is correctly configured for AU/NZ,1. Open PDP,Region-specific content such as currency and delivery messaging is correct,High
+PDP-004,Page Load,Verify PDP loads over HTTPS,Same as above,1. Open PDP,PDP loads securely without browser security warning,Medium
+PDP-005,Page Load,Verify no visible application error is shown on PDP,Same as above,1. Open PDP,"No visible application error, exception page, or major JS crash UI is shown",High
+PDP-006,Breadcrumb,Verify breadcrumb is displayed,PDP loaded,1. Observe breadcrumb section,Breadcrumb is visible and structured correctly,Medium
+PDP-007,Breadcrumb,Verify breadcrumb links redirect correctly,Breadcrumb links exist,1. Click breadcrumb links,User is redirected to the correct category or landing page,Medium
+PDP-008,Product Info,Verify product name is displayed,PDP loaded,1. Observe product info section,Product name is visible and correct,High
+PDP-009,Product Info,Verify product price is displayed,PDP loaded,1. Observe product price,Price is visible and formatted correctly for region,High
+PDP-010,Product Info,Verify sale price presentation is correct,Product is on sale,1. Open sale product PDP,Sale price and original price are displayed correctly,High
+PDP-011,Product Info,Verify promotional label or badge is displayed correctly,Product has promotional badge,1. Open product with badge,Badge text and placement are correct,Medium
+PDP-012,Product Info,Verify SKU or product code is displayed if applicable,Product has SKU/code displayed on PDP,1. Observe product details section,SKU/product code is displayed correctly,Low
+PDP-013,Product Info,Verify product description is displayed,PDP loaded,1. Scroll to description section,Product description is visible and readable,High
+PDP-014,Product Info,Verify product attributes are displayed correctly,"Product has attributes such as color, size, material, style code",1. Observe attribute section,Product attributes are displayed correctly,High
+PDP-015,Product Info,Verify product title and description are consistent with selected variant,Configurable product with variants exists,1. Select a variant 2. Observe product info,Product info updates correctly for selected variant where applicable,Medium
+PDP-016,Media Gallery,Verify main product image is displayed,PDP loaded,1. Observe main image,Main product image is visible and rendered correctly,High
+PDP-017,Media Gallery,Verify thumbnail images are displayed,Product has multiple images,1. Observe thumbnail gallery,All expected thumbnails are visible,Medium
+PDP-018,Media Gallery,Verify selecting thumbnail updates main image,Product has multiple images,1. Click a thumbnail,Main image updates to selected image,High
+PDP-019,Media Gallery,Verify zoom functionality if available,Zoom feature is enabled,1. Hover/click image to zoom,Zoom works correctly without distortion,Medium
+PDP-020,Media Gallery,Verify media gallery navigation controls if available,Gallery has next/previous controls,1. Click next/previous controls,Images change correctly,Low
+PDP-021,Media Gallery,Verify product video is playable if available,Product has video media,1. Open video on PDP,Video plays correctly,Low
+PDP-022,Variant Selection,Verify color options are displayed correctly,Product has color variants,1. Observe color options,All expected color options are visible,High
+PDP-023,Variant Selection,Verify selecting a color updates product information correctly,Product has color variants,1. Select a color,Selected color is highlighted and relevant content updates correctly,High
+PDP-024,Variant Selection,Verify selecting a color updates product images correctly,Product has color-specific images,1. Select a color,Image gallery updates to selected color where applicable,High
+PDP-025,Variant Selection,Verify size options are displayed correctly,Product has size variants,1. Observe size options,All expected size options are visible,High
+PDP-026,Variant Selection,Verify unavailable size state is displayed correctly,Product has unavailable size(s),1. Observe size options,Unavailable size is visually distinguished and cannot be selected if intended,High
+PDP-027,Variant Selection,Verify selecting a size updates selected state correctly,Product has size variants,1. Select a size,Selected size is highlighted correctly,High
+PDP-028,Variant Selection,Verify add to cart is blocked when required options are not selected,Product requires option selection,1. Do not select required option(s) 2. Click Add to Cart,User cannot add to cart and appropriate validation is shown,High
+PDP-029,Variant Selection,Verify variant selection is retained correctly before add to cart,Product has multiple required options,1. Select color 2. Select size,Selected options remain correctly highlighted,High
+PDP-030,Stock,Verify in-stock state is displayed correctly,In-stock product,1. Open in-stock PDP,In-stock messaging/state is correct,High
+PDP-031,Stock,Verify out-of-stock state is displayed correctly,Out-of-stock product,1. Open OOS PDP,Out-of-stock messaging/state is correct,High
+PDP-032,Stock,Verify Add to Cart is unavailable for out-of-stock product,Out-of-stock product,1. Open OOS PDP,Add to Cart is disabled or unavailable as expected,High
+PDP-033,Stock,Verify low-stock messaging is displayed correctly if applicable,Product has low-stock messaging,1. Open product with low-stock condition,Low-stock messaging is displayed correctly,Medium
+PDP-034,Add to Cart,Verify Add to Cart button is displayed,In-stock product with required options selected if applicable,1. Observe CTA section,Add to Cart button is visible,High
+PDP-035,Add to Cart,Verify product can be added to cart successfully from PDP,In-stock product; Required options selected,1. Select required options 2. Click Add to Cart,Product is added to cart successfully,Critical
+PDP-036,Add to Cart,Verify correct variant is added to cart,In-stock configurable product,1. Select color and size 2. Click Add to Cart 3. Open cart,Cart contains the selected variant with correct details,Critical
+PDP-037,Add to Cart,Verify cart count updates after successful add to cart,Empty or known cart state,1. Add product to cart,Cart count updates correctly,High
+PDP-038,Add to Cart,Verify add-to-cart success feedback is shown,Product added successfully,1. Click Add to Cart,"Success message, mini-cart update, or confirmation UI is shown correctly",High
+PDP-039,Add to Cart,Verify quantity defaults correctly before add to cart if quantity selector exists,Quantity selector exists,1. Open PDP,Default quantity is correct,Medium
+PDP-040,Add to Cart,Verify quantity can be updated before add to cart if supported,Quantity selector exists,1. Change quantity 2. Add to cart,Selected quantity is added correctly,Medium
+PDP-041,Wishlist,Verify wishlist entry point is displayed,Wishlist feature enabled,1. Observe wishlist button/icon,Wishlist entry point is visible,Medium
+PDP-042,Wishlist,Verify product can be added to wishlist,Wishlist feature enabled; User logged in if required,1. Click wishlist button,Product is added to wishlist successfully or login flow is triggered correctly,Medium
+PDP-043,Wishlist,Verify selected variant is handled correctly in wishlist flow,Configurable product; Wishlist enabled,1. Select variant 2. Add to wishlist,Wishlist captures correct product/variant behavior as designed,Medium
+PDP-044,Store Finder,Verify Find in Store entry point is displayed if feature is enabled,Find in Store feature enabled,1. Observe PDP,Find in Store link/button is visible,Medium
+PDP-045,Store Finder,Verify Find in Store opens correctly,Find in Store enabled,1. Click Find in Store,Store finder modal/page opens correctly,Medium
+PDP-046,Delivery / Pickup,Verify delivery messaging is displayed correctly,Delivery message available,1. Observe delivery section,Delivery message is visible and correct for region,Medium
+PDP-047,Delivery / Pickup,Verify pickup messaging is displayed correctly if applicable,Pickup feature enabled,1. Observe pickup/store section,Pickup messaging is correct,Low
+PDP-048,Promo / Finance,Verify finance/payment promotional messaging is displayed correctly if applicable,Payment promo feature enabled,1. Observe payment promo area,Promo text and placement are correct,Medium
+PDP-049,Promo / Finance,Verify finance/payment CTA or modal opens correctly if applicable,Payment promo feature enabled,1. Click payment promo CTA/link,Corresponding modal/page opens correctly,Low
+PDP-050,Recommendations,Verify recommendation module is displayed if applicable,Recommendation module enabled,1. Scroll below product details,Recommendation module is visible,Low
+PDP-051,Recommendations,Verify clicking recommended product redirects correctly,Recommendation module enabled,1. Click recommended product card,Correct PDP opens,Medium
+PDP-052,Content Sections,Verify accordion/tab sections are displayed correctly,"PDP has accordion/tab content such as description, shipping, returns",1. Observe content sections,Sections are visible and labeled correctly,Medium
+PDP-053,Content Sections,Verify accordion/tab expansion and collapse behavior,Accordion/tab content exists,1. Expand/collapse each section,Sections behave correctly,Medium
+PDP-054,Content Sections,Verify shipping and returns information is displayed correctly if applicable,Shipping/returns content exists,1. Open shipping/returns section,Content is displayed correctly,Low
+PDP-055,UI,Verify no overlapping UI elements on PDP,PDP loaded,1. Scroll through PDP,"No overlapping issue among header, gallery, CTA, sticky elements, chat widget, and footer",High
+PDP-056,UI,Verify text is readable on PDP,PDP loaded,1. Inspect PDP text content,"No text is truncated, hidden, or unreadable",Medium
+PDP-057,UI,Verify images are rendered without distortion,PDP loaded,1. Inspect gallery images,Images maintain expected aspect ratio and clarity,Medium
+PDP-058,UI,Verify sticky add-to-cart behavior if applicable,Sticky ATC enabled,1. Scroll through PDP,Sticky ATC appears and behaves correctly,Medium
+PDP-059,Responsive,Verify PDP layout on desktop viewport,Desktop viewport,1. Open PDP on desktop,Desktop layout is correct,High
+PDP-060,Responsive,Verify PDP layout on tablet viewport,Tablet viewport,1. Open PDP on tablet,Tablet layout adapts correctly,Medium
+PDP-061,Responsive,Verify PDP layout on mobile viewport,Mobile viewport,1. Open PDP on mobile,Mobile layout adapts correctly without horizontal overflow,High
+PDP-062,Responsive,Verify product gallery behavior on mobile,Mobile viewport,1. Open gallery on mobile 2. Swipe or navigate images,Mobile gallery behaves correctly,Medium
+PDP-063,Performance,Verify PDP load performance is acceptable,Stable network,1. Open PDP,PDP loads within acceptable threshold,Medium
+PDP-064,Stability,Verify repeated variant switching does not break PDP,Configurable product,1. Switch colors/sizes repeatedly,PDP remains stable without broken state or incorrect data,High
+PDP-065,Stability,Verify browser refresh retains valid PDP state,Configurable or simple product,1. Select variant if applicable 2. Refresh page,PDP reloads correctly and state behaves as designed,Medium
+PDP-066,Error Handling,Verify invalid or unavailable product URL is handled correctly,Invalid or disabled product URL,1. Open invalid PDP URL,"Proper error page, redirect, or unavailable state is shown",Medium
+PDP-067,Analytics,Verify product view tracking is fired on PDP load,Analytics/debug tools available,1. Open PDP,Expected product view event is triggered with correct metadata,High
+PDP-068,Analytics,Verify variant selection tracking is fired,Analytics/debug tools available; Configurable product,1. Select color or size,Expected selection event is triggered with correct metadata,Medium
+PDP-069,Analytics,Verify add-to-cart tracking is fired from PDP,Analytics/debug tools available,1. Add product to cart from PDP,Expected add-to-cart event is triggered with correct metadata,Critical
+PDP-070,Analytics,Verify Find in Store click tracking is fired if applicable,Analytics/debug tools available; Feature enabled,1. Click Find in Store,Expected event is triggered with correct metadata,Low
+PDP-071,Analytics,Verify wishlist click tracking is fired if applicable,Analytics/debug tools available; Wishlist enabled,1. Click wishlist button,Expected event is triggered with correct metadata,Low
+PDP-072,Analytics,Verify event metadata is correct for PDP interactions,Analytics/debug tools available,1. Trigger PDP actions 2. Inspect payload,"Event metadata such as product ID, variant, region, price, and module are correct",High
