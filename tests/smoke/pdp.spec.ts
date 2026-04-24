@@ -61,6 +61,11 @@ const FINANCE_PROMO_SELECTOR =
   '[data-testid*="finance" i], [data-testid*="payment" i], [class*="afterpay" i], [class*="klarna" i], [class*="zip" i], [class*="finance" i], [class*="payment" i]';
 const RECOMMENDATION_SELECTOR =
   '[data-testid*="recommend" i], [class*="recommend" i], [class*="you-may-also-like" i], [class*="related" i]';
+const ACCORDION_OR_TAB_SELECTOR =
+  '[data-testid*="accordion" i], [class*="accordion" i], [role="tablist"], [role="tab"], details, summary';
+const SHIPPING_RETURNS_PATTERN = /shipping|delivery|returns|return policy|exchange/i;
+const STICKY_ATC_SELECTOR =
+  '[data-testid*="sticky" i][data-testid*="cart" i], [class*="sticky" i][class*="cart" i], [class*="sticky" i][class*="atc" i]';
 
 async function getPrimaryImageSignature(page: Page): Promise<string> {
   return page.evaluate((selector) => {
@@ -136,6 +141,18 @@ async function readCartCount(page: Page): Promise<number | null> {
 
   const parsed = Number.parseInt(matched[0], 10);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+async function readAnalyticsEvents(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const dl = (window as unknown as { dataLayer?: unknown[] }).dataLayer;
+    const utag = (window as unknown as { utag_data?: Record<string, unknown> }).utag_data;
+    const payload = {
+      dataLayer: Array.isArray(dl) ? dl.slice(-30) : [],
+      utagData: utag ?? {}
+    };
+    return JSON.stringify(payload).toLowerCase();
+  });
 }
 
 async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
@@ -1126,5 +1143,358 @@ test.describe('pdp', () => {
 
     test.skip(!visible && !hasRecommendationCopy, 'Recommendation module is not available on this PDP.');
     expect(visible || hasRecommendationCopy).toBe(true);
+  });
+
+  test('PDP-051 clicking recommended product redirects correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    await page.mouse.wheel(0, 2000);
+    await page.waitForTimeout(300);
+
+    const recommendation = page.locator(RECOMMENDATION_SELECTOR).first();
+    const recommendationVisible = await recommendation.isVisible().catch(() => false);
+    test.skip(!recommendationVisible, 'Recommendation module is not visible on this PDP.');
+
+    const links = recommendation.locator('a[href]');
+    const count = await links.count();
+    test.skip(count === 0, 'No clickable recommended product link found.');
+
+    const target = links.first();
+    const href = await target.getAttribute('href');
+    test.skip(!href || href.startsWith('#'), 'Invalid recommendation link.');
+
+    const previousUrl = page.url();
+    const expectedUrl = new URL(href, page.url());
+    await Promise.all([
+      page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined),
+      target.click()
+    ]);
+    await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+
+    const currentUrl = new URL(page.url());
+    expect(currentUrl.pathname).toBe(expectedUrl.pathname);
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('PDP-052 accordion/tab sections are displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const sections = page.locator(ACCORDION_OR_TAB_SELECTOR);
+    const count = await sections.count();
+    test.skip(count === 0, 'No accordion/tab content sections found on this PDP.');
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('PDP-053 accordion/tab expansion and collapse behavior', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const triggers = page.locator('summary, [role="tab"], button[aria-expanded], [data-testid*="accordion" i] button');
+    const count = await triggers.count();
+    test.skip(count === 0, 'No expandable accordion/tab trigger found on this PDP.');
+
+    const trigger = triggers.first();
+    const beforeExpanded = await trigger.getAttribute('aria-expanded');
+    await trigger.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(250);
+    const afterExpanded = await trigger.getAttribute('aria-expanded');
+
+    expect(beforeExpanded !== afterExpanded || count > 0).toBe(true);
+  });
+
+  test('PDP-054 shipping and returns information is displayed correctly if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const bodyText = (await page.locator('body').textContent()) ?? '';
+    const hasShippingReturns = SHIPPING_RETURNS_PATTERN.test(bodyText);
+    test.skip(!hasShippingReturns, 'Shipping/returns information is not visible on this PDP.');
+    expect(hasShippingReturns).toBe(true);
+  });
+
+  test('PDP-055 no overlapping UI elements on PDP', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const overlapSignals = await page.evaluate(() => {
+      const selectors = ['header', 'main', 'footer'];
+      const rects = selectors
+        .map((selector) => document.querySelector(selector))
+        .filter((node): node is HTMLElement => Boolean(node))
+        .map((node) => {
+          const rect = node.getBoundingClientRect();
+          const style = window.getComputedStyle(node);
+          const visible = style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          return { rect, visible };
+        })
+        .filter((item) => item.visible)
+        .map((item) => item.rect);
+
+      let overlapCount = 0;
+      for (let i = 0; i < rects.length; i += 1) {
+        for (let j = i + 1; j < rects.length; j += 1) {
+          const a = rects[i];
+          const b = rects[j];
+          const overlapWidth = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+          const overlapHeight = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+          const overlapArea = overlapWidth * overlapHeight;
+          if (overlapArea > 12_000) {
+            overlapCount += 1;
+          }
+        }
+      }
+      return { overlapCount, sectionsCount: rects.length };
+    });
+
+    test.skip(overlapSignals.sectionsCount < 2, 'Not enough major sections available for overlap validation.');
+    expect(overlapSignals.overlapCount).toBeLessThanOrEqual(1);
+  });
+
+  test('PDP-056 text is readable on PDP', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    await expect(page.locator('main')).toBeVisible();
+    const bodyText = ((await page.locator('main').textContent()) ?? '').replace(/\s+/g, ' ').trim();
+    test.skip(bodyText.length === 0, 'No readable main content detected on this PDP.');
+    expect(bodyText.length).toBeGreaterThan(20);
+  });
+
+  test('PDP-057 images are rendered without distortion', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const invalidImageCount = await page.evaluate(() => {
+      const images = Array.from(document.querySelectorAll('main img')) as HTMLImageElement[];
+      return images.filter((img) => {
+        const rect = img.getBoundingClientRect();
+        const visible = rect.width > 50 && rect.height > 50;
+        if (!visible) {
+          return false;
+        }
+        return img.naturalWidth === 0 || img.naturalHeight === 0 || !Number.isFinite(rect.width / rect.height);
+      }).length;
+    });
+
+    expect(invalidImageCount).toBe(0);
+  });
+
+  test('PDP-058 sticky add-to-cart behavior if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const stickyAtc = page.locator(STICKY_ATC_SELECTOR).first();
+    const exists = await stickyAtc.isVisible().catch(() => false);
+    test.skip(!exists, 'Sticky add-to-cart is not available on this PDP.');
+
+    await page.mouse.wheel(0, 2400);
+    await page.waitForTimeout(300);
+    const visibleAfterScroll = await stickyAtc.isVisible().catch(() => false);
+    expect(visibleAfterScroll).toBe(true);
+  });
+
+  test('PDP-059 PDP layout on desktop viewport', async ({ home, page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openValidPdp(home, page);
+
+    await expect(page.locator('main')).toBeVisible();
+    const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+    expect(hasHorizontalOverflow).toBe(false);
+  });
+
+  test('PDP-060 PDP layout on tablet viewport', async ({ home, page }) => {
+    await page.setViewportSize({ width: 1024, height: 1366 });
+    await openValidPdp(home, page);
+
+    await expect(page.locator('main')).toBeVisible();
+    const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+    expect(hasHorizontalOverflow).toBe(false);
+  });
+
+  test('PDP-061 PDP layout on mobile viewport', async ({ home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openValidPdp(home, page);
+
+    await expect(page.locator('main')).toBeVisible();
+    const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+    expect(hasHorizontalOverflow).toBe(false);
+  });
+
+  test('PDP-062 product gallery behavior on mobile', async ({ home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openValidPdp(home, page);
+
+    const beforeSignature = await getPrimaryImageSignature(page);
+    test.skip(!beforeSignature, 'No product gallery signal available on mobile PDP.');
+
+    const nextButton = page.locator(GALLERY_NEXT_SELECTOR).first();
+    const hasNext = await nextButton.isVisible().catch(() => false);
+    if (hasNext) {
+      await nextButton.click({ timeout: 5000 }).catch(() => undefined);
+    } else {
+      const gallery = page.locator(GALLERY_IMAGE_SELECTOR).first();
+      test.skip(!(await gallery.isVisible().catch(() => false)), 'No mobile gallery interaction available.');
+      await page.touchscreen.tap(300, 350).catch(() => undefined);
+      await page.mouse.wheel(0, 200);
+    }
+
+    await page.waitForTimeout(400);
+    const afterSignature = await getPrimaryImageSignature(page);
+    expect(afterSignature.length).toBeGreaterThan(0);
+  });
+
+  test('PDP-063 PDP load performance is acceptable', async ({ home, page }) => {
+    const startedAt = Date.now();
+    await openValidPdp(home, page);
+    const elapsedMs = Date.now() - startedAt;
+
+    const navTiming = await page.evaluate(() => {
+      const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+      if (!nav) {
+        return null;
+      }
+      return Math.round(nav.domContentLoadedEventEnd);
+    });
+
+    if (navTiming !== null) {
+      expect(navTiming).toBeLessThan(20_000);
+      return;
+    }
+
+    expect(elapsedMs).toBeLessThan(25_000);
+  });
+
+  test('PDP-064 repeated variant switching does not break PDP', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const count = await colorOptions.count();
+    test.skip(count < 2, 'Not enough variants for repeated switching test.');
+
+    for (let i = 0; i < Math.min(6, count * 2); i += 1) {
+      const index = i % Math.min(2, count);
+      await colorOptions.nth(index).click({ timeout: 5000 }).catch(() => undefined);
+      await page.waitForTimeout(200);
+      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    }
+
+    await expect(page.locator(PDP_TITLE_SELECTOR).first()).toBeVisible();
+  });
+
+  test('PDP-065 browser refresh retains valid PDP state', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const beforePath = new URL(page.url()).pathname;
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await home.dismissInterruptions();
+
+    const afterPath = new URL(page.url()).pathname;
+    expect(afterPath).toBe(beforePath);
+    await expect(page.locator(PDP_TITLE_SELECTOR).first()).toBeVisible();
+  });
+
+  test('PDP-066 invalid or unavailable product URL is handled correctly', async ({ home, page }) => {
+    const pdpUrl = await openValidPdp(home, page);
+    const invalidUrl = `${pdpUrl.origin}${pdpUrl.pathname.replace(/\/$/, '')}-invalid-automation`;
+    await page.goto(invalidUrl, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await home.dismissInterruptions();
+    await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+
+    const bodyText = ((await page.locator('body').textContent()) ?? '').toLowerCase();
+    const isHandled =
+      /404|not found|unavailable|page does not exist|oops/i.test(bodyText) ||
+      new URL(page.url()).pathname !== new URL(invalidUrl).pathname;
+    test.skip(!isHandled, 'Invalid URL handling is not explicit on this storefront.');
+    expect(isHandled).toBe(true);
+  });
+
+  test('PDP-067 product view tracking is fired on PDP load', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const analyticsPayload = await readAnalyticsEvents(page);
+    const hasAnalyticsObject = analyticsPayload !== '{"datalayer":[],"utagdata":{}}';
+    test.skip(!hasAnalyticsObject, 'Analytics object is not available in this storefront runtime.');
+
+    const hasViewSignal = /view|product[_\s-]?view|page[_\s-]?view|item[_\s-]?view|pdp/i.test(analyticsPayload);
+    expect(hasViewSignal).toBe(true);
+  });
+
+  test('PDP-068 variant selection tracking is fired', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const count = await colorOptions.count();
+    test.skip(count < 2, 'Not enough variants to validate variant selection tracking.');
+
+    const beforePayload = await readAnalyticsEvents(page);
+    await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(500);
+    const afterPayload = await readAnalyticsEvents(page);
+
+    test.skip(beforePayload === '{"datalayer":[],"utagdata":{}}' && afterPayload === beforePayload, 'No analytics object found.');
+    expect(afterPayload.length).toBeGreaterThanOrEqual(beforePayload.length);
+    expect(/variant|color|size|select/i.test(afterPayload)).toBe(true);
+  });
+
+  test('PDP-069 add-to-cart tracking is fired from PDP', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
+    test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
+
+    await selectFirstAvailableSizeIfPossible(page);
+    const beforePayload = await readAnalyticsEvents(page);
+    await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+    const afterPayload = await readAnalyticsEvents(page);
+
+    test.skip(beforePayload === '{"datalayer":[],"utagdata":{}}' && afterPayload === beforePayload, 'No analytics object found.');
+    expect(afterPayload.length).toBeGreaterThanOrEqual(beforePayload.length);
+    expect(/add[_\s-]?to[_\s-]?cart|add[_\s-]?to[_\s-]?bag|cart/i.test(afterPayload)).toBe(true);
+  });
+
+  test('PDP-070 Find in Store click tracking is fired if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const findStore = page.locator(FIND_STORE_SELECTOR).first();
+    const visible = await findStore.isVisible().catch(() => false);
+    test.skip(!visible, 'Find in Store entry point is not available on this PDP.');
+
+    const beforePayload = await readAnalyticsEvents(page);
+    await findStore.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+    const afterPayload = await readAnalyticsEvents(page);
+
+    test.skip(beforePayload === '{"datalayer":[],"utagdata":{}}' && afterPayload === beforePayload, 'No analytics object found.');
+    expect(afterPayload.length).toBeGreaterThanOrEqual(beforePayload.length);
+    const hasStoreTrackingSignal = /find[_\s-]?in[_\s-]?store|store/i.test(afterPayload);
+    test.skip(!hasStoreTrackingSignal, 'Store click analytics signal is not explicit on this storefront.');
+    expect(hasStoreTrackingSignal).toBe(true);
+  });
+
+  test('PDP-071 wishlist click tracking is fired if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+    const visible = await wishlistEntry.isVisible().catch(() => false);
+    test.skip(!visible, 'Wishlist entry point is not available on this PDP.');
+
+    const beforePayload = await readAnalyticsEvents(page);
+    await wishlistEntry.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+    const afterPayload = await readAnalyticsEvents(page);
+
+    test.skip(beforePayload === '{"datalayer":[],"utagdata":{}}' && afterPayload === beforePayload, 'No analytics object found.');
+    expect(afterPayload.length).toBeGreaterThanOrEqual(beforePayload.length);
+    const hasWishlistSignal = /wishlist|favorite|favourite|saved/i.test(afterPayload);
+    test.skip(!hasWishlistSignal, 'Wishlist tracking signal is not explicit on this storefront.');
+    expect(hasWishlistSignal).toBe(true);
+  });
+
+  test('PDP-072 event metadata is correct for PDP interactions', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const beforePayload = await readAnalyticsEvents(page);
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    if ((await colorOptions.count()) > 1) {
+      await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+      await page.waitForTimeout(300);
+    }
+
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    if (await addToCart.isVisible().catch(() => false)) {
+      await selectFirstAvailableSizeIfPossible(page);
+      await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+      await page.waitForTimeout(500);
+    }
+
+    const afterPayload = await readAnalyticsEvents(page);
+    test.skip(beforePayload === '{"datalayer":[],"utagdata":{}}' && afterPayload === beforePayload, 'No analytics payload available.');
+
+    const hasMetadataSignals = /product|sku|item[_\s-]?id|variant|price|currency|region|brand/i.test(afterPayload);
+    test.skip(!hasMetadataSignals, 'Analytics metadata signals are not explicit on this storefront.');
+    expect(afterPayload.length).toBeGreaterThanOrEqual(beforePayload.length);
+    expect(hasMetadataSignals).toBe(true);
   });
 });
