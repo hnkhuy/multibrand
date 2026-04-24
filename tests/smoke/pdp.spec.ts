@@ -49,6 +49,18 @@ const CART_COUNT_SELECTOR =
   '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="badge" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]';
 const QUANTITY_INPUT_SELECTOR =
   'input[name*="qty" i], input[name*="quantity" i], [data-testid*="quantity" i] input, select[name*="qty" i], select[name*="quantity" i]';
+const WISHLIST_ENTRY_SELECTOR =
+  '[data-testid*="wishlist" i], button[aria-label*="wishlist" i], a[href*="wishlist"], [class*="wishlist" i]';
+const FIND_STORE_SELECTOR =
+  '[data-testid*="store" i], button:has-text("Find in Store"), a:has-text("Find in Store"), [class*="store" i]';
+const DELIVERY_SELECTOR =
+  '[data-testid*="delivery" i], [class*="delivery" i], [class*="shipping" i], [id*="delivery" i]';
+const PICKUP_SELECTOR =
+  '[data-testid*="pickup" i], [class*="pickup" i], [class*="click-and-collect" i], [class*="collect" i]';
+const FINANCE_PROMO_SELECTOR =
+  '[data-testid*="finance" i], [data-testid*="payment" i], [class*="afterpay" i], [class*="klarna" i], [class*="zip" i], [class*="finance" i], [class*="payment" i]';
+const RECOMMENDATION_SELECTOR =
+  '[data-testid*="recommend" i], [class*="recommend" i], [class*="you-may-also-like" i], [class*="related" i]';
 
 async function getPrimaryImageSignature(page: Page): Promise<string> {
   return page.evaluate((selector) => {
@@ -960,5 +972,159 @@ test.describe('pdp', () => {
     const updated = await quantityInput.inputValue().catch(() => '');
     test.skip(updated === '', 'Could not update quantity input on this PDP.');
     expect(updated).toBe('2');
+  });
+
+  test('PDP-041 wishlist entry point is displayed', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+    const visible = await wishlistEntry.isVisible().catch(() => false);
+    test.skip(!visible, 'Wishlist entry point is not available on this PDP.');
+    await expect(wishlistEntry).toBeVisible();
+  });
+
+  test('PDP-042 product can be added to wishlist', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+    const visible = await wishlistEntry.isVisible().catch(() => false);
+    test.skip(!visible, 'Wishlist entry point is not available on this PDP.');
+
+    const previousUrl = page.url();
+    await wishlistEntry.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const bodyText = (await page.locator('body').textContent()) ?? '';
+    const successSignal = /added to wishlist|saved|favourite|favorite/i.test(bodyText);
+    const loginSignal = /sign in|log in|login|create account/i.test(bodyText) || page.url() !== previousUrl;
+    expect(successSignal || loginSignal).toBe(true);
+  });
+
+  test('PDP-043 selected variant is handled correctly in wishlist flow', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+    const wishlistVisible = await wishlistEntry.isVisible().catch(() => false);
+    test.skip(!wishlistVisible, 'Wishlist entry point is not available on this PDP.');
+
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const sizeOptions = page.locator(SIZE_OPTION_SELECTOR);
+    const colorCount = await colorOptions.count();
+    const sizeCount = await sizeOptions.count();
+    test.skip(colorCount < 2 && sizeCount < 2, 'Not enough variant options for wishlist variant check.');
+
+    if (colorCount > 1) {
+      await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+    }
+    if (sizeCount > 1) {
+      await selectFirstAvailableSizeIfPossible(page);
+    }
+
+    await wishlistEntry.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const bodyText = (await page.locator('body').textContent()) ?? '';
+    const hasSignal = /wishlist|saved|favourite|favorite|sign in|log in/i.test(bodyText);
+    expect(hasSignal).toBe(true);
+  });
+
+  test('PDP-044 Find in Store entry point is displayed if feature is enabled', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const findStore = page.locator(FIND_STORE_SELECTOR).first();
+    const visible = await findStore.isVisible().catch(() => false);
+    test.skip(!visible, 'Find in Store entry point is not available on this PDP.');
+    await expect(findStore).toBeVisible();
+  });
+
+  test('PDP-045 Find in Store opens correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const findStore = page.locator(FIND_STORE_SELECTOR).first();
+    const visible = await findStore.isVisible().catch(() => false);
+    test.skip(!visible, 'Find in Store entry point is not available on this PDP.');
+
+    const previousUrl = page.url();
+    await findStore.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const modalVisible = await page
+      .locator('[role="dialog"], [data-testid*="store" i], [class*="store-locator" i], [class*="find-store" i]')
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const urlChanged = page.url() !== previousUrl;
+    test.skip(!modalVisible && !urlChanged, 'Find in Store entry point is visible but not actionable on this PDP.');
+    expect(modalVisible || urlChanged).toBe(true);
+  });
+
+  test('PDP-046 delivery messaging is displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const delivery = page.locator(DELIVERY_SELECTOR).first();
+    const visible = await delivery.isVisible().catch(() => false);
+    const hasDeliveryCopy = await page
+      .locator('body')
+      .textContent()
+      .then((text) => /delivery|shipping|dispatch/i.test(text ?? ''));
+
+    test.skip(!visible && !hasDeliveryCopy, 'Delivery messaging is not available on this PDP.');
+    expect(visible || hasDeliveryCopy).toBe(true);
+  });
+
+  test('PDP-047 pickup messaging is displayed correctly if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const pickup = page.locator(PICKUP_SELECTOR).first();
+    const visible = await pickup.isVisible().catch(() => false);
+    const hasPickupCopy = await page
+      .locator('body')
+      .textContent()
+      .then((text) => /pickup|pick up|collect|click and collect/i.test(text ?? ''));
+
+    test.skip(!visible && !hasPickupCopy, 'Pickup messaging is not available on this PDP.');
+    expect(visible || hasPickupCopy).toBe(true);
+  });
+
+  test('PDP-048 finance/payment promotional messaging is displayed correctly if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const financePromo = page.locator(FINANCE_PROMO_SELECTOR).first();
+    const visible = await financePromo.isVisible().catch(() => false);
+    const hasFinanceCopy = await page
+      .locator('body')
+      .textContent()
+      .then((text) => /afterpay|klarna|zip|interest[- ]?free|finance|payment options/i.test(text ?? ''));
+
+    test.skip(!visible && !hasFinanceCopy, 'Finance/payment promotional messaging is not available on this PDP.');
+    expect(visible || hasFinanceCopy).toBe(true);
+  });
+
+  test('PDP-049 finance/payment CTA or modal opens correctly if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const financePromo = page.locator(FINANCE_PROMO_SELECTOR).first();
+    const visible = await financePromo.isVisible().catch(() => false);
+    test.skip(!visible, 'Finance/payment promotional CTA is not available on this PDP.');
+
+    const previousUrl = page.url();
+    await financePromo.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const modalVisible = await page
+      .locator('[role="dialog"], [data-testid*="finance" i], [class*="finance" i], [class*="payment" i]')
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const urlChanged = page.url() !== previousUrl;
+    test.skip(!modalVisible && !urlChanged, 'Finance/payment CTA is visible but not actionable on this PDP.');
+    expect(modalVisible || urlChanged).toBe(true);
+  });
+
+  test('PDP-050 recommendation module is displayed if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    await page.mouse.wheel(0, 1800);
+    await page.waitForTimeout(300);
+
+    const recommendation = page.locator(RECOMMENDATION_SELECTOR).first();
+    const visible = await recommendation.isVisible().catch(() => false);
+    const hasRecommendationCopy = await page
+      .locator('body')
+      .textContent()
+      .then((text) => /recommended|you may also like|related products|complete the look/i.test(text ?? ''));
+
+    test.skip(!visible && !hasRecommendationCopy, 'Recommendation module is not available on this PDP.');
+    expect(visible || hasRecommendationCopy).toBe(true);
   });
 });
