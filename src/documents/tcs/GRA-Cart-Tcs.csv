@@ -1,0 +1,78 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+CART-001,Page Load,Verify cart page loads successfully,Cart URL is accessible,1. Open cart page,"Cart page loads without error, blank page, or broken layout",High
+CART-002,Page Load,Verify empty cart state,Cart is empty,1. Open cart page,Empty cart message and continue shopping CTA are displayed correctly,High
+CART-003,Page Load,Verify cart with product loads successfully,Cart has at least one product,1. Open cart page,Cart displays product details correctly,High
+CART-004,Region,Verify region-specific content is displayed correctly,Site is configured for AU/NZ,1. Open cart page,"Currency, delivery message, and payment messaging are correct for selected region",High
+CART-005,Security,Verify cart page loads over HTTPS,Cart URL is accessible,1. Open cart page,Page loads securely without browser warning,Medium
+CART-006,Header,Verify cart count matches cart quantity,Cart has product(s),1. Observe header cart count 2. Compare with cart quantity,Header cart count matches cart item quantity,High
+CART-007,Product Details,Verify product image is displayed,Cart has product(s),1. Open cart,Product image is visible and not broken,High
+CART-008,Product Details,Verify product name is displayed,Cart has product(s),1. Open cart,Product name is visible and correct,High
+CART-009,Product Details,Verify product attributes are displayed,Configurable product in cart,1. Open cart,"Selected size, colour, or variant details are displayed correctly",High
+CART-010,Product Details,Verify product price is displayed,Cart has product(s),1. Open cart,Product price is visible and formatted correctly,High
+CART-011,Product Details,Verify sale price is displayed correctly,Cart contains sale product,1. Open cart,Sale price/original price are displayed correctly where applicable,High
+CART-012,Product Details,Verify product link redirects to PDP,Cart has product(s),1. Click product name/image,Correct PDP opens,Medium
+CART-013,Quantity,Verify quantity selector/input is displayed,Cart has product(s),1. Open cart,Quantity control is visible,High
+CART-014,Quantity,Verify increasing quantity updates cart,Cart has product with available stock,1. Increase quantity,Item quantity and cart totals update correctly,Critical
+CART-015,Quantity,Verify decreasing quantity updates cart,Cart has product quantity > 1,1. Decrease quantity,Item quantity and cart totals update correctly,Critical
+CART-016,Quantity,Verify quantity cannot be set below minimum,Cart has product,1. Attempt to set quantity to 0 or negative value,Quantity is rejected or product removal flow is triggered as designed,High
+CART-017,Quantity,Verify quantity cannot exceed available stock,Cart has limited-stock product,1. Set quantity above available stock,Validation message is displayed and quantity is not incorrectly updated,High
+CART-018,Quantity,Verify manual quantity input works if supported,Quantity input is editable,1. Enter valid quantity 2. Apply/update,Cart quantity and totals update correctly,Medium
+CART-019,Quantity,Verify invalid quantity input is handled,Quantity input is editable,1. Enter invalid value such as text/symbol,Validation message is shown and cart remains stable,Medium
+CART-020,Remove Item,Verify product can be removed from cart,Cart has product(s),1. Click Remove,Product is removed and totals update correctly,Critical
+CART-021,Remove Item,Verify cart shows empty state after removing last item,Cart has only one product,1. Remove product,Empty cart state is displayed correctly,High
+CART-022,Remove Item,Verify removing one item does not remove other items,Cart has multiple products,1. Remove one product,Only selected product is removed,High
+CART-023,Cart Totals,Verify subtotal is displayed,Cart has product(s),1. Open cart,Subtotal is visible and calculated correctly,Critical
+CART-024,Cart Totals,Verify discount is displayed correctly if applied,Discount/coupon applied,1. Open cart,Discount appears correctly in order summary,Critical
+CART-025,Cart Totals,Verify shipping estimate is displayed if applicable,Shipping estimate available,1. Open cart,Shipping estimate/message is displayed correctly,Medium
+CART-026,Cart Totals,Verify tax/GST is displayed correctly if applicable,Tax/GST shown on cart,1. Open cart,Tax/GST value and label are correct,High
+CART-027,Cart Totals,Verify grand total is calculated correctly,Cart has product(s),1. Open cart,Grand total equals subtotal + fees - discounts as designed,Critical
+CART-028,Cart Totals,Verify totals update after quantity change,Cart has product(s),1. Change quantity,"Subtotal, discount, shipping, tax, and grand total update correctly",Critical
+CART-029,Cart Totals,Verify totals update after item removal,Cart has product(s),1. Remove product,Cart totals update correctly,Critical
+CART-030,Coupon,Verify coupon field is displayed,Coupon feature enabled,1. Open cart,Coupon/promo code field is visible,Medium
+CART-031,Coupon,Verify valid coupon can be applied,Valid coupon exists,1. Enter valid coupon 2. Apply,Coupon is applied and discount is reflected in totals,Critical
+CART-032,Coupon,Verify invalid coupon shows validation message,Coupon feature enabled,1. Enter invalid coupon 2. Apply,Proper error message is displayed,High
+CART-033,Coupon,Verify applied coupon can be removed,Coupon applied,1. Remove coupon,Coupon is removed and totals update correctly,High
+CART-034,Coupon,Verify coupon persists after cart refresh,Coupon applied,1. Refresh cart page,Coupon remains applied as designed,Medium
+CART-035,Coupon,Verify coupon does not apply to excluded products,Coupon has product/category restrictions,1. Add excluded product 2. Apply coupon,Coupon is rejected or discount is not applied incorrectly,High
+CART-036,Payment Messaging,Verify available payment method messaging is displayed,Cart has eligible products,1. Open cart,Payment method messages are displayed correctly,Medium
+CART-037,Payment Messaging,Verify payment promo rules are correct,Payment promo feature enabled,1. Set cart total within/outside promo range,Promo message appears or hides according to rules,High
+CART-038,Payment Messaging,Verify payment promo modal/link opens correctly,Payment promo CTA exists,1. Click payment promo CTA,Correct modal/page opens,Low
+CART-039,Checkout CTA,Verify checkout button is displayed,Cart has product(s),1. Open cart,Checkout CTA is visible and enabled,Critical
+CART-040,Checkout CTA,Verify clicking checkout redirects to checkout page,Cart has valid product(s),1. Click Checkout,User is redirected to checkout page,Critical
+CART-041,Checkout CTA,Verify checkout is blocked when cart has unavailable item,Cart contains unavailable/OOS item,1. Click Checkout,User cannot proceed and proper message is shown,Critical
+CART-042,Continue Shopping,Verify continue shopping link is displayed,Cart page loaded,1. Observe cart page,Continue shopping CTA is visible,Low
+CART-043,Continue Shopping,Verify continue shopping redirects correctly,Cart page loaded,1. Click Continue Shopping,User is redirected to homepage/PLP as designed,Low
+CART-044,Mini Cart,Verify mini-cart reflects cart changes,Product added to cart,1. Open mini-cart,Mini-cart quantity and product details match cart,High
+CART-045,Mini Cart,Verify cart page reflects mini-cart changes,Mini-cart supports remove/update,1. Update/remove product in mini-cart 2. Open cart,Cart page reflects changes correctly,High
+CART-046,Stock,Verify stock validation after cart update,Cart has limited-stock product,1. Increase quantity above stock,Proper stock validation is displayed,High
+CART-047,Stock,Verify cart handles product becoming unavailable,Product becomes unavailable after added to cart,1. Open cart,User is informed and checkout is restricted as designed,Critical
+CART-048,Stock,Verify cart handles price change after product added,Product price changes after added to cart,1. Open cart,Updated price is reflected or user is informed as designed,High
+CART-049,Guest Cart,Verify guest cart persists after page refresh,Guest user has product in cart,1. Refresh cart page,Cart items remain available,High
+CART-050,Guest Cart,Verify guest cart persists after browser back/forward navigation,Guest user has product in cart,1. Navigate away 2. Use browser Back/Forward,Cart remains consistent,Medium
+CART-051,Logged-in Cart,Verify logged-in user cart loads correctly,User is logged in with cart items,1. Open cart,User’s cart items are displayed correctly,High
+CART-052,Logged-in Cart,Verify guest cart merges after login if applicable,Guest cart has product; User logs in,1. Login from guest state,Guest cart merges with account cart according to design,High
+CART-053,Logged-in Cart,Verify cart is consistent across sessions if applicable,Logged-in user has cart items,1. Log out/in or open new session,Cart items persist according to account behavior,Medium
+CART-054,UI,Verify cart layout is displayed correctly,Cart has product(s),1. Open cart,Cart item list and order summary are aligned correctly,High
+CART-055,UI,Verify no overlapping UI elements on cart page,Cart page loaded,1. Scroll cart page,"No overlap between header, item list, order summary, chat widget, sticky CTA, and footer",High
+CART-056,UI,Verify cart text is readable,Cart page loaded,"1. Inspect labels, product names, prices, messages","No text is truncated, hidden, or unreadable",Medium
+CART-057,UI,Verify sticky order summary/checkout CTA behavior if applicable,Sticky summary/CTA enabled,1. Scroll cart page,Sticky summary/CTA behaves correctly,Medium
+CART-058,Responsive,Verify cart layout on desktop viewport,Desktop viewport,1. Open cart,Desktop cart layout is correct,High
+CART-059,Responsive,Verify cart layout on tablet viewport,Tablet viewport,1. Open cart,Tablet cart layout adapts correctly,Medium
+CART-060,Responsive,Verify cart layout on mobile viewport,Mobile viewport,1. Open cart,Mobile cart layout adapts correctly without horizontal overflow,High
+CART-061,Mobile,Verify quantity update works on mobile,Mobile viewport; Cart has product,1. Update quantity on mobile,Quantity and totals update correctly,High
+CART-062,Mobile,Verify remove item works on mobile,Mobile viewport; Cart has product,1. Remove item,Product is removed and totals update correctly,High
+CART-063,Mobile,Verify checkout CTA is accessible on mobile,Mobile viewport; Cart has product,1. Scroll cart page,Checkout CTA remains accessible and usable,Critical
+CART-064,Performance,Verify cart page load performance is acceptable,Stable network,1. Open cart,Cart loads within acceptable threshold,Medium
+CART-065,Performance,Verify cart update performance is acceptable,Cart has product,1. Update quantity/remove item/apply coupon,Cart updates within acceptable threshold,Medium
+CART-066,Stability,Verify repeated cart updates do not break cart,Cart has product(s),1. Update quantity repeatedly 2. Remove/apply coupon repeatedly,Cart remains stable without broken state,High
+CART-067,Error Handling,Verify cart handles failed cart update gracefully,Cart update API fails/simulated failure,1. Attempt cart update,User-friendly error is shown and cart remains stable,High
+CART-068,Error Handling,Verify cart handles failed coupon apply gracefully,Coupon API fails/simulated failure,1. Apply coupon,User-friendly error is shown and totals are not corrupted,Medium
+CART-069,Error Handling,Verify cart handles failed checkout redirect gracefully,Checkout redirect fails/simulated failure,1. Click Checkout,User-friendly error is shown or user remains on cart safely,High
+CART-070,Accessibility,Verify keyboard navigation on cart page,Cart page loaded,1. Use Tab/Shift+Tab through cart controls,Focus order is logical and controls are reachable,Medium
+CART-071,Accessibility,Verify cart controls have accessible labels,Cart page loaded,"1. Inspect quantity, remove, coupon, checkout controls",Controls have meaningful accessible labels,Medium
+CART-072,Analytics,Verify cart view tracking is fired,Analytics/debug tools available,1. Open cart page,Expected cart view event is triggered with correct metadata,High
+CART-073,Analytics,Verify quantity update tracking is fired,Analytics/debug tools available,1. Update product quantity,Expected cart update event is triggered,Medium
+CART-074,Analytics,Verify remove-from-cart tracking is fired,Analytics/debug tools available,1. Remove product,Expected remove-from-cart event is triggered with correct metadata,High
+CART-075,Analytics,Verify coupon apply tracking is fired,Analytics/debug tools available,1. Apply coupon,Expected coupon event is triggered with correct metadata,Medium
+CART-076,Analytics,Verify checkout click tracking is fired,Analytics/debug tools available,1. Click Checkout,Expected checkout-start or checkout-click event is triggered,High
+CART-077,Analytics,Verify cart analytics metadata is correct,Analytics/debug tools available,1. Trigger cart interactions 2. Inspect event payload,"Event metadata such as product ID, variant, quantity, price, discount, cart total, region, and currency are correct",High

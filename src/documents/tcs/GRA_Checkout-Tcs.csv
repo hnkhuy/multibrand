@@ -1,0 +1,125 @@
+,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+CO-001,Page Load,Verify checkout page loads successfully,Cart has valid product(s),1. Open checkout page,"Checkout loads without error, blank page, or broken layout",Critical
+CO-002,Page Load,Verify guest user can access checkout,Guest user has valid cart,1. Click Checkout from cart,Guest checkout page opens correctly,Critical
+CO-003,Page Load,Verify logged-in user can access checkout,Logged-in user has valid cart,1. Click Checkout from cart,Checkout page opens with customer information where applicable,Critical
+CO-004,Page Load,Verify empty cart cannot access checkout,Cart is empty,1. Open checkout URL directly,User is redirected to cart or shown proper empty-cart message,High
+CO-005,Region,Verify region-specific checkout content,Site configured for AU/NZ,1. Open checkout,"Currency, address fields, delivery options, and payment messaging are correct for region",Critical
+CO-006,Security,Verify checkout loads over HTTPS,Checkout URL accessible,1. Open checkout,Checkout loads securely without browser warning,Critical
+CO-007,Header,Verify checkout header/brand logo is displayed,Checkout loaded,1. Observe checkout page,Header/logo is visible and rendered correctly,Medium
+CO-008,Header,Verify cart/order summary entry point is available,Checkout loaded,1. Observe checkout,Order summary/cart details are accessible,High
+CO-009,Guest Details,Verify email field is displayed for guest checkout,Guest user at checkout,1. Observe customer details section,Email field is visible,Critical
+CO-010,Guest Details,Verify valid guest email is accepted,Guest user at checkout,1. Enter valid email,Email is accepted without validation error,Critical
+CO-011,Guest Details,Verify invalid email format validation,Guest user at checkout,1. Enter invalid email 2. Continue,Email validation message is displayed,High
+CO-012,Guest Details,Verify required email validation,Guest user at checkout,1. Leave email empty 2. Continue,Required field validation is displayed,High
+CO-013,Guest Details,Verify returning customer prompt/login link if available,Guest user at checkout,1. Observe checkout customer section,Returning customer login prompt/link is displayed if designed,Low
+CO-014,Login During Checkout,Verify user can log in from checkout,Guest user with valid account and cart,1. Click login from checkout 2. Enter valid credentials,User logs in and returns to checkout with cart retained,High
+CO-015,Login During Checkout,Verify cart is retained after checkout login,Guest cart has product(s),1. Login during checkout,Cart/order summary remains correct,Critical
+CO-016,Shipping Address,Verify shipping address form is displayed,Checkout loaded,1. Observe shipping section,Shipping address fields are visible,Critical
+CO-017,Shipping Address,Verify required field validation for shipping address,Checkout loaded,1. Submit/continue with empty required fields,Required field validation is displayed,Critical
+CO-018,Shipping Address,Verify AU address fields display correctly,AU site checkout,1. Open shipping address form,"AU-specific fields such as suburb, state, postcode display correctly",High
+CO-019,Shipping Address,Verify NZ address fields display correctly,NZ site checkout,1. Open shipping address form,NZ-specific address fields display correctly,High
+CO-020,Shipping Address,Verify valid shipping address can be entered,Checkout loaded,1. Fill valid shipping address,Address is accepted and delivery methods are available,Critical
+CO-021,Shipping Address,Verify invalid postcode validation,Checkout loaded,1. Enter invalid postcode 2. Continue,Postcode validation is displayed,High
+CO-022,Shipping Address,Verify phone number validation,Checkout loaded,1. Enter invalid phone number 2. Continue,Phone validation is displayed,High
+CO-023,Shipping Address,Verify address autocomplete if available,Address autocomplete enabled,1. Start typing address 2. Select suggestion,Selected address populates fields correctly,High
+CO-024,Shipping Address,Verify manual address entry works if autocomplete fails,Manual address entry available,1. Choose manual entry 2. Fill address,Address can be entered and saved manually,High
+CO-025,Shipping Address,Verify saved address is prefilled for logged-in user,Logged-in user has saved address,1. Open checkout,Saved/default shipping address is prefilled or selectable,High
+CO-026,Shipping Address,Verify user can choose different saved address,Logged-in user has multiple saved addresses,1. Select another saved address,Checkout updates to selected address,Medium
+CO-027,Shipping Address,Verify new address can be added during checkout,Logged-in user at checkout,1. Add new address 2. Save/use address,New address is used for checkout,High
+CO-028,Shipping Address,Verify rural/remote address handling if applicable,NZ/AU rural or remote address available,1. Enter rural/remote address,Delivery options and surcharge/validation behave correctly,High
+CO-029,Shipping Address,Verify address change recalculates delivery and totals,Checkout has address and delivery method,1. Change postcode/state/country,Delivery options and order totals update correctly,Critical
+CO-030,Delivery Method,Verify delivery methods are displayed after valid address,Valid shipping address entered,1. Fill valid address,Available delivery methods are displayed,Critical
+CO-031,Delivery Method,Verify default delivery method selection if applicable,Delivery methods available,1. Observe delivery section,Default method is selected according to design,Medium
+CO-032,Delivery Method,Verify user can select delivery method,Multiple delivery methods available,1. Select delivery method,Selected method is highlighted and applied,Critical
+CO-033,Delivery Method,Verify delivery cost updates order summary,Delivery methods available,1. Select delivery method,Shipping cost and grand total update correctly,Critical
+CO-034,Delivery Method,Verify unavailable delivery method is handled correctly,Address not eligible for a method,1. Enter address not eligible for delivery method,Unavailable method is hidden/disabled with proper message,High
+CO-035,Delivery Method,Verify free shipping threshold if applicable,Free shipping rule configured,1. Set cart below/above threshold,Free shipping message/cost appears according to rule,High
+CO-036,Click & Collect,Verify pickup/click-and-collect option is displayed if enabled,Feature enabled,1. Open checkout delivery section,Pickup option is visible,Medium
+CO-037,Click & Collect,Verify user can select pickup option,Pickup feature enabled,1. Select pickup/click-and-collect,Pickup flow opens correctly,Medium
+CO-038,Click & Collect,Verify store search works in pickup flow,Pickup feature enabled,1. Search by suburb/postcode,Store list displays relevant results,Medium
+CO-039,Click & Collect,Verify user can select pickup store,Store results available,1. Select store,Selected store is applied to order,High
+CO-040,Click & Collect,Verify pickup selection updates order summary,Pickup store selected,1. Observe order summary,Delivery/pickup method and cost update correctly,High
+CO-041,Order Summary,Verify order summary displays product details,Cart has product(s),1. Open checkout,"Product image, name, variant, quantity, and price are displayed correctly",Critical
+CO-042,Order Summary,Verify order summary subtotal is correct,Cart has product(s),1. Open checkout,Subtotal is calculated correctly,Critical
+CO-043,Order Summary,Verify discount is displayed correctly,Coupon/promo applied,1. Open checkout,Discount appears correctly in order summary,Critical
+CO-044,Order Summary,Verify shipping cost is displayed correctly,Delivery method selected,1. Observe order summary,Shipping cost is correct,Critical
+CO-045,Order Summary,Verify tax/GST is displayed correctly if applicable,Tax/GST displayed in checkout,1. Observe order summary,Tax/GST label and amount are correct,High
+CO-046,Order Summary,Verify grand total is calculated correctly,"Checkout has product(s), delivery, discount if applicable",1. Observe grand total,Grand total equals expected calculation,Critical
+CO-047,Order Summary,Verify order summary updates after delivery change,Multiple delivery methods available,1. Change delivery method,Shipping cost and grand total update correctly,Critical
+CO-048,Order Summary,Verify order summary updates after address change,Checkout has address entered,1. Change address/postcode,Order summary updates correctly,Critical
+CO-049,Coupon,Verify coupon field is displayed in checkout if enabled,Coupon feature enabled,1. Open checkout,Coupon/promo code field is visible,Medium
+CO-050,Coupon,Verify valid coupon can be applied in checkout,Valid coupon exists,1. Enter valid coupon 2. Apply,Coupon is applied and discount updates in order summary,Critical
+CO-051,Coupon,Verify invalid coupon shows validation message,Coupon feature enabled,1. Enter invalid coupon 2. Apply,Error message is displayed,High
+CO-052,Coupon,Verify applied coupon can be removed in checkout,Coupon applied,1. Remove coupon,Coupon is removed and totals update correctly,High
+CO-053,Coupon,Verify coupon persists when moving from cart to checkout,Coupon applied in cart,1. Go to checkout,Coupon remains applied according to design,High
+CO-054,Coupon,Verify restricted coupon is not incorrectly applied,Restricted coupon exists,1. Apply restricted coupon to ineligible cart,Coupon is rejected or discount is not applied incorrectly,High
+CO-055,Payment,Verify payment section is displayed,Checkout has valid address and delivery method,1. Observe payment section,Payment methods are visible,Critical
+CO-056,Payment,Verify card payment option is displayed if enabled,Card payment enabled,1. Observe payment methods,Card payment option is available,Critical
+CO-057,Payment,Verify PayPal option is displayed if enabled,PayPal enabled,1. Observe payment methods,PayPal option is available,High
+CO-058,Payment,Verify Afterpay/BNPL option is displayed if enabled,BNPL enabled,1. Observe payment methods,BNPL option is available according to eligibility rules,High
+CO-059,Payment,Verify payment method eligibility rules by cart total,Payment rules configured,1. Set cart total below/within/above threshold,Payment methods appear or hide according to rules,Critical
+CO-060,Payment,Verify user can select payment method,Payment methods available,1. Select payment method,Selected payment method is highlighted and required fields appear,Critical
+CO-061,Card Payment,Verify required card field validation,Card payment selected,1. Submit payment with empty card fields,Required card field validation is displayed,Critical
+CO-062,Card Payment,Verify invalid card number validation,Card payment selected,1. Enter invalid card number,Card number validation is displayed,High
+CO-063,Card Payment,Verify invalid expiry date validation,Card payment selected,1. Enter invalid expiry date,Expiry validation is displayed,High
+CO-064,Card Payment,Verify invalid CVV validation,Card payment selected,1. Enter invalid CVV,CVV validation is displayed,High
+CO-065,Card Payment,Verify valid card details are accepted,Card payment selected; Test card available,1. Enter valid test card details,Card details are accepted without validation error,Critical
+CO-066,PayPal,Verify PayPal flow opens correctly,PayPal enabled,1. Select PayPal 2. Continue/place order,PayPal flow opens correctly,High
+CO-067,PayPal,Verify PayPal cancellation returns user to checkout,PayPal flow opened,1. Cancel PayPal payment,User returns to checkout with cart retained,High
+CO-068,PayPal,Verify successful PayPal payment places order,PayPal test account available,1. Complete PayPal payment,Order is placed successfully,Critical
+CO-069,BNPL,Verify BNPL information/modal opens correctly,BNPL enabled,1. Click BNPL info link,BNPL modal/page opens correctly,Low
+CO-070,BNPL,Verify BNPL checkout flow opens correctly,BNPL enabled and eligible cart total,1. Select BNPL 2. Continue/place order,BNPL checkout flow opens correctly,High
+CO-071,BNPL,Verify BNPL is unavailable for ineligible cart total,BNPL rule configured,1. Set cart total outside eligible range,BNPL is hidden/disabled or shows correct message,High
+CO-072,Billing Address,Verify billing same as shipping is selected by default if applicable,Payment section available,1. Observe billing section,Same-as-shipping option behaves according to design,Medium
+CO-073,Billing Address,Verify user can enter different billing address,Billing address editable,1. Uncheck same-as-shipping 2. Enter billing address,Billing address is accepted,High
+CO-074,Billing Address,Verify required validation for billing address,Different billing address selected,1. Submit empty billing fields,Required field validation is displayed,High
+CO-075,Place Order,Verify Place Order button is displayed,Required checkout data completed,1. Observe payment section,Place Order button is visible and enabled,Critical
+CO-076,Place Order,Verify Place Order button is disabled until required data completed,Checkout incomplete,1. Observe/attempt to place order,Place Order is disabled or validation blocks submission,Critical
+CO-077,Place Order,Verify successful order placement with card payment,"Valid cart, address, delivery, card payment",1. Complete checkout 2. Place order,Order is placed and user is redirected to order success page,Critical
+CO-078,Place Order,Verify successful order placement with alternative payment,"Valid cart, address, delivery, alternative payment",1. Complete payment flow,Order is placed successfully,Critical
+CO-079,Place Order,Verify duplicate order is not created from double-click,Checkout ready,1. Double-click Place Order quickly,Only one order is created,Critical
+CO-080,Place Order,Verify loading state appears during order submission,Checkout ready,1. Click Place Order,Loading/processing state is shown and button is protected from repeat clicks,High
+CO-081,Place Order,Verify failed payment is handled correctly,Payment failure test scenario,1. Submit failed payment,Error message is displayed and cart/order state remains safe,Critical
+CO-082,Place Order,Verify checkout handles payment timeout gracefully,Payment timeout scenario,1. Submit payment and simulate timeout,User-friendly message is displayed and duplicate charge/order is avoided,Critical
+CO-083,Place Order,Verify unavailable product blocks order placement,Product becomes unavailable before placing order,1. Attempt Place Order,Order is blocked and user is informed,Critical
+CO-084,Place Order,Verify price change before placing order is handled correctly,Product price changes before payment,1. Attempt Place Order,Updated price or validation message is shown according to design,High
+CO-085,Order Success,Verify order success page loads after order placement,Order placed successfully,1. Complete checkout,Order success page loads correctly,Critical
+CO-086,Order Success,Verify order number is displayed,Order placed successfully,1. Observe success page,Order number is displayed,Critical
+CO-087,Order Success,Verify success page order summary is correct,Order placed successfully,1. Observe success page,"Product, delivery, payment, totals, and customer details are correct",Critical
+CO-088,Order Success,Verify confirmation email is sent,Order placed successfully; Email accessible,1. Complete order 2. Check email,Order confirmation email is received with correct details,High
+CO-089,Order Success,Verify guest user can create account after checkout if offered,Guest order placed; Account creation offered,1. Complete guest checkout 2. Create account from success page,Account creation flow works correctly,Low
+CO-090,Data Persistence,Verify checkout data persists after refresh,Checkout form partially completed,1. Refresh checkout,Checkout data persists or resets according to design without corruption,Medium
+CO-091,Data Persistence,Verify checkout data persists after browser back/forward,Checkout partially completed,1. Navigate back/forward,Checkout state remains consistent,Medium
+CO-092,Data Persistence,Verify cart remains intact after checkout validation error,Checkout has validation/payment error,1. Trigger error 2. Return to cart,Cart products and totals remain correct,Critical
+CO-093,UI,Verify checkout layout is displayed correctly,Checkout loaded,1. Observe checkout page,"Checkout form, order summary, and CTA are aligned correctly",High
+CO-094,UI,Verify no overlapping UI elements on checkout,Checkout loaded,1. Scroll checkout page,"No overlap between header, forms, order summary, payment widgets, chat widget, and footer",High
+CO-095,UI,Verify checkout text is readable,Checkout loaded,"1. Inspect labels, messages, prices, CTAs","No text is truncated, hidden, or unreadable",Medium
+CO-096,UI,Verify validation messages are clear and placed correctly,Checkout form has validation errors,1. Trigger validation errors,Error messages appear near relevant fields and are understandable,High
+CO-097,Responsive,Verify checkout layout on desktop viewport,Desktop viewport,1. Open checkout,Desktop layout is correct,High
+CO-098,Responsive,Verify checkout layout on tablet viewport,Tablet viewport,1. Open checkout,Tablet layout adapts correctly,Medium
+CO-099,Responsive,Verify checkout layout on mobile viewport,Mobile viewport,1. Open checkout,Mobile layout adapts correctly without horizontal overflow,Critical
+CO-100,Mobile,Verify shipping form works on mobile,Mobile viewport,1. Fill shipping address,Shipping form can be completed correctly,Critical
+CO-101,Mobile,Verify delivery method selection works on mobile,Mobile viewport; Delivery methods available,1. Select delivery method,Delivery method is applied correctly,Critical
+CO-102,Mobile,Verify payment form works on mobile,Mobile viewport; Payment available,1. Fill payment details,Payment form can be completed correctly,Critical
+CO-103,Mobile,Verify order summary is accessible on mobile,Mobile viewport,1. Open/expand order summary,Order summary is accessible and correct,High
+CO-104,Mobile,Verify Place Order CTA is accessible on mobile,Mobile viewport; Checkout ready,1. Scroll checkout page,Place Order CTA is visible/usable as designed,Critical
+CO-105,Performance,Verify checkout page load performance is acceptable,Stable network; Valid cart,1. Open checkout,Checkout loads within acceptable threshold,High
+CO-106,Performance,Verify address/delivery update performance is acceptable,Checkout loaded,1. Enter address/change delivery,Delivery options and totals update within acceptable threshold,High
+CO-107,Performance,Verify payment submission performance is acceptable,Checkout ready,1. Click Place Order,Processing completes within acceptable threshold or shows progress correctly,High
+CO-108,Stability,Verify repeated address changes do not break checkout,Checkout loaded,1. Change address/postcode repeatedly,Checkout remains stable and totals update correctly,High
+CO-109,Stability,Verify repeated payment method switching does not break checkout,Multiple payment methods available,1. Switch payment methods repeatedly,Checkout remains stable and selected payment data behaves correctly,High
+CO-110,Error Handling,Verify failed address validation is handled gracefully,Address validation API failure simulated,1. Enter address/continue,User-friendly error is displayed and checkout remains stable,High
+CO-111,Error Handling,Verify failed delivery method loading is handled gracefully,Delivery API failure simulated,1. Enter valid address,User-friendly error is displayed and user cannot proceed incorrectly,Critical
+CO-112,Error Handling,Verify failed coupon API is handled gracefully,Coupon API failure simulated,1. Apply coupon,User-friendly error is displayed and totals are not corrupted,Medium
+CO-113,Error Handling,Verify failed payment provider loading is handled gracefully,Payment provider fails to load,1. Open payment section,User-friendly error is displayed and checkout does not silently fail,Critical
+CO-114,Error Handling,Verify failed order placement is handled gracefully,Order placement API failure simulated,1. Place order,User-friendly error is displayed and duplicate order is avoided,Critical
+CO-115,Accessibility,Verify keyboard navigation through checkout,Checkout loaded,1. Use Tab/Shift+Tab through checkout,Focus order is logical and all controls are reachable,Medium
+CO-116,Accessibility,Verify form fields have accessible labels,Checkout loaded,1. Inspect form fields,Form fields have meaningful labels,Medium
+CO-117,Accessibility,Verify validation errors are accessible,Validation errors triggered,1. Submit invalid form,Errors are visible and associated with relevant fields,Medium
+CO-118,Analytics,Verify checkout start tracking is fired,Analytics/debug tools available,1. Open checkout from cart,Expected checkout-start event is triggered,High
+CO-119,Analytics,Verify shipping information tracking is fired,Analytics/debug tools available,1. Enter shipping info / select delivery,Expected shipping event is triggered with correct metadata,High
+CO-120,Analytics,Verify payment information tracking is fired,Analytics/debug tools available,1. Select payment method,Expected payment event is triggered with correct metadata,High
+CO-121,Analytics,Verify coupon apply tracking is fired,Analytics/debug tools available,1. Apply coupon,Expected coupon event is triggered with correct metadata,Medium
+CO-122,Analytics,Verify purchase tracking is fired on order success,Analytics/debug tools available,1. Complete checkout,Expected purchase/order success event is triggered once,Critical
+CO-123,Analytics,Verify purchase tracking is not duplicated,Analytics/debug tools available; Order completed,1. Refresh success page,Purchase event is not duplicated if design requires single firing,Critical
+CO-124,Analytics,Verify checkout analytics metadata is correct,Analytics/debug tools available,1. Trigger checkout events 2. Inspect payload,"Metadata such as order ID, product ID, quantity, price, discount, shipping, tax, payment method, region, and currency are correct",Critical

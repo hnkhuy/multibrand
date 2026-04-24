@@ -1,0 +1,63 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+WL-001,Entry Point,Verify wishlist icon is displayed on product card,Wishlist feature enabled; PLP has products,1. Open PLP 2. Observe product card,Wishlist icon/button is visible,High
+WL-002,Entry Point,Verify wishlist icon is displayed on PDP,Wishlist feature enabled; PDP accessible,1. Open PDP,Wishlist icon/button is visible,High
+WL-003,Guest User,Verify guest user is redirected to login when adding product to wishlist,User is guest,1. Open PDP/PLP 2. Click wishlist icon,Login/register flow is triggered correctly,High
+WL-004,Guest User,Verify product wishlist action is preserved after login if applicable,User is guest; Wishlist action requires login,1. Click wishlist 2. Login,Product is added to wishlist or user is returned to expected flow,Medium
+WL-005,Logged-in User,Verify logged-in user can add product to wishlist from PLP,User is logged in; Product is active,1. Open PLP 2. Click wishlist icon on product card,Product is added to wishlist successfully,Critical
+WL-006,Logged-in User,Verify logged-in user can add product to wishlist from PDP,User is logged in; Product is active,1. Open PDP 2. Click wishlist icon,Product is added to wishlist successfully,Critical
+WL-007,Product Variant,Verify selected variant is added to wishlist from PDP,User is logged in; Configurable product,1. Select color/size 2. Click wishlist,Correct product/variant is added according to design,High
+WL-008,Product Variant,Verify validation when adding configurable product without required options,User is logged in; Configurable product requires option selection,1. Do not select required option 2. Click wishlist,Validation message is shown or parent product is added as designed,High
+WL-009,UI State,Verify wishlist icon state updates after adding product,User is logged in,1. Add product to wishlist,Wishlist icon changes to selected/active state,High
+WL-010,UI State,Verify success message is displayed after adding product,User is logged in,1. Add product to wishlist,Success message/toast is displayed correctly,Medium
+WL-011,UI State,Verify duplicate wishlist add is handled correctly,Product already in wishlist,1. Click wishlist icon again,Product is not duplicated; remove/toggle/message behavior follows design,High
+WL-012,Wishlist Page,Verify wishlist page loads successfully,User is logged in,1. Open wishlist page,Wishlist page loads without error or broken layout,High
+WL-013,Wishlist Page,Verify empty wishlist state,User is logged in; Wishlist is empty,1. Open wishlist page,Empty wishlist message and continue shopping CTA are displayed,High
+WL-014,Wishlist Page,Verify wishlist with products displays correctly,User is logged in; Wishlist has products,1. Open wishlist page,Wishlist products are displayed correctly,High
+WL-015,Product Details,Verify product image is displayed in wishlist,Wishlist has products,1. Open wishlist page,Product image is visible and not broken,High
+WL-016,Product Details,Verify product name is displayed in wishlist,Wishlist has products,1. Open wishlist page,Product name is visible and correct,High
+WL-017,Product Details,Verify product price is displayed in wishlist,Wishlist has products,1. Open wishlist page,Product price is visible and formatted correctly for AU/NZ,High
+WL-018,Product Details,Verify selected variant details are displayed,Wishlist contains configurable product/variant,1. Open wishlist page,"Selected size, colour, or variant info is displayed correctly where applicable",High
+WL-019,Product Details,Verify sale price is displayed correctly,Wishlist contains sale product,1. Open wishlist page,Sale price and original price are displayed correctly,Medium
+WL-020,Product Navigation,Verify clicking wishlist product redirects to PDP,Wishlist has products,1. Click product image/name,Correct PDP opens,High
+WL-021,Remove,Verify product can be removed from wishlist,Wishlist has products,1. Click remove wishlist item,Product is removed from wishlist,Critical
+WL-022,Remove,Verify empty state after removing last wishlist item,Wishlist has one product,1. Remove product,Empty wishlist state is displayed correctly,High
+WL-023,Remove,Verify removing one item does not remove other items,Wishlist has multiple products,1. Remove one product,Only selected product is removed,High
+WL-024,Move/Add to Cart,Verify Add to Cart button is displayed for wishlist product,Wishlist has in-stock product,1. Open wishlist page,Add to Cart CTA is visible,High
+WL-025,Move/Add to Cart,Verify wishlist product can be added to cart,Wishlist has in-stock product,1. Click Add to Cart,Product is added to cart successfully,Critical
+WL-026,Move/Add to Cart,Verify correct variant is added to cart from wishlist,Wishlist has configurable product/variant,1. Click Add to Cart 2. Open cart,Correct product/variant is added to cart,Critical
+WL-027,Move/Add to Cart,Verify cart count updates after adding wishlist item to cart,Wishlist has in-stock product,1. Add wishlist item to cart,Cart count updates correctly,High
+WL-028,Move/Add to Cart,Verify product remains or is removed from wishlist after Add to Cart according to design,Wishlist has product,1. Add item to cart,Wishlist item state follows expected design,Medium
+WL-029,Move/Add to Cart,Verify Add to Cart is blocked for unavailable wishlist product,Wishlist has OOS/unavailable product,1. Click Add to Cart,User cannot add item and proper message is shown,High
+WL-030,Stock,Verify out-of-stock state is displayed in wishlist,Wishlist has OOS product,1. Open wishlist page,OOS state/message is displayed correctly,High
+WL-031,Stock,Verify unavailable product state is handled correctly,Product in wishlist becomes disabled/unavailable,1. Open wishlist page,User is informed and unavailable product does not break page,High
+WL-032,Price Update,Verify updated product price is reflected in wishlist,Product price changed after being added,1. Open wishlist page,Current product price is displayed or price change is handled as designed,Medium
+WL-033,Persistence,Verify wishlist persists after page refresh,User is logged in; Wishlist has products,1. Refresh wishlist page,Wishlist items remain visible,High
+WL-034,Persistence,Verify wishlist persists after logout and login,User has wishlist products,1. Log out 2. Log in again 3. Open wishlist,Wishlist products remain saved,High
+WL-035,Persistence,"Verify wishlist state is consistent between PLP, PDP, and wishlist page",User is logged in; Product in wishlist,1. Open PLP/PDP for same product 2. Observe wishlist icon 3. Open wishlist page,Wishlist state is consistent across pages,High
+WL-036,Multi-device / Session,Verify wishlist is available in a new session/browser if account-based,User is logged in with wishlist items,1. Login in another browser/session 2. Open wishlist,Wishlist items are available according to account behavior,Medium
+WL-037,Sharing,Verify wishlist share option is displayed if available,Wishlist share feature enabled,1. Open wishlist page,Share option is visible,Low
+WL-038,Sharing,Verify wishlist share link is generated correctly if available,Wishlist has products; Share enabled,1. Click share wishlist,Share link/email/social option is generated correctly,Low
+WL-039,Sorting / Display,Verify wishlist product order is displayed correctly,Wishlist has multiple products,1. Open wishlist page,"Product order follows expected design, such as most recently added first",Low
+WL-040,UI,Verify wishlist page layout is displayed correctly,Wishlist page loaded,1. Open wishlist page,Product list and page content are aligned correctly,High
+WL-041,UI,Verify no overlapping UI elements on wishlist page,Wishlist page loaded,1. Scroll page,"No overlap between header, product cards, CTA, chat widget, and footer",High
+WL-042,UI,Verify wishlist text is readable,Wishlist page loaded,"1. Inspect labels, product names, prices, messages","No text is truncated, hidden, or unreadable",Medium
+WL-043,UI,Verify wishlist product images render without distortion,Wishlist has products,1. Inspect wishlist product images,Images maintain expected aspect ratio and clarity,Medium
+WL-044,Responsive,Verify wishlist layout on desktop viewport,Desktop viewport,1. Open wishlist page,Desktop layout is correct,High
+WL-045,Responsive,Verify wishlist layout on tablet viewport,Tablet viewport,1. Open wishlist page,Tablet layout adapts correctly,Medium
+WL-046,Responsive,Verify wishlist layout on mobile viewport,Mobile viewport,1. Open wishlist page,Mobile layout adapts correctly without horizontal overflow,High
+WL-047,Mobile,Verify adding product to wishlist works on mobile PLP/PDP,Mobile viewport; User logged in,1. Open PLP/PDP 2. Tap wishlist icon,Product is added successfully,High
+WL-048,Mobile,Verify removing wishlist item works on mobile,Mobile viewport; Wishlist has product,1. Open wishlist page 2. Remove product,Product is removed correctly,High
+WL-049,Mobile,Verify Add to Cart from wishlist works on mobile,Mobile viewport; Wishlist has in-stock product,1. Tap Add to Cart,Product is added to cart correctly,Critical
+WL-050,Performance,Verify wishlist page load performance is acceptable,User logged in,1. Open wishlist page,Wishlist page loads within acceptable threshold,Medium
+WL-051,Performance,Verify wishlist actions complete within acceptable time,Wishlist feature enabled,1. Add/remove wishlist item,Action completes within acceptable threshold,Medium
+WL-052,Stability,Verify repeated add/remove wishlist actions do not break state,User logged in; Product available,1. Add/remove same product repeatedly,Wishlist state remains correct and stable,High
+WL-053,Error Handling,Verify failed add-to-wishlist is handled gracefully,Add wishlist API fails/simulated failure,1. Click wishlist icon,User-friendly error is shown and UI state is not corrupted,High
+WL-054,Error Handling,Verify failed remove-from-wishlist is handled gracefully,Remove wishlist API fails/simulated failure,1. Remove wishlist item,User-friendly error is shown and item state remains consistent,Medium
+WL-055,Error Handling,Verify wishlist page handles unavailable data gracefully,Wishlist API/data issue simulated if possible,1. Open wishlist page,User-friendly error/empty state is shown without full page crash,Medium
+WL-056,Accessibility,Verify keyboard navigation for wishlist controls,Wishlist page loaded,1. Use Tab/Shift+Tab through wishlist controls,Focus order is logical and controls are reachable,Medium
+WL-057,Accessibility,Verify wishlist controls have accessible labels,Wishlist page loaded,"1. Inspect wishlist, remove, Add to Cart controls",Controls have meaningful accessible labels,Medium
+WL-058,Analytics,Verify add-to-wishlist tracking is fired from PLP,Analytics/debug tools available,1. Add product to wishlist from PLP,Expected add-to-wishlist event is triggered with correct metadata,High
+WL-059,Analytics,Verify add-to-wishlist tracking is fired from PDP,Analytics/debug tools available,1. Add product to wishlist from PDP,Expected add-to-wishlist event is triggered with correct metadata,High
+WL-060,Analytics,Verify remove-from-wishlist tracking is fired,Analytics/debug tools available,1. Remove product from wishlist,Expected remove-from-wishlist event is triggered with correct metadata,Medium
+WL-061,Analytics,Verify Add to Cart from wishlist tracking is fired,Analytics/debug tools available,1. Add wishlist product to cart,Expected add-to-cart event is triggered with correct metadata,High
+WL-062,Analytics,Verify wishlist event metadata is correct,Analytics/debug tools available,1. Trigger wishlist actions 2. Inspect payload,"Event metadata such as product ID, variant, price, region, currency, source page, and action type are correct",High
