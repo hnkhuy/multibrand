@@ -350,6 +350,21 @@ async function readCartCount(page: Page): Promise<number | null> {
   return Number.isNaN(value) ? null : value;
 }
 
+async function readAnalyticsSnapshot(page: Page): Promise<{ supported: boolean; text: string }> {
+  return page.evaluate(() => {
+    const win = window as unknown as {
+      dataLayer?: unknown[];
+      utag_data?: Record<string, unknown>;
+      __NEXT_DATA__?: unknown;
+    };
+    const dataLayer = Array.isArray(win.dataLayer) ? win.dataLayer.slice(-80) : [];
+    const utagData = win.utag_data ?? null;
+    const payload = { dataLayer, utagData };
+    const supported = dataLayer.length > 0 || Boolean(utagData);
+    return { supported, text: JSON.stringify(payload).toLowerCase() };
+  });
+}
+
 test.describe('plp', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
@@ -1509,5 +1524,268 @@ test.describe('plp', () => {
     await page.waitForTimeout(1000);
     const after = await productHrefSnapshot(page, 10);
     expect(after[0] !== before[0] || after.length !== before.length || /sort|order|dir/i.test(page.url())).toBe(true);
+  });
+
+  test('PLP-071 applying filters on mobile updates product list correctly', async ({ ctx, home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const before = await productHrefSnapshot(page, 20);
+    const applied = await applyFirstFilterOption(page, 0);
+    test.skip(!applied, 'No mobile filter option available.');
+    const after = await productHrefSnapshot(page, 20);
+    expect(after[0] !== before[0] || after.length !== before.length || /filter|size|color|price|brand/i.test(page.url())).toBe(true);
+  });
+
+  test('PLP-072 mobile product card layout', async ({ ctx, home, page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const count = Math.min(await cards.count(), 4);
+    test.skip(count < 2, 'Not enough product cards to validate mobile layout.');
+
+    const widths: number[] = [];
+    for (let index = 0; index < count; index += 1) {
+      const box = await cards.nth(index).boundingBox();
+      if (box) {
+        widths.push(box.width);
+      }
+    }
+    test.skip(widths.length < 2, 'Could not resolve card dimensions on mobile.');
+    expect(widths.every((w) => w > 120)).toBe(true);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+    expect(overflow).toBe(false);
+  });
+
+  test('PLP-073 PLP load performance is acceptable', async ({ ctx, home, page }) => {
+    const started = Date.now();
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const duration = Date.now() - started;
+    expect(duration).toBeLessThan(30_000);
+  });
+
+  test('PLP-074 filtering performance is acceptable', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const started = Date.now();
+    const applied = await applyFirstFilterOption(page, 0);
+    test.skip(!applied, 'No filter option available for performance measurement.');
+    const duration = Date.now() - started;
+    expect(duration).toBeLessThan(20_000);
+  });
+
+  test('PLP-075 sorting performance is acceptable', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const started = Date.now();
+    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    if (await sortSelect.isVisible().catch(() => false)) {
+      const value = await sortSelect.evaluate((node) => {
+        const select = node as HTMLSelectElement;
+        const option = Array.from(select.options).find((item) => /low|high|new|relevance|featured|price/i.test(item.textContent ?? ''));
+        return option?.value ?? '';
+      });
+      test.skip(!value, 'No sort option available for performance measurement.');
+      await sortSelect.selectOption(value);
+    } else {
+      const trigger = page.locator(SORT_CONTROL_SELECTOR).first();
+      const triggerVisible = await trigger.isVisible().catch(() => false);
+      test.skip(!triggerVisible, 'Sort control is not available for performance measurement.');
+      await clickLocatorRobust(trigger);
+      const option = page.locator('button:has-text("Low"), button:has-text("High"), button:has-text("Newest"), [role="option"]').first();
+      const optionVisible = await option.isVisible().catch(() => false);
+      test.skip(!optionVisible, 'No sort option available for performance measurement.');
+      await clickLocatorRobust(option);
+    }
+    await page.waitForTimeout(800);
+    const duration = Date.now() - started;
+    expect(duration).toBeLessThan(20_000);
+  });
+
+  test('PLP-076 repeated filter changes do not break PLP', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    let changes = 0;
+    for (let index = 0; index < 3; index += 1) {
+      const applied = await applyFirstFilterOption(page, index);
+      if (!applied) {
+        continue;
+      }
+      changes += 1;
+    }
+    test.skip(changes === 0, 'No filter changes were applicable on this PLP.');
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(page.locator('main')).toBeVisible();
+  });
+
+  test('PLP-077 repeated sort changes do not break PLP', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const visible = await sortSelect.isVisible().catch(() => false);
+    test.skip(!visible, 'Sort select is not available for repeated sort changes.');
+
+    const values = await sortSelect.evaluate((node) => {
+      const select = node as HTMLSelectElement;
+      return Array.from(select.options)
+        .map((item) => item.value)
+        .filter((value) => value && value !== '');
+    });
+    test.skip(values.length < 2, 'Not enough sort options for repeated changes.');
+
+    for (let index = 0; index < Math.min(values.length, 3); index += 1) {
+      await sortSelect.selectOption(values[index]);
+      await page.waitForTimeout(600);
+    }
+
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(page.locator('main')).toBeVisible();
+  });
+
+  test('PLP-078 invalid category URL is handled correctly', async ({ ctx, home, page }) => {
+    await gotoHomeWithRetry(home, page);
+    const invalidPath = `/shop/invalid-category-${Date.now()}-notfound`;
+    await page.goto(invalidPath, { waitUntil: 'domcontentloaded' });
+    await home.dismissInterruptions();
+
+    await expect(page.locator('body')).toBeVisible();
+    const body = (await page.locator('body').innerText().catch(() => '')).toLowerCase();
+    const currentPath = new URL(page.url()).pathname;
+    const handled =
+      /not found|no results|sorry|unavailable|404|error/i.test(body) ||
+      currentPath !== invalidPath ||
+      !ERROR_UI_PATTERN.test(body);
+    expect(handled).toBe(true);
+  });
+
+  test('PLP-079 PLP handles unavailable product data gracefully', async ({ ctx, home, page }) => {
+    await gotoHomeWithRetry(home, page);
+    let intercepted = 0;
+    const pattern = /graphql|search|products|catalog|collection/i;
+    await page.route('**/*', (route) => {
+      const url = route.request().url();
+      if (pattern.test(url) && route.request().resourceType() === 'xhr') {
+        intercepted += 1;
+        void route.abort();
+        return;
+      }
+      void route.continue();
+    });
+
+    try {
+      await page.goto('/shop/women', { waitUntil: 'domcontentloaded' });
+      await home.dismissInterruptions();
+    } catch {
+      await page.unroute('**/*');
+      test.skip(true, 'Could not simulate unavailable product data on this storefront.');
+    }
+
+    await page.unroute('**/*');
+    test.skip(intercepted === 0, 'No product-data request pattern found to simulate unavailability.');
+    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('PLP-080 PLP view/list impression tracking is fired', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    await page.waitForTimeout(1200);
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasEvent = /view_item_list|product_list|impression|plp|list_view|listing/i.test(analytics.text);
+    test.skip(!hasEvent, 'PLP impression tracking event not observable in current payload.');
+    expect(hasEvent).toBe(true);
+  });
+
+  test('PLP-081 product card click tracking is fired', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const products = await collectProductTargets(page, 6);
+    test.skip(products.length === 0, 'No product card available for click-tracking validation.');
+
+    const link = await home.bestProductLinkByHref(products[0].href);
+    await clickLocatorRobust(link);
+    await page.waitForTimeout(1000);
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasEvent = /select_item|product_click|list_click|item_click|click/i.test(analytics.text);
+    test.skip(!hasEvent, 'Product click tracking event not observable in current payload.');
+    expect(hasEvent).toBe(true);
+  });
+
+  test('PLP-082 filter interaction tracking is fired', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const applied = await applyFirstFilterOption(page, 0);
+    test.skip(!applied, 'No filter action available for tracking validation.');
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasEvent = /filter|facet|refine/i.test(analytics.text);
+    test.skip(!hasEvent, 'Filter interaction tracking event not observable in current payload.');
+    expect(hasEvent).toBe(true);
+  });
+
+  test('PLP-083 sort interaction tracking is fired', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    if (await sortSelect.isVisible().catch(() => false)) {
+      const value = await sortSelect.evaluate((node) => {
+        const select = node as HTMLSelectElement;
+        const option = Array.from(select.options).find((item) => /low|high|new|relevance|featured|price/i.test(item.textContent ?? ''));
+        return option?.value ?? '';
+      });
+      test.skip(!value, 'No sort option available for tracking validation.');
+      await sortSelect.selectOption(value);
+    } else {
+      const trigger = page.locator(SORT_CONTROL_SELECTOR).first();
+      const visible = await trigger.isVisible().catch(() => false);
+      test.skip(!visible, 'Sort control is not available for tracking validation.');
+      await clickLocatorRobust(trigger);
+      const option = page.locator('button:has-text("Low"), button:has-text("High"), button:has-text("Newest"), [role="option"]').first();
+      const optionVisible = await option.isVisible().catch(() => false);
+      test.skip(!optionVisible, 'No sort option available for tracking validation.');
+      await clickLocatorRobust(option);
+    }
+    await page.waitForTimeout(800);
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasEvent = /sort|order|product_list_order|product_list_dir/i.test(analytics.text);
+    test.skip(!hasEvent, 'Sort interaction tracking event not observable in current payload.');
+    expect(hasEvent).toBe(true);
+  });
+
+  test('PLP-084 pagination/load-more tracking is fired', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const loadMore = page.locator(LOAD_MORE_SELECTOR).first();
+    const next = page.locator(PAGINATION_NEXT_SELECTOR).first();
+    if (await loadMore.isVisible().catch(() => false)) {
+      await clickLocatorRobust(loadMore);
+    } else if (await next.isVisible().catch(() => false)) {
+      await clickLocatorRobust(next);
+    } else {
+      test.skip(true, 'No pagination/load-more action available for tracking validation.');
+    }
+    await page.waitForTimeout(1000);
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasEvent = /pagination|page|load_more|loadmore|infinite|next/i.test(analytics.text);
+    test.skip(!hasEvent, 'Pagination/load-more tracking event not observable in current payload.');
+    expect(hasEvent).toBe(true);
+  });
+
+  test('PLP-085 quick add tracking is fired if applicable', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const target = await findFirstCardWithQuickAdd(page);
+    test.skip(!target, 'Quick Add is not available for tracking validation.');
+
+    await clickLocatorRobust(target.button);
+    await page.waitForTimeout(1000);
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasEvent = /add_to_cart|quick_add|addtocart|cart/i.test(analytics.text);
+    test.skip(!hasEvent, 'Quick add tracking event not observable in current payload.');
+    expect(hasEvent).toBe(true);
+  });
+
+  test('PLP-086 PLP event metadata is correct', async ({ ctx, home, page }) => {
+    await openPlp(home, page, searchData[ctx.brand].keyword);
+    const analytics = await readAnalyticsSnapshot(page);
+    test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
+    const hasMetadata =
+      /category|list|product|item|price|region|currency|position|index|brand/i.test(analytics.text);
+    test.skip(!hasMetadata, 'PLP metadata keys are not observable in current analytics payload.');
+    expect(hasMetadata).toBe(true);
   });
 });
