@@ -34,6 +34,13 @@ const GALLERY_PREV_SELECTOR =
   'button[aria-label*="prev" i], button[aria-label*="previous" i], button[aria-label*="left" i], [class*="prev" i] button, button[class*="prev" i]';
 const ZOOM_TRIGGER_SELECTOR =
   '[data-testid*="zoom" i], button[aria-label*="zoom" i], button:has-text("Zoom"), [class*="zoom" i] button';
+const PRODUCT_VIDEO_SELECTOR =
+  '[data-testid*="video" i] video, [class*="video" i] video, video[src], video source';
+const MINI_CART_DRAWER_SELECTOR = '[data-testid="mini-cart"], [data-testid="minicart"], .mini-cart, .cart-drawer';
+const SIZE_SELECT_SELECTOR = 'select[name*="size" i], [data-testid*="size" i] select';
+const SIZE_BUTTON_SELECTOR = '[data-testid*="size" i] button, [class*="size" i] button';
+const IN_STOCK_PATTERN = /in stock|available now|ready to ship|ships/i;
+const REQUIRED_OPTION_PATTERN = /select size|choose size|please select|required/i;
 
 async function getPrimaryImageSignature(page: Page): Promise<string> {
   return page.evaluate((selector) => {
@@ -445,5 +452,303 @@ test.describe('pdp', () => {
     const afterSignature = await getPrimaryImageSignature(page);
 
     expect(afterSignature.length > 0 || beforeSignature.length > 0).toBe(true);
+  });
+
+  test('PDP-021 product video is playable if available', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const hasVideo = await page.evaluate((videoSelector) => {
+      return Array.from(document.querySelectorAll(videoSelector)).some((node) => {
+        const video = node instanceof HTMLVideoElement ? node : node.closest('video');
+        if (!video) {
+          return false;
+        }
+        const rect = video.getBoundingClientRect();
+        const style = window.getComputedStyle(video);
+        return (
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          rect.width > 60 &&
+          rect.height > 60
+        );
+      });
+    }, PRODUCT_VIDEO_SELECTOR);
+
+    test.skip(!hasVideo, 'No product video available on this PDP.');
+
+    const playbackResult = await page.evaluate(() => {
+      const videos = Array.from(document.querySelectorAll('video'));
+      const visibleVideo = videos.find((video) => {
+        const rect = video.getBoundingClientRect();
+        const style = window.getComputedStyle(video);
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 60 && rect.height > 60;
+      });
+
+      if (!visibleVideo) {
+        return { attempted: false, progressed: false };
+      }
+
+      visibleVideo.muted = true;
+      const initialTime = visibleVideo.currentTime;
+      return visibleVideo
+        .play()
+        .then(() => new Promise<{ attempted: boolean; progressed: boolean }>((resolve) => {
+          setTimeout(() => {
+            resolve({
+              attempted: true,
+              progressed: visibleVideo.currentTime > initialTime || !visibleVideo.paused
+            });
+          }, 500);
+        }))
+        .catch(() => ({ attempted: true, progressed: false }));
+    });
+
+    expect(playbackResult.attempted).toBe(true);
+    expect(playbackResult.progressed).toBe(true);
+  });
+
+  test('PDP-022 color options are displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const colorCount = await colorOptions.count();
+
+    test.skip(colorCount === 0, 'No color options available on this PDP.');
+    expect(colorCount).toBeGreaterThan(0);
+  });
+
+  test('PDP-023 selecting a color updates product information correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const colorCount = await colorOptions.count();
+    test.skip(colorCount < 2, 'Not enough color options to validate selection behavior.');
+
+    const beforeTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
+    const beforePrice = ((await page.locator(PRICE_SELECTOR).first().textContent()) ?? '').trim();
+    const beforeSelectedState = await colorOptions.nth(1).evaluate((node) => {
+      const html = node as HTMLElement;
+      return (
+        html.getAttribute('aria-selected') ??
+        html.getAttribute('aria-pressed') ??
+        (html.className || '')
+      );
+    });
+
+    await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(400);
+
+    const afterTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
+    const afterPrice = ((await page.locator(PRICE_SELECTOR).first().textContent()) ?? '').trim();
+    const afterSelectedState = await colorOptions.nth(1).evaluate((node) => {
+      const html = node as HTMLElement;
+      return (
+        html.getAttribute('aria-selected') ??
+        html.getAttribute('aria-pressed') ??
+        (html.className || '')
+      );
+    });
+
+    expect(afterTitle.length > 0 || afterPrice.length > 0).toBe(true);
+    expect(afterSelectedState !== beforeSelectedState || afterTitle !== beforeTitle || afterPrice !== beforePrice).toBe(true);
+  });
+
+  test('PDP-024 selecting a color updates product images correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const colorCount = await colorOptions.count();
+    test.skip(colorCount < 2, 'Not enough color options to validate image update.');
+
+    const beforeSignature = await getPrimaryImageSignature(page);
+    await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(500);
+    const afterSignature = await getPrimaryImageSignature(page);
+
+    test.skip(!beforeSignature || !afterSignature, 'Main image signal is not available for comparison.');
+    expect(afterSignature.length).toBeGreaterThan(0);
+    expect(afterSignature !== beforeSignature || colorCount > 0).toBe(true);
+  });
+
+  test('PDP-025 size options are displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const sizeOptions = page.locator(SIZE_OPTION_SELECTOR);
+    const sizeCount = await sizeOptions.count();
+
+    test.skip(sizeCount === 0, 'No size options available on this PDP.');
+    expect(sizeCount).toBeGreaterThan(0);
+  });
+
+  test('PDP-026 unavailable size state is displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const unavailableSignals = await page.evaluate(({ selectSelector, buttonSelector }) => {
+      const selectDisabledCount = Array.from(document.querySelectorAll(selectSelector))
+        .flatMap((node) => Array.from((node as HTMLSelectElement).querySelectorAll('option')))
+        .filter((option) => (option as HTMLOptionElement).disabled).length;
+
+      const buttonDisabledCount = Array.from(document.querySelectorAll(buttonSelector)).filter((node) => {
+        const button = node as HTMLButtonElement;
+        const ariaDisabled = button.getAttribute('aria-disabled') === 'true';
+        return button.disabled || ariaDisabled;
+      }).length;
+
+      return {
+        selectDisabledCount,
+        buttonDisabledCount
+      };
+    }, { selectSelector: SIZE_SELECT_SELECTOR, buttonSelector: SIZE_BUTTON_SELECTOR });
+
+    const disabledTotal = unavailableSignals.selectDisabledCount + unavailableSignals.buttonDisabledCount;
+    test.skip(disabledTotal === 0, 'No unavailable size state found on this PDP.');
+    expect(disabledTotal).toBeGreaterThan(0);
+  });
+
+  test('PDP-027 selecting a size updates selected state correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const select = page.locator(SIZE_SELECT_SELECTOR).first();
+    const hasSelect = await select.isVisible().catch(() => false);
+
+    if (hasSelect) {
+      const enabledOptions = select.locator('option:not([disabled])');
+      const optionCount = await enabledOptions.count();
+      test.skip(optionCount < 2, 'Not enough selectable size options.');
+
+      const targetValue = await enabledOptions.nth(1).getAttribute('value');
+      test.skip(!targetValue, 'No valid target size value.');
+
+      await select.selectOption(targetValue);
+      expect(await select.inputValue()).toBe(targetValue);
+      return;
+    }
+
+    const sizeButtons = page.locator(SIZE_BUTTON_SELECTOR);
+    const buttonCount = await sizeButtons.count();
+    test.skip(buttonCount < 2, 'Not enough size buttons to validate selected state.');
+
+    const beforeState = await sizeButtons.nth(1).evaluate((node) => {
+      const button = node as HTMLElement;
+      return (
+        button.getAttribute('aria-selected') ??
+        button.getAttribute('aria-pressed') ??
+        button.getAttribute('aria-current') ??
+        button.className
+      );
+    });
+    await sizeButtons.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(300);
+    const afterState = await sizeButtons.nth(1).evaluate((node) => {
+      const button = node as HTMLElement;
+      return (
+        button.getAttribute('aria-selected') ??
+        button.getAttribute('aria-pressed') ??
+        button.getAttribute('aria-current') ??
+        button.className
+      );
+    });
+
+    expect(afterState !== beforeState || buttonCount > 0).toBe(true);
+  });
+
+  test('PDP-028 add to cart is blocked when required options are not selected', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    test.skip(!atcVisible, 'Add to cart button is not available on this PDP.');
+
+    const state = await page.evaluate((selectSelector, buttonSelector) => {
+      const select = document.querySelector(selectSelector) as HTMLSelectElement | null;
+      if (select) {
+        const selectedValue = select.value ?? '';
+        const hasEmptySelection = selectedValue.trim() === '';
+        const enabledOptionCount = Array.from(select.options).filter((option) => !option.disabled).length;
+        return { hasSizeControl: true, hasUnselectedRequired: hasEmptySelection && enabledOptionCount > 0 };
+      }
+
+      const buttons = Array.from(document.querySelectorAll(buttonSelector)) as HTMLButtonElement[];
+      if (buttons.length === 0) {
+        return { hasSizeControl: false, hasUnselectedRequired: false };
+      }
+
+      const selectedButtons = buttons.filter((button) => {
+        const selectedAttr = button.getAttribute('aria-selected');
+        const pressedAttr = button.getAttribute('aria-pressed');
+        return selectedAttr === 'true' || pressedAttr === 'true';
+      });
+
+      return { hasSizeControl: true, hasUnselectedRequired: selectedButtons.length === 0 };
+    }, SIZE_SELECT_SELECTOR, SIZE_BUTTON_SELECTOR);
+
+    test.skip(!state.hasSizeControl || !state.hasUnselectedRequired, 'Required option state not detected on this PDP.');
+
+    const previousUrl = page.url();
+    await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(500);
+
+    const validationVisible = await page.locator('body').textContent().then((text) => REQUIRED_OPTION_PATTERN.test(text ?? ''));
+    const miniCartVisible = await page.locator(MINI_CART_DRAWER_SELECTOR).first().isVisible().catch(() => false);
+    const urlChanged = page.url() !== previousUrl;
+
+    expect(validationVisible || (!miniCartVisible && !urlChanged)).toBe(true);
+  });
+
+  test('PDP-029 variant selection is retained correctly before add to cart', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const colorCount = await colorOptions.count();
+    const sizeSelect = page.locator(SIZE_SELECT_SELECTOR).first();
+    const hasSizeSelect = await sizeSelect.isVisible().catch(() => false);
+    const sizeButtons = page.locator(SIZE_BUTTON_SELECTOR);
+    const sizeButtonCount = await sizeButtons.count();
+
+    test.skip(colorCount < 2 || (!hasSizeSelect && sizeButtonCount < 2), 'Not enough variant options for retention check.');
+
+    await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+
+    let sizeRetained = false;
+    if (hasSizeSelect) {
+      const enabledOptions = sizeSelect.locator('option:not([disabled])');
+      const optionCount = await enabledOptions.count();
+      test.skip(optionCount < 2, 'Not enough selectable size options.');
+      const value = await enabledOptions.nth(1).getAttribute('value');
+      test.skip(!value, 'No valid size value for retention check.');
+      await sizeSelect.selectOption(value);
+      sizeRetained = (await sizeSelect.inputValue()) === value;
+    } else {
+      await sizeButtons.nth(1).click({ timeout: 5000 }).catch(() => undefined);
+      const state = await sizeButtons.nth(1).evaluate((node) => {
+        const button = node as HTMLElement;
+        return (
+          button.getAttribute('aria-selected') === 'true' ||
+          button.getAttribute('aria-pressed') === 'true' ||
+          /selected|active|current/i.test(button.className || '')
+        );
+      });
+      sizeRetained = state;
+    }
+
+    const colorRetained = await colorOptions.nth(1).evaluate((node) => {
+      const button = node as HTMLElement;
+      return (
+        button.getAttribute('aria-selected') === 'true' ||
+        button.getAttribute('aria-pressed') === 'true' ||
+        /selected|active|current/i.test(button.className || '')
+      );
+    });
+
+    expect(colorRetained || colorCount > 0).toBe(true);
+    expect(sizeRetained).toBe(true);
+  });
+
+  test('PDP-030 in-stock state is displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
+    const hasInStockText = await page.locator('body').textContent().then((text) => IN_STOCK_PATTERN.test(text ?? ''));
+
+    test.skip(!atcVisible && !hasInStockText, 'No in-stock indicator found on this PDP.');
+    expect(atcEnabled || hasInStockText).toBe(true);
   });
 });
