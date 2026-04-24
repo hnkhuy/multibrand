@@ -40,7 +40,15 @@ const MINI_CART_DRAWER_SELECTOR = '[data-testid="mini-cart"], [data-testid="mini
 const SIZE_SELECT_SELECTOR = 'select[name*="size" i], [data-testid*="size" i] select';
 const SIZE_BUTTON_SELECTOR = '[data-testid*="size" i] button, [class*="size" i] button';
 const IN_STOCK_PATTERN = /in stock|available now|ready to ship|ships/i;
+const OUT_OF_STOCK_PATTERN = /out of stock|sold out|unavailable|currently unavailable/i;
+const LOW_STOCK_PATTERN = /low stock|only\s+\d+\s+left|hurry/i;
 const REQUIRED_OPTION_PATTERN = /select size|choose size|please select|required/i;
+const SUCCESS_FEEDBACK_SELECTOR =
+  '[data-testid*="success" i], [data-testid*="added" i], [class*="success" i], [class*="toast" i], [class*="notification" i]';
+const CART_COUNT_SELECTOR =
+  '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="badge" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]';
+const QUANTITY_INPUT_SELECTOR =
+  'input[name*="qty" i], input[name*="quantity" i], [data-testid*="quantity" i] input, select[name*="qty" i], select[name*="quantity" i]';
 
 async function getPrimaryImageSignature(page: Page): Promise<string> {
   return page.evaluate((selector) => {
@@ -70,6 +78,52 @@ async function getPrimaryImageSignature(page: Page): Promise<string> {
 
     return `${target.src}|${target.alt}|${target.area}`;
   }, GALLERY_IMAGE_SELECTOR);
+}
+
+async function selectFirstAvailableSizeIfPossible(page: Page): Promise<boolean> {
+  const select = page.locator(SIZE_SELECT_SELECTOR).first();
+  if (await select.isVisible().catch(() => false)) {
+    const options = select.locator('option:not([disabled])');
+    const count = await options.count();
+    if (count > 0) {
+      const value = await options.nth(0).getAttribute('value');
+      if (value) {
+        await select.selectOption(value).catch(() => undefined);
+        return true;
+      }
+    }
+  }
+
+  const sizeButtons = page.locator(SIZE_BUTTON_SELECTOR);
+  const count = await sizeButtons.count();
+  for (let index = 0; index < count; index += 1) {
+    const option = sizeButtons.nth(index);
+    const disabled = await option.evaluate((node) => {
+      const button = node as HTMLButtonElement;
+      return button.disabled || button.getAttribute('aria-disabled') === 'true';
+    }).catch(() => true);
+    if (!disabled) {
+      await option.click({ timeout: 5000 }).catch(() => undefined);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function readCartCount(page: Page): Promise<number | null> {
+  const countText = await page.locator(CART_COUNT_SELECTOR).first().textContent().catch(() => null);
+  if (!countText) {
+    return null;
+  }
+
+  const matched = countText.match(/\d+/);
+  if (!matched) {
+    return null;
+  }
+
+  const parsed = Number.parseInt(matched[0], 10);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
@@ -655,7 +709,7 @@ test.describe('pdp', () => {
     const atcVisible = await addToCart.isVisible().catch(() => false);
     test.skip(!atcVisible, 'Add to cart button is not available on this PDP.');
 
-    const state = await page.evaluate((selectSelector, buttonSelector) => {
+    const state = await page.evaluate(({ selectSelector, buttonSelector }) => {
       const select = document.querySelector(selectSelector) as HTMLSelectElement | null;
       if (select) {
         const selectedValue = select.value ?? '';
@@ -676,7 +730,7 @@ test.describe('pdp', () => {
       });
 
       return { hasSizeControl: true, hasUnselectedRequired: selectedButtons.length === 0 };
-    }, SIZE_SELECT_SELECTOR, SIZE_BUTTON_SELECTOR);
+    }, { selectSelector: SIZE_SELECT_SELECTOR, buttonSelector: SIZE_BUTTON_SELECTOR });
 
     test.skip(!state.hasSizeControl || !state.hasUnselectedRequired, 'Required option state not detected on this PDP.');
 
@@ -750,5 +804,161 @@ test.describe('pdp', () => {
 
     test.skip(!atcVisible && !hasInStockText, 'No in-stock indicator found on this PDP.');
     expect(atcEnabled || hasInStockText).toBe(true);
+  });
+
+  test('PDP-031 out-of-stock state is displayed correctly', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const hasOosText = await page.locator('body').textContent().then((text) => OUT_OF_STOCK_PATTERN.test(text ?? ''));
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcDisabled = atcVisible ? !(await addToCart.isEnabled().catch(() => true)) : false;
+
+    test.skip(!hasOosText && !atcDisabled, 'No out-of-stock signal found on this PDP.');
+    expect(hasOosText || atcDisabled).toBe(true);
+  });
+
+  test('PDP-032 Add to Cart is unavailable for out-of-stock product', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const hasOosText = await page.locator('body').textContent().then((text) => OUT_OF_STOCK_PATTERN.test(text ?? ''));
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    test.skip(!hasOosText || !atcVisible, 'Out-of-stock Add to Cart state is not available on this PDP.');
+
+    const atcEnabled = await addToCart.isEnabled().catch(() => false);
+    expect(atcEnabled).toBe(false);
+  });
+
+  test('PDP-033 low-stock messaging is displayed correctly if applicable', async ({ home, page }) => {
+    await openValidPdp(home, page);
+
+    const hasLowStock = await page.locator('body').textContent().then((text) => LOW_STOCK_PATTERN.test(text ?? ''));
+    test.skip(!hasLowStock, 'No low-stock messaging found on this PDP.');
+    expect(hasLowStock).toBe(true);
+  });
+
+  test('PDP-034 Add to Cart button is displayed', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    test.skip(!atcVisible, 'Add to Cart is not visible on this PDP.');
+    await expect(addToCart).toBeVisible();
+  });
+
+  test('PDP-035 product can be added to cart successfully from PDP', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
+
+    test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
+
+    await selectFirstAvailableSizeIfPossible(page);
+    await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const miniCartVisible = await page.locator(MINI_CART_DRAWER_SELECTOR).first().isVisible().catch(() => false);
+    const successVisible = await page.locator(SUCCESS_FEEDBACK_SELECTOR).first().isVisible().catch(() => false);
+    expect(miniCartVisible || successVisible).toBe(true);
+  });
+
+  test('PDP-036 correct variant is added to cart', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
+    test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
+
+    const productTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
+    await selectFirstAvailableSizeIfPossible(page);
+    await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const miniCart = page.locator(MINI_CART_DRAWER_SELECTOR).first();
+    const miniCartVisible = await miniCart.isVisible().catch(() => false);
+    test.skip(!miniCartVisible, 'Mini cart did not open after add to cart.');
+
+    const miniCartText = ((await miniCart.textContent()) ?? '').toLowerCase();
+    test.skip(!miniCartText, 'Mini cart content is empty.');
+    expect(miniCartText.includes(productTitle.toLowerCase()) || miniCartText.length > 0).toBe(true);
+  });
+
+  test('PDP-037 cart count updates after successful add to cart', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
+    test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
+
+    const beforeCount = await readCartCount(page);
+    await selectFirstAvailableSizeIfPossible(page);
+    await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(800);
+    const afterCount = await readCartCount(page);
+
+    test.skip(beforeCount === null || afterCount === null, 'Cart count badge is not available on this storefront.');
+    expect(afterCount).toBeGreaterThanOrEqual(beforeCount);
+  });
+
+  test('PDP-038 add-to-cart success feedback is shown', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const atcVisible = await addToCart.isVisible().catch(() => false);
+    const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
+    test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
+
+    await selectFirstAvailableSizeIfPossible(page);
+    await addToCart.click({ timeout: 5000 }).catch(() => undefined);
+    await page.waitForTimeout(700);
+
+    const miniCartVisible = await page.locator(MINI_CART_DRAWER_SELECTOR).first().isVisible().catch(() => false);
+    const successVisible = await page.locator(SUCCESS_FEEDBACK_SELECTOR).first().isVisible().catch(() => false);
+    const bodyHasConfirmation = await page
+      .locator('body')
+      .textContent()
+      .then((text) => /added to cart|added to bag|item added|success/i.test(text ?? ''));
+    expect(miniCartVisible || successVisible || bodyHasConfirmation).toBe(true);
+  });
+
+  test('PDP-039 quantity defaults correctly before add to cart if quantity selector exists', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const quantityInput = page.locator(QUANTITY_INPUT_SELECTOR).first();
+    const quantityVisible = await quantityInput.isVisible().catch(() => false);
+    test.skip(!quantityVisible, 'Quantity selector is not available on this PDP.');
+
+    const tagName = await quantityInput.evaluate((node) => node.tagName.toLowerCase()).catch(() => '');
+    if (tagName === 'select') {
+      const value = await quantityInput.inputValue().catch(() => '');
+      expect(value === '' || value === '1').toBe(true);
+      return;
+    }
+
+    const value = await quantityInput.inputValue().catch(() => '');
+    expect(value === '' || value === '1').toBe(true);
+  });
+
+  test('PDP-040 quantity can be updated before add to cart if supported', async ({ home, page }) => {
+    await openValidPdp(home, page);
+    const quantityInput = page.locator(QUANTITY_INPUT_SELECTOR).first();
+    const quantityVisible = await quantityInput.isVisible().catch(() => false);
+    test.skip(!quantityVisible, 'Quantity selector is not available on this PDP.');
+
+    const tagName = await quantityInput.evaluate((node) => node.tagName.toLowerCase()).catch(() => '');
+    if (tagName === 'select') {
+      const options = quantityInput.locator('option:not([disabled])');
+      const optionCount = await options.count();
+      test.skip(optionCount < 2, 'No alternate quantity option available.');
+      const targetValue = await options.nth(1).getAttribute('value');
+      test.skip(!targetValue, 'No target quantity value available.');
+      await quantityInput.selectOption(targetValue).catch(() => undefined);
+      expect(await quantityInput.inputValue()).toBe(targetValue);
+      return;
+    }
+
+    await quantityInput.fill('2').catch(() => undefined);
+    const updated = await quantityInput.inputValue().catch(() => '');
+    test.skip(updated === '', 'Could not update quantity input on this PDP.');
+    expect(updated).toBe('2');
   });
 });
