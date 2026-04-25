@@ -35,6 +35,11 @@ const REMOVE_WISHLIST_ITEM_SELECTOR =
   '[data-testid*="remove" i], button[aria-label*="remove" i], button:has-text("Remove"), button:has-text("Delete"), [class*="remove" i]';
 const PRICE_SELECTOR = '[data-testid*="price" i], [class*="price" i], [id*="price" i]';
 
+function requireDefined<T>(value: T | null | undefined, skipMessage: string): T {
+  test.skip(value == null, skipMessage);
+  return value as T;
+}
+
 function getLoginCredential(): { email: string; password: string } | null {
   const email =
     [
@@ -81,8 +86,10 @@ async function openPlp(home: HomePage, page: Page, keyword: string): Promise<voi
   const isPlpLikeUrl = PLP_URL_PATTERN.test(page.url()) || SEARCH_URL_PATTERN.test(page.url());
   if (!isPlpLikeUrl) {
     const navItems = await home.header.getVisibleNavigationItems();
-    const plpEntry = navItems.find((item) => PLP_URL_PATTERN.test(item.href));
-    test.skip(!plpEntry, 'No PLP navigation entry was found.');
+    const plpEntry = requireDefined(
+      navItems.find((item) => PLP_URL_PATTERN.test(item.href)),
+      'No PLP navigation entry was found.'
+    );
     await page.goto(new URL(plpEntry.href, page.url()).href, { waitUntil: 'domcontentloaded' });
     await home.dismissInterruptions();
   }
@@ -467,20 +474,19 @@ test.describe('wishlist', () => {
 
   test('WL-011 duplicate wishlist add is handled correctly', async ({ home, page }) => {
     await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
-    test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
+    const trigger = requireDefined(await getWishlistTriggerFromPdp(page), 'Wishlist icon is not displayed on this PDP.');
 
-    await clickLocatorRobust(trigger!);
+    await clickLocatorRobust(trigger);
     await page.waitForTimeout(1000);
     const loggedIn = await tryLoginIfNeeded(page);
     test.skip(!loggedIn, 'Logged-in account is required. Provide TEST_ACCOUNT_EMAIL/TEST_ACCOUNT_PASSWORD.');
 
-    await clickLocatorRobust(trigger!);
+    await clickLocatorRobust(trigger);
     await page.waitForTimeout(1000);
 
     const body = await readBodyText(page);
-    const classState = await trigger!.getAttribute('class').catch(() => '');
-    const pressed = await trigger!.getAttribute('aria-pressed').catch(() => null);
+    const classState = (await trigger.getAttribute('class').catch(() => '')) ?? '';
+    const pressed = await trigger.getAttribute('aria-pressed').catch(() => null);
 
     expect(
       /already|exists|wishlist|removed|saved/.test(body) ||

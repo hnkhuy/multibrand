@@ -357,8 +357,9 @@ test.describe('cart', () => {
     const link = row.locator(CART_PRODUCT_LINK_SELECTOR).first();
     const href = await link.getAttribute('href');
     test.skip(!(await link.isVisible().catch(() => false)) || !href, 'Product link is not available in cart row.');
+    const targetHref = href as string;
 
-    const targetUrl = new URL(href, page.url()).href;
+    const targetUrl = new URL(targetHref, page.url()).href;
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
     await pdp.dismissInterruptions();
 

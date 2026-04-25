@@ -63,6 +63,11 @@ interface OpenPlpResult {
   navLabel?: string;
 }
 
+function requireDefined<T>(value: T | null | undefined, skipMessage: string): T {
+  test.skip(value == null, skipMessage);
+  return value as T;
+}
+
 function normalizePrice(value: string): number {
   const normalized = value.replace(/[^0-9.,]/g, '').replace(/,/g, '');
   return Number.parseFloat(normalized);
@@ -95,8 +100,10 @@ async function openPlp(home: HomePage, page: Page, keyword: string): Promise<voi
   const isPlpLikeUrl = PLP_URL_PATTERN.test(page.url()) || SEARCH_URL_PATTERN.test(page.url());
   if (!isPlpLikeUrl) {
     const navItems = await home.header.getVisibleNavigationItems();
-    const plpEntry = navItems.find((item) => PLP_URL_PATTERN.test(item.href));
-    test.skip(!plpEntry, 'No PLP navigation entry was found.');
+    const plpEntry = requireDefined(
+      navItems.find((item) => PLP_URL_PATTERN.test(item.href)),
+      'No PLP navigation entry was found.'
+    );
 
     const plpUrl = new URL(plpEntry.href, page.url());
     await page.goto(plpUrl.href, { waitUntil: 'domcontentloaded' });
@@ -190,10 +197,11 @@ async function collectVisiblePrices(page: Page, maxCards = 10): Promise<number[]
   for (let index = 0; index < count; index += 1) {
     const text = await cards.nth(index).innerText().catch(() => '');
     const matched = text.match(/\$\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?/g) ?? [];
-    if (matched.length === 0) {
+    const [firstPrice] = matched;
+    if (!firstPrice) {
       continue;
     }
-    const value = normalizePrice(matched[0]);
+    const value = normalizePrice(firstPrice);
     if (!Number.isNaN(value)) {
       prices.push(value);
     }
@@ -481,15 +489,13 @@ test.describe('plp', () => {
 
   test('PLP-010 product grid is displayed', async ({ ctx, home, page }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = await firstVisibleProductCard(page);
-    test.skip(!card, 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
     await expect(card).toBeVisible();
   });
 
   test('PLP-011 product cards are displayed correctly', async ({ ctx, home, page }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = await firstVisibleProductCard(page);
-    test.skip(!card, 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
 
     const image = card.locator('img').first();
     const name = card.locator(PRODUCT_NAME_SELECTOR).first();
@@ -510,8 +516,7 @@ test.describe('plp', () => {
 
   test('PLP-012 product card image is rendered correctly', async ({ ctx, home, page }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = await firstVisibleProductCard(page);
-    test.skip(!card, 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
 
     const image = card.locator('img').first();
     await expect(image).toBeVisible();
@@ -531,8 +536,7 @@ test.describe('plp', () => {
 
   test('PLP-013 product name is displayed', async ({ ctx, home, page }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = await firstVisibleProductCard(page);
-    test.skip(!card, 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
 
     const name = card.locator(PRODUCT_NAME_SELECTOR).first();
     await expect(name).toBeVisible().catch(() => undefined);
@@ -542,8 +546,7 @@ test.describe('plp', () => {
 
   test('PLP-014 product price is displayed', async ({ ctx, home, page }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = await firstVisibleProductCard(page);
-    test.skip(!card, 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
 
     const price = card.locator(PRODUCT_PRICE_SELECTOR).first();
     const priceVisible = await price.isVisible().catch(() => false);
@@ -574,8 +577,13 @@ test.describe('plp', () => {
         continue;
       }
 
-      const sale = normalizePrice(matched[0]);
-      const original = normalizePrice(matched[1]);
+      const [salePrice, originalPrice] = matched;
+      if (!salePrice || !originalPrice) {
+        continue;
+      }
+
+      const sale = normalizePrice(salePrice);
+      const original = normalizePrice(originalPrice);
       if (Number.isNaN(sale) || Number.isNaN(original)) {
         continue;
       }
@@ -949,8 +957,7 @@ test.describe('plp', () => {
 
   test('PLP-030 filter panel is displayed', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const panel = await ensureFilterPanelOpen(page);
-    test.skip(!panel, 'Filter panel is not available on this PLP.');
+    const panel = requireDefined(await ensureFilterPanelOpen(page), 'Filter panel is not available on this PLP.');
     await expect(panel).toBeVisible();
   });
 
@@ -1060,8 +1067,7 @@ test.describe('plp', () => {
 
   test('PLP-038 filter options with zero products are handled correctly', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const panel = await ensureFilterPanelOpen(page);
-    test.skip(!panel, 'Filter panel is not available on this PLP.');
+    const panel = requireDefined(await ensureFilterPanelOpen(page), 'Filter panel is not available on this PLP.');
 
     const zeroOption = panel
       .locator('label, button, a, [role="checkbox"]')
@@ -1181,8 +1187,7 @@ test.describe('plp', () => {
     await home.search(keyword);
     await page.keyboard.press('Escape').catch(() => undefined);
 
-    const card = await firstVisibleProductCard(page);
-    test.skip(!card, 'No product card available in search result PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page), 'No product card available in search result PLP.');
     const name = (await readProductNameFromCard(card)).toLowerCase();
     const keywordToken = keyword.toLowerCase().split(/\s+/)[0];
     expect(name.includes(keywordToken) || keywordToken.length <= 2).toBe(true);
@@ -1208,8 +1213,7 @@ test.describe('plp', () => {
 
   test('PLP-051 quick add opens size/variant selector if required', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = await findFirstCardWithQuickAdd(page);
-    test.skip(!target, 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
 
     await clickLocatorRobust(target.button);
     const variantSelector = page
@@ -1222,8 +1226,7 @@ test.describe('plp', () => {
 
   test('PLP-052 product can be added to cart from PLP', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = await findFirstCardWithQuickAdd(page);
-    test.skip(!target, 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
 
     const before = await readCartCount(page);
     await clickLocatorRobust(target.button);
@@ -1241,8 +1244,7 @@ test.describe('plp', () => {
 
   test('PLP-053 correct variant is added to cart from PLP', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = await findFirstCardWithQuickAdd(page);
-    test.skip(!target, 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
 
     const cardName = (await readProductNameFromCard(target.card)).toLowerCase();
     await clickLocatorRobust(target.button);
@@ -1258,8 +1260,7 @@ test.describe('plp', () => {
 
   test('PLP-054 validation when adding configurable product without required option', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = await findFirstCardWithQuickAdd(page);
-    test.skip(!target, 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
 
     await clickLocatorRobust(target.button);
     await page.waitForTimeout(1000);
@@ -1346,8 +1347,8 @@ test.describe('plp', () => {
       }
     }
 
-    test.skip(!targetButton, 'No out-of-stock product with Quick Add found.');
-    const disabled = await targetButton
+    const targetButtonRef = requireDefined(targetButton, 'No out-of-stock product with Quick Add found.');
+    const disabled = await targetButtonRef
       .evaluate((node) => {
         const btn = node as HTMLButtonElement;
         return btn.disabled || btn.getAttribute('aria-disabled') === 'true';
@@ -1767,8 +1768,10 @@ test.describe('plp', () => {
 
   test('PLP-085 quick add tracking is fired if applicable', async ({ ctx, home, page }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = await findFirstCardWithQuickAdd(page);
-    test.skip(!target, 'Quick Add is not available for tracking validation.');
+    const target = requireDefined(
+      await findFirstCardWithQuickAdd(page),
+      'Quick Add is not available for tracking validation.'
+    );
 
     await clickLocatorRobust(target.button);
     await page.waitForTimeout(1000);

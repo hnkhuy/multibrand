@@ -926,7 +926,10 @@ test.describe('pdp', () => {
     await page.waitForTimeout(800);
     const afterCount = await readCartCount(page);
 
-    test.skip(beforeCount === null || afterCount === null, 'Cart count badge is not available on this storefront.');
+    if (beforeCount === null || afterCount === null) {
+      test.skip(true, 'Cart count badge is not available on this storefront.');
+      return;
+    }
     expect(afterCount).toBeGreaterThanOrEqual(beforeCount);
   });
 
@@ -1160,7 +1163,10 @@ test.describe('pdp', () => {
 
     const target = links.first();
     const href = await target.getAttribute('href');
-    test.skip(!href || href.startsWith('#'), 'Invalid recommendation link.');
+    if (!href || href.startsWith('#')) {
+      test.skip(true, 'Invalid recommendation link.');
+      return;
+    }
 
     const previousUrl = page.url();
     const expectedUrl = new URL(href, page.url());
