@@ -9,5 +9,9 @@ export const headerSelectors: HeaderSelectors = {
   searchSubmit: '[data-testid="search-submit"]:visible, button[type="submit"]:visible, button[aria-label*="Search" i]:visible',
   accountIcon: '[data-testid="account-icon"], a[href*="account"], a[href*="login"], button[aria-label*="account" i], button[aria-label*="sign in" i], button[aria-label*="login" i], button[aria-label*="my account" i]',
   cartIcon: '[data-testid="cart-icon"]:visible, a[href*="cart"]:visible, button[aria-label*="cart" i]:visible, button[aria-label*="bag" i]:visible',
-  menuButton: '[data-testid="menu-button"], button[aria-label*="menu" i]'
+  menuButton: '[data-testid="menu-button"], button[aria-label*="menu" i], header button[aria-label*="nav" i]',
+  mobileMenuSurface: 'nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]',
+  mobileMenuLink: 'nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]',
+  cartCount: '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="bag-count" i], [aria-label*="cart" i], [aria-label*="bag" i]',
+  actionTarget: 'header button, header [role="button"], header a'
 };

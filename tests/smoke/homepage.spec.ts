@@ -13,8 +13,8 @@ test.describe('homepage', () => {
   test('HP-001 homepage loads successfully', async ({ home, page }) => {
     await home.goto('/');
 
-    await expect(page.locator('body')).toBeVisible();
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).toBeVisible();
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     await expect(home.header.logo).toBeVisible();
   });
 
@@ -26,7 +26,7 @@ test.describe('homepage', () => {
 
     expect(currentUrl.hostname).toBe(expectedBaseUrl.hostname);
     expect(currentUrl.hostname).toContain(`-${ctx.region}.`);
-    await expect(page.locator('body')).not.toBeEmpty();
+    await expect(home.body).not.toBeEmpty();
   });
 
   test('HP-003 homepage loads over HTTPS', async ({ home, page }) => {
@@ -38,7 +38,7 @@ test.describe('homepage', () => {
   test('HP-004 no visible application error is shown on homepage', async ({ home, page }) => {
     await home.goto('/');
 
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-005 homepage remains stable after refresh', async ({ home, page }) => {
@@ -50,7 +50,7 @@ test.describe('homepage', () => {
 
     const currentUrl = new URL(page.url());
     expect(currentUrl.pathname).toBe('/');
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     await expect(home.header.logo).toBeVisible();
   });
 
@@ -100,7 +100,7 @@ test.describe('homepage', () => {
 
       const currentUrl = new URL(page.url());
       expect(currentUrl.pathname).toBe(expectedUrl.pathname);
-      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     }
   });
 
@@ -146,8 +146,8 @@ test.describe('homepage', () => {
     await home.search(keyword);
 
     await expect(page).toHaveURL(/search|q=|query=|\/s\//i);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
-    await expect(page.locator('body')).toContainText(keyword);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).toContainText(keyword);
   });
 
   test('HP-013 search with invalid keyword shows no-result state', async ({ home, page }) => {
@@ -157,10 +157,10 @@ test.describe('homepage', () => {
     await home.search(invalidKeyword);
 
     await expect(page).toHaveURL(/search|q=|query=|\/s\//i);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
-    await expect(page.locator('body')).toContainText(invalidKeyword);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).toContainText(invalidKeyword);
 
-    const bodyText = await page.locator('body').innerText();
+    const bodyText = await home.body.innerText();
     expect(bodyText).toMatch(NO_RESULTS_PATTERN);
   });
 
@@ -220,7 +220,7 @@ test.describe('homepage', () => {
 
     const currentUrl = new URL(page.url());
     expect(currentUrl.pathname).toBe(expectedUrl.pathname);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-018 hero banner image is rendered correctly', async ({ home }) => {
@@ -279,7 +279,7 @@ test.describe('homepage', () => {
     const afterPrevious = await home.promoCarouselSignature();
 
     expect(afterPrevious).not.toBe(afterNext);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-020 promotional carousel auto-rotation works if enabled', async ({ home, page }) => {
@@ -294,7 +294,7 @@ test.describe('homepage', () => {
     test.skip(before === after, 'Promotional carousel auto-rotation is not enabled or not detectable.');
 
     expect(after).not.toBe(before);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-021 promotional tiles/cards are displayed', async ({ home, page }) => {
@@ -302,8 +302,8 @@ test.describe('homepage', () => {
     const promoLinks = await home.getPromoTileLinks();
 
     expect(promoLinks.length).toBeGreaterThan(0);
-    await page.locator('main a[href]').nth(promoLinks[0].index).scrollIntoViewIfNeeded();
-    await expect(page.locator('main a[href]').nth(promoLinks[0].index)).toBeVisible();
+    await home.mainLinks.nth(promoLinks[0].index).scrollIntoViewIfNeeded();
+    await expect(home.mainLinks.nth(promoLinks[0].index)).toBeVisible();
   });
 
   test('HP-022 promotional tile CTA redirects correctly', async ({ home, page }) => {
@@ -314,7 +314,7 @@ test.describe('homepage', () => {
 
     for (const link of promoLinks) {
       await home.goto('/');
-      const tile = page.locator('main a[href]').nth(link.index);
+      const tile = home.mainLinks.nth(link.index);
       const expectedUrl = new URL(link.href, page.url());
       const previousUrl = page.url();
 
@@ -328,7 +328,7 @@ test.describe('homepage', () => {
 
       const currentUrl = new URL(page.url());
       expect(currentUrl.pathname).toBe(expectedUrl.pathname);
-      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     }
   });
 
@@ -347,7 +347,7 @@ test.describe('homepage', () => {
 
     for (const category of categoryLinks) {
       await home.goto('/');
-      const entry = page.locator('main a[href]').nth(category.index);
+      const entry = home.mainLinks.nth(category.index);
       const expectedUrl = new URL(category.href, page.url());
       const previousUrl = page.url();
 
@@ -361,7 +361,7 @@ test.describe('homepage', () => {
 
       const currentUrl = new URL(page.url());
       expect(currentUrl.pathname).toBe(expectedUrl.pathname);
-      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     }
   });
 
@@ -373,7 +373,7 @@ test.describe('homepage', () => {
 
     for (const category of categoryLinks) {
       await home.goto('/');
-      const entry = page.locator('main a[href]').nth(category.index);
+      const entry = home.mainLinks.nth(category.index);
       const previousUrl = page.url();
       const categoryKeyword = category.text.split(/\s+/)[0];
 
@@ -385,9 +385,9 @@ test.describe('homepage', () => {
       ]);
       await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
 
-      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
       if (categoryKeyword.length >= 3) {
-        await expect(page.locator('body')).toContainText(new RegExp(categoryKeyword, 'i'));
+        await expect(home.body).toContainText(new RegExp(categoryKeyword, 'i'));
       }
     }
   });
@@ -439,7 +439,7 @@ test.describe('homepage', () => {
 
     const currentUrl = new URL(page.url());
     expect(currentUrl.pathname).toBe(expectedUrl.pathname);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-029 product price format matches selected region', async ({ home }) => {
@@ -523,7 +523,7 @@ test.describe('homepage', () => {
     }
 
     test.skip(!availabilityValidated, 'No explicit availability state is displayed on featured product cards.');
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-032 quick action opens correctly if feature exists', async ({ home, page }) => {
@@ -531,8 +531,7 @@ test.describe('homepage', () => {
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.2));
     await page.waitForTimeout(500);
 
-    const quickActionClicked = await page
-      .locator('main button, main [role="button"], main a')
+    const quickActionClicked = await home.promoButtons
       .evaluateAll((elements) => {
         const textPattern = /quick view|quick add/i;
         const candidate = elements.find((element) => {
@@ -560,21 +559,20 @@ test.describe('homepage', () => {
 
     test.skip(!quickActionClicked, 'Quick action feature is not available on homepage.');
 
-    const quickViewOpened = await page
-      .locator('[role="dialog"], [aria-modal="true"], .modal, .drawer')
+    const quickViewOpened = await home.dialogSurface
       .first()
       .isVisible({ timeout: 5_000 })
       .catch(() => false);
 
     test.skip(!quickViewOpened, 'Quick action did not open a detectable modal/drawer on this brand.');
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-033 footer is displayed', async ({ home, page }) => {
     await home.goto('/');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-    const footer = page.locator('footer').first();
+    const footer = home.footer;
     await expect(footer).toBeVisible();
     await expect(footer).not.toBeEmpty();
   });
@@ -584,7 +582,7 @@ test.describe('homepage', () => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
     const baseHost = new URL(page.url()).hostname;
-    const footerLinks = await page.locator('footer a[href]').evaluateAll((elements, currentHost) => {
+    const footerLinks = await home.footerLinks.evaluateAll((elements, currentHost) => {
       const links = elements
         .map((element) => {
           const anchor = element as HTMLAnchorElement;
@@ -621,7 +619,7 @@ test.describe('homepage', () => {
       const expectedUrl = new URL(expectedHref, page.url());
       const previousUrl = page.url();
       const popupPromise = page.waitForEvent('popup', { timeout: 5_000 }).catch(() => null);
-      const clickedHref = await page.locator('footer a[href]').evaluateAll((elements, targetHref) => {
+      const clickedHref = await home.footerLinks.evaluateAll((elements, targetHref) => {
         const target = elements.find((element) => {
           const anchor = element as HTMLAnchorElement;
           const href = anchor.getAttribute('href') ?? '';
@@ -661,7 +659,7 @@ test.describe('homepage', () => {
     await home.goto('/');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-    const socialLinks = await page.locator('footer a[href]').evaluateAll((elements) => {
+    const socialLinks = await home.footerLinks.evaluateAll((elements) => {
       const links = elements
         .map((element) => {
           const anchor = element as HTMLAnchorElement;
@@ -686,7 +684,7 @@ test.describe('homepage', () => {
       await home.goto('/');
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-      const socialLink = page.locator(`footer a[href="${href.replace(/"/g, '\\"')}"]`).first();
+      const socialLink = home.footerLinkByHref(href);
       const expectedHost = new URL(href, page.url()).hostname.replace(/^www\./, '');
       const previousUrl = page.url();
       const popupPromise = page.waitForEvent('popup', { timeout: 10_000 }).catch(() => null);
@@ -720,7 +718,7 @@ test.describe('homepage', () => {
     await home.goto('/');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-    const footer = page.locator('footer').first();
+    const footer = home.footer;
     await expect(footer).toBeVisible();
 
     const footerText = await footer.innerText();
@@ -862,7 +860,7 @@ test.describe('homepage', () => {
     const initialTop = stickyInfo.top ?? 0;
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
     await page.waitForTimeout(400);
-    const afterScrollTop = (await page.locator('header').first().boundingBox())?.y ?? 0;
+    const afterScrollTop = (await home.headerRoot.boundingBox())?.y ?? 0;
 
     expect(Math.abs(afterScrollTop - initialTop)).toBeLessThan(6);
   });
@@ -871,18 +869,18 @@ test.describe('homepage', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await home.goto('/');
 
-    await expect(page.locator('main')).toBeVisible();
+    await expect(home.main).toBeVisible();
     await expect(home.header.navigation).toBeVisible();
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-042 homepage layout on tablet viewport', async ({ home, page }) => {
     await page.setViewportSize({ width: 820, height: 1180 });
     await home.goto('/');
 
-    await expect(page.locator('main')).toBeVisible();
+    await expect(home.main).toBeVisible();
     await expect(home.header.logo).toBeVisible();
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-043 homepage layout on mobile viewport', async ({ home, page }) => {
@@ -894,32 +892,26 @@ test.describe('homepage', () => {
       return doc.scrollWidth - doc.clientWidth > 1;
     });
 
-    await expect(page.locator('main')).toBeVisible();
+    await expect(home.main).toBeVisible();
     expect(hasHorizontalOverflow).toBe(false);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-044 hamburger menu opens correctly on mobile', async ({ home, page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await home.goto('/');
 
-    const hamburger = page
-      .locator('header button, header [role="button"], header a')
+    const hamburger = home.header.actionTargets
       .filter({ hasText: /menu|navigation|open/i })
       .first();
-    const hamburgerByLabel = page
-      .locator('header button[aria-label*="menu" i], header button[aria-label*="nav" i]')
-      .first();
+    const hamburgerByLabel = home.header.menuButton;
 
     const trigger = (await hamburgerByLabel.isVisible().catch(() => false)) ? hamburgerByLabel : hamburger;
     test.skip(!(await trigger.isVisible().catch(() => false)), 'Hamburger menu is not available on this site.');
 
     await trigger.click({ timeout: 10_000 });
 
-    const mobileMenuVisible = await page
-      .locator('nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]')
-      .filter({ has: page.locator('a[href]') })
-      .first()
+    const mobileMenuVisible = await home.header.mobileMenuSurface
       .isVisible({ timeout: 5_000 })
       .catch(() => false);
 
@@ -931,32 +923,20 @@ test.describe('homepage', () => {
     await home.goto('/');
 
     const openHamburgerMenu = async (): Promise<boolean> => {
-      const buttonByLabel = page
-        .locator('header button[aria-label*="menu" i], header button[aria-label*="nav" i]')
-        .first();
-      const buttonByText = page
-        .locator('header button, header [role="button"], header a')
-        .filter({ hasText: /menu|navigation|open/i })
-        .first();
+      const buttonByLabel = home.header.menuButton;
+      const buttonByText = home.header.actionTargets.filter({ hasText: /menu|navigation|open/i }).first();
       const trigger = (await buttonByLabel.isVisible().catch(() => false)) ? buttonByLabel : buttonByText;
       if (!(await trigger.isVisible().catch(() => false))) {
         return false;
       }
 
       await trigger.click({ timeout: 10_000 });
-      return page
-        .locator('nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]')
-        .filter({ has: page.locator('a[href]') })
-        .first()
-        .isVisible({ timeout: 5_000 })
-        .catch(() => false);
+      return home.header.mobileMenuSurface.isVisible({ timeout: 5_000 }).catch(() => false);
     };
 
     test.skip(!(await openHamburgerMenu()), 'Mobile menu is not available/openable on this site.');
 
-    const navCandidates = await page
-      .locator('nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]')
-      .evaluateAll((elements) => {
+    const navCandidates = await home.header.mobileMenuLinks.evaluateAll((elements) => {
         const blocked = /^(#|javascript:|mailto:|tel:)/i;
         return elements
           .map((element) => {
@@ -982,9 +962,7 @@ test.describe('homepage', () => {
     const expectedUrl = new URL(targetHref, page.url());
     const previousUrl = page.url();
 
-    await page
-      .locator('nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]')
-      .evaluateAll((elements, href) => {
+    await home.header.mobileMenuLinks.evaluateAll((elements, href) => {
         const target = elements.find((element) => (element as HTMLAnchorElement).getAttribute('href') === href) as
           | HTMLAnchorElement
           | undefined;
@@ -995,7 +973,7 @@ test.describe('homepage', () => {
     await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
 
     expect(new URL(page.url()).pathname).toBe(expectedUrl.pathname);
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-046 homepage load performance is acceptable', async ({ home, page }) => {
@@ -1003,14 +981,14 @@ test.describe('homepage', () => {
     await home.goto('/');
     const loadDurationMs = Date.now() - start;
 
-    await expect(page.locator('main')).toBeVisible();
+    await expect(home.main).toBeVisible();
     // Keep threshold practical for staging/live network variability.
     expect(loadDurationMs).toBeLessThan(15_000);
   });
 
   test('HP-047 repeated navigation from homepage does not break page', async ({ home, page }) => {
     await home.goto('/');
-    const links = await page.locator('main a[href]').evaluateAll((elements) => {
+    const links = await home.mainLinks.evaluateAll((elements) => {
       const blocked = /^(#|javascript:|mailto:|tel:)/i;
       return elements
         .map((element) => {
@@ -1032,7 +1010,7 @@ test.describe('homepage', () => {
     for (const href of links) {
       await home.goto('/');
       const previousUrl = page.url();
-      await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+      await home.mainLinks.evaluateAll((elements, targetHref) => {
         const target = elements.find((element) => (element as HTMLAnchorElement).getAttribute('href') === targetHref) as
           | HTMLAnchorElement
           | undefined;
@@ -1040,17 +1018,17 @@ test.describe('homepage', () => {
       }, href);
       await page.waitForURL((url) => url.href !== previousUrl, { timeout: 10_000 }).catch(() => undefined);
       await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
-      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     }
 
     await home.goto('/');
-    await expect(page.locator('main')).toBeVisible();
-    await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+    await expect(home.main).toBeVisible();
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
   test('HP-048 homepage visible links do not lead to broken pages', async ({ home, page }) => {
     await home.goto('/');
-    const links = await page.locator('main a[href]').evaluateAll((elements) => {
+    const links = await home.mainLinks.evaluateAll((elements) => {
       const blocked = /^(#|javascript:|mailto:|tel:)/i;
       return elements
         .map((element) => {
@@ -1072,7 +1050,7 @@ test.describe('homepage', () => {
     for (const href of links) {
       await home.goto('/');
       const previousUrl = page.url();
-      await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+      await home.mainLinks.evaluateAll((elements, targetHref) => {
         const target = elements.find((element) => (element as HTMLAnchorElement).getAttribute('href') === targetHref) as
           | HTMLAnchorElement
           | undefined;
@@ -1084,7 +1062,7 @@ test.describe('homepage', () => {
 
       const current = page.url();
       expect(current).not.toMatch(/\/404|\/500|not-found|error/i);
-      await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
+      await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     }
   });
 
@@ -1156,7 +1134,7 @@ test.describe('homepage', () => {
       const win = window as Window & { __capturedDataLayerEvents?: unknown[] };
       return (win.__capturedDataLayerEvents ?? []).length;
     });
-    const clicked = await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+    const clicked = await home.mainLinks.evaluateAll((elements, targetHref) => {
       const candidate = elements.find((element) => {
         const anchor = element as HTMLAnchorElement;
         const href = anchor.getAttribute('href') ?? '';
@@ -1219,7 +1197,7 @@ test.describe('homepage', () => {
       return (win.__capturedDataLayerEvents ?? []).length;
     });
 
-    const clicked = await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+    const clicked = await home.mainLinks.evaluateAll((elements, targetHref) => {
       const candidate = elements.find((element) => {
         const anchor = element as HTMLAnchorElement;
         const href = anchor.getAttribute('href') ?? '';
@@ -1282,7 +1260,7 @@ test.describe('homepage', () => {
       return (win.__capturedDataLayerEvents ?? []).length;
     });
 
-    const clicked = await page.locator('main a[href]').evaluateAll((elements, targetHref) => {
+    const clicked = await home.mainLinks.evaluateAll((elements, targetHref) => {
       const candidate = elements.find((element) => {
         const anchor = element as HTMLAnchorElement;
         const href = anchor.getAttribute('href') ?? '';

@@ -2,11 +2,6 @@ import type { Locator, Page } from '@playwright/test';
 import type { BrandContext, Selectors } from '../core/types';
 import { BasePage } from './BasePage';
 
-const HERO_CTA_SELECTOR = 'main a[href], main button';
-const HERO_MEDIA_SELECTOR = 'main img, main picture, main video';
-const MAIN_LINK_SELECTOR = 'main a[href]';
-const PRODUCT_LINK_SELECTOR = 'main a[href]';
-
 export interface HomeLinkItem {
   index: number;
   text: string;
@@ -30,7 +25,7 @@ export class HomePage extends BasePage {
   }
 
   async heroCta(): Promise<Locator> {
-    const candidates = this.page.locator(HERO_CTA_SELECTOR);
+    const candidates = this.page.locator(this.selectors.home.heroCta);
     const index = await candidates.evaluateAll((elements) => {
       const blockedPathPatterns = [
         /^\/$/,
@@ -90,7 +85,7 @@ export class HomePage extends BasePage {
 
     if (index < 0) {
       const ctaByName = this.page
-        .locator('main a[href], main button')
+        .locator(this.selectors.home.heroCta)
         .filter({
           hasText: /shop now|shop sale|shop men|shop men's|shop women|shop women's|shop all|view all|discover|explore/i
         })
@@ -107,7 +102,7 @@ export class HomePage extends BasePage {
   }
 
   async heroMedia(): Promise<Locator> {
-    const media = this.page.locator(HERO_MEDIA_SELECTOR);
+    const media = this.page.locator(this.selectors.home.heroMedia);
     const index = await media.evaluateAll((elements) => {
       const scored = elements
         .map((element, index) => {
@@ -183,7 +178,7 @@ export class HomePage extends BasePage {
   }
 
   async getPromoTileLinks(limit = 8): Promise<HomeLinkItem[]> {
-    const links = this.page.locator(MAIN_LINK_SELECTOR);
+    const links = this.page.locator(this.selectors.home.promoTileLink);
 
     const candidates = await links.evaluateAll((elements) => {
       const blockedPathPatterns = [
@@ -225,7 +220,7 @@ export class HomePage extends BasePage {
   }
 
   async getCategoryEntryLinks(limit = 8): Promise<HomeLinkItem[]> {
-    const links = this.page.locator(MAIN_LINK_SELECTOR);
+    const links = this.page.locator(this.selectors.home.categoryEntryLink);
 
     const candidates = await links.evaluateAll((elements) => {
       const blockedPathPatterns = [/\.html(?:$|\?)/i, /\/wishlist/i, /\/cart/i, /\/account/i, /\/login/i];
@@ -260,7 +255,7 @@ export class HomePage extends BasePage {
     const collected = new Map<string, HomeLinkItem>();
 
     for (let attempt = 0; attempt < 8 && collected.size < limit; attempt += 1) {
-      const links = this.page.locator(PRODUCT_LINK_SELECTOR);
+      const links = this.page.locator(this.selectors.home.featuredProductLink);
       const batch = await links.evaluateAll((elements) => {
         const productPathPattern = /\.html(?:$|\?)|\/products?\/|\/p\/|\/product\//i;
         const blockedPathPatterns = [
@@ -332,7 +327,7 @@ export class HomePage extends BasePage {
   }
 
   async productCardSnapshot(linkIndex: number): Promise<ProductCardSnapshot> {
-    const productLink = this.page.locator(PRODUCT_LINK_SELECTOR).nth(linkIndex);
+    const productLink = this.page.locator(this.selectors.home.featuredProductLink).nth(linkIndex);
 
     return productLink.evaluate((element) => {
       const anchor = element as HTMLAnchorElement;
@@ -356,6 +351,30 @@ export class HomePage extends BasePage {
 
   productLinkByHref(href: string): Locator {
     return this.page.locator(`main a[href="${href.replace(/"/g, '\\"')}"]`);
+  }
+
+  footerLinkByHref(href: string): Locator {
+    return this.page.locator(`footer a[href="${href.replace(/"/g, '\\"')}"]`).first();
+  }
+
+  get mainLinks(): Locator {
+    return this.page.locator(this.selectors.home.mainLink);
+  }
+
+  get footerLinks(): Locator {
+    return this.page.locator(this.selectors.home.footerLink);
+  }
+
+  get socialLinks(): Locator {
+    return this.page.locator(this.selectors.home.socialLink);
+  }
+
+  get promoButtons(): Locator {
+    return this.page.locator(this.selectors.home.promoButton ?? this.selectors.home.mainLink);
+  }
+
+  get dialogSurface(): Locator {
+    return this.page.locator(this.selectors.home.dialogSurface ?? this.selectors.modal?.container ?? '[role="dialog"]').first();
   }
 
   async bestProductLinkByHref(href: string): Promise<Locator> {

@@ -1,10 +1,12 @@
 import type { Page } from '@playwright/test';
 import type { BrandContext, PageFactory as PageFactoryContract, Selectors } from '../core/types';
+import { AccountPage } from '../pages/Account.page';
 import { CartPage } from '../pages/Cart.page';
 import { CheckoutPage } from '../pages/Checkout.page';
 import { HomePage } from '../pages/Home.page';
 import { PDPPage } from '../pages/PDP.page';
 import { PLPPage } from '../pages/PLP.page';
+import { WishlistPage } from '../pages/Wishlist.page';
 
 export class PageFactory implements PageFactoryContract {
   constructor(
@@ -31,5 +33,13 @@ export class PageFactory implements PageFactoryContract {
 
   createCheckoutPage(): CheckoutPage {
     return new CheckoutPage(this.page, this.selectors, this.ctx);
+  }
+
+  createAccountPage(): AccountPage {
+    return new AccountPage(this.page, this.selectors, this.ctx);
+  }
+
+  createWishlistPage(): WishlistPage {
+    return new WishlistPage(this.page, this.selectors, this.ctx);
   }
 }

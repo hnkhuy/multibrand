@@ -7,6 +7,8 @@ import { PLPPage } from '../pages/PLP.page';
 import { PDPPage } from '../pages/PDP.page';
 import { CartPage } from '../pages/Cart.page';
 import { CheckoutPage } from '../pages/Checkout.page';
+import { AccountPage } from '../pages/Account.page';
+import { WishlistPage } from '../pages/Wishlist.page';
 
 export interface AppFixtures {
   ctx: BrandContext;
@@ -17,6 +19,8 @@ export interface AppFixtures {
   pdp: PDPPage;
   cart: CartPage;
   checkout: CheckoutPage;
+  account: AccountPage;
+  wishlist: WishlistPage;
 }
 
 export const test = base.extend<AppFixtures>({
@@ -55,6 +59,14 @@ export const test = base.extend<AppFixtures>({
 
   checkout: async ({ pageFactory }, use) => {
     await use(pageFactory.createCheckoutPage());
+  },
+
+  account: async ({ pageFactory }, use) => {
+    await use(pageFactory.createAccountPage());
+  },
+
+  wishlist: async ({ pageFactory }, use) => {
+    await use(pageFactory.createWishlistPage());
   }
 });
 

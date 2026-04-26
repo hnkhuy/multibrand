@@ -46,6 +46,26 @@ export class HeaderComponent {
     return this.page.locator(this.selectors.header.submenu);
   }
 
+  get menuButton(): Locator {
+    return this.page.locator(this.selectors.header.menuButton ?? '').first();
+  }
+
+  get mobileMenuSurface(): Locator {
+    return this.page.locator(this.selectors.header.mobileMenuSurface ?? '').first();
+  }
+
+  get mobileMenuLinks(): Locator {
+    return this.page.locator(this.selectors.header.mobileMenuLink ?? this.selectors.header.navigationLink);
+  }
+
+  get cartCount(): Locator {
+    return this.page.locator(this.selectors.header.cartCount ?? '').first();
+  }
+
+  get actionTargets(): Locator {
+    return this.page.locator(this.selectors.header.actionTarget ?? '');
+  }
+
   async getVisibleNavigationItems(): Promise<NavigationItem[]> {
     return this.navigationLinks.evaluateAll((elements) =>
       elements

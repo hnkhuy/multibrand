@@ -1,6 +1,7 @@
 import { accountData } from '../../config/testData';
 import { env } from '../../src/core/env';
 import { test, expect } from '../../src/fixtures/test.fixture';
+import type { AccountPage } from '../../src/pages/Account.page';
 import type { HomePage } from '../../src/pages/Home.page';
 import type { Locator, Page } from '@playwright/test';
 
@@ -14,14 +15,6 @@ const EMAIL_VALIDATION_PATTERN = /valid email|invalid email|email.+invalid|pleas
 const PASSWORD_RULE_PATTERN = /minimum|at least|password.+must|please enter 6 or more/i;
 const REQUIRED_PATTERN = /required|this is a required field|please enter/i;
 
-const SIGN_IN_TRIGGER_SELECTOR =
-  'button:has-text("Sign In"), a:has-text("Sign In"), button:has-text("Log In"), a:has-text("Log In"), button:has-text("Login"), a:has-text("Login"), button[type="submit"], [data-testid*="signin" i], [data-testid*="login" i]';
-const REGISTER_TRIGGER_SELECTOR =
-  'a:has-text("Create"), a:has-text("Register"), a:has-text("Sign Up"), a:has-text("Join"), button:has-text("Create"), button:has-text("Register"), button:has-text("Sign Up"), button:has-text("Join"), [href*="register"], [href*="create"], [href*="join"]';
-const LOGOUT_TRIGGER_SELECTOR =
-  'a:has-text("Sign Out"), a:has-text("Logout"), a:has-text("Log Out"), button:has-text("Sign Out"), button:has-text("Logout"), [href*="logout"], [href*="signout"]';
-const MARKETING_CHECKBOX_SELECTOR =
-  'input[type="checkbox"][name*="newsletter" i], input[type="checkbox"][id*="newsletter" i], input[type="checkbox"][name*="marketing" i], input[type="checkbox"][id*="marketing" i], label:has-text("Newsletter") input[type="checkbox"], label:has-text("Marketing") input[type="checkbox"]';
 const PROTECTED_ACCOUNT_PATHS = ['/customer/account', '/customer/account/index', '/my-account', '/account'];
 
 function uniqueEmail(prefix: string): string {
@@ -32,87 +25,56 @@ function registrationPassword(): string {
   return `GRA!${Date.now()}a1`;
 }
 
-function emailInput(page: Page): Locator {
-  return page
-    .locator('input[type="email"], input[name*="email" i], input[id*="email" i], input[autocomplete="email"]')
-    .first();
+function emailInput(account: AccountPage): Locator {
+  return account.emailInput;
 }
 
-function passwordInput(page: Page): Locator {
-  return page
-    .locator(
-      'input[type="password"][name*="pass" i], input[type="password"][id*="pass" i], input[type="password"][autocomplete="current-password"], input[type="password"]'
-    )
-    .first();
+function passwordInput(account: AccountPage): Locator {
+  return account.passwordInput;
 }
 
-function confirmPasswordInput(page: Page): Locator {
-  return page
-    .locator(
-      'input[type="password"][name*="confirm" i], input[type="password"][id*="confirm" i], input[name*="confirmation" i], input[id*="confirmation" i]'
-    )
-    .first();
+function confirmPasswordInput(account: AccountPage): Locator {
+  return account.confirmPasswordInput;
 }
 
-function firstNameInput(page: Page): Locator {
-  return page.locator('input[name*="first" i], input[id*="first" i], input[autocomplete="given-name"]').first();
+function firstNameInput(account: AccountPage): Locator {
+  return account.firstNameInput;
 }
 
-function lastNameInput(page: Page): Locator {
-  return page.locator('input[name*="last" i], input[id*="last" i], input[autocomplete="family-name"]').first();
+function lastNameInput(account: AccountPage): Locator {
+  return account.lastNameInput;
 }
 
-function submitButton(page: Page): Locator {
-  return page
-    .locator(
-      `${SIGN_IN_TRIGGER_SELECTOR}, button:has-text("Create Account"), button:has-text("Register"), button:has-text("Continue"), button[type="submit"]`
-    )
-    .first();
+function submitButton(account: AccountPage): Locator {
+  return account.authSubmit;
 }
 
-async function authForm(page: Page): Promise<Locator | null> {
-  const forms = page.locator('form');
+async function authForm(account: AccountPage): Promise<Locator | null> {
+  const forms = account.authForms;
   const total = await forms.count();
   for (let index = 0; index < total; index += 1) {
     const form = forms.nth(index);
-    const hasEmail = await form
-      .locator('input[type="email"], input[name*="email" i], input[id*="email" i]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasPassword = await form
-      .locator('input[type="password"], input[name*="pass" i], input[id*="pass" i]')
-      .first()
-      .isVisible()
-      .catch(() => false);
-    if (hasEmail || hasPassword) {
+    if (await form.isVisible().catch(() => false)) {
       return form;
     }
   }
   return null;
 }
 
-async function submitAuthForm(page: Page): Promise<void> {
-  const form = await authForm(page);
-  if (form) {
-    const submit = form
-      .locator(
-        'button[type="submit"], input[type="submit"], button:has-text("Login"), button:has-text("Sign In"), button:has-text("Create"), button:has-text("Register"), button:has-text("Join"), button:has-text("Continue")'
-      )
-      .first();
-    if (await submit.isVisible().catch(() => false)) {
-      await clickRobust(submit);
-      return;
-    }
+async function submitAuthForm(account: AccountPage): Promise<void> {
+  const form = await authForm(account);
+  if (form && (await account.authSubmit.isVisible().catch(() => false))) {
+    await clickRobust(account.authSubmit);
+    return;
   }
 
-  const password = passwordInput(page);
+  const password = passwordInput(account);
   if (await password.isVisible().catch(() => false)) {
     await password.press('Enter').catch(() => undefined);
     return;
   }
 
-  await clickRobust(submitButton(page));
+  await clickRobust(submitButton(account));
 }
 
 async function clickRobust(target: Locator): Promise<void> {
@@ -122,28 +84,28 @@ async function clickRobust(target: Locator): Promise<void> {
   });
 }
 
-async function bodyText(page: Page): Promise<string> {
-  return ((await page.locator('body').innerText().catch(() => '')) || '').toLowerCase();
+async function bodyText(account: AccountPage): Promise<string> {
+  return ((await account.readBodyText().catch(() => '')) || '').toLowerCase();
 }
 
-async function isLoginGate(page: Page): Promise<boolean> {
-  const body = await bodyText(page);
+async function isLoginGate(account: AccountPage, page: Page): Promise<boolean> {
+  const body = await bodyText(account);
   return LOGIN_URL_PATTERN.test(page.url()) || LOGIN_COPY_PATTERN.test(body);
 }
 
-async function isRegisterPage(page: Page): Promise<boolean> {
-  const body = await bodyText(page);
+async function isRegisterPage(account: AccountPage, page: Page): Promise<boolean> {
+  const body = await bodyText(account);
   return REGISTER_URL_PATTERN.test(page.url()) || REGISTER_COPY_PATTERN.test(body);
 }
 
-async function isLoggedInState(page: Page): Promise<boolean> {
-  if (await isLoginGate(page)) {
+async function isLoggedInState(account: AccountPage, page: Page): Promise<boolean> {
+  if (await isLoginGate(account, page)) {
     return false;
   }
 
-  const loginFormVisible = await emailInput(page).isVisible().catch(() => false);
-  const logoutVisible = await page.locator(LOGOUT_TRIGGER_SELECTOR).first().isVisible().catch(() => false);
-  const body = await bodyText(page);
+  const loginFormVisible = await emailInput(account).isVisible().catch(() => false);
+  const logoutVisible = await account.logoutTrigger.isVisible().catch(() => false);
+  const body = await bodyText(account);
   const hasSuccessCopy = SUCCESS_COPY_PATTERN.test(body);
   return !loginFormVisible || hasSuccessCopy || logoutVisible;
 }
@@ -156,13 +118,13 @@ async function openLoginPage(home: HomePage, page: Page): Promise<void> {
   await home.dismissInterruptions();
 }
 
-async function openRegisterPage(home: HomePage, page: Page): Promise<void> {
+async function openRegisterPage(home: HomePage, account: AccountPage, page: Page): Promise<void> {
   await openLoginPage(home, page);
-  if (await isRegisterPage(page)) {
+  if (await isRegisterPage(account, page)) {
     return;
   }
 
-  const registerLink = page.locator(REGISTER_TRIGGER_SELECTOR).first();
+  const registerLink = account.registerTrigger;
   const registerVisible = await registerLink.isVisible().catch(() => false);
   test.skip(!registerVisible, 'Registration entry point is not available on this storefront.');
 
@@ -170,20 +132,20 @@ async function openRegisterPage(home: HomePage, page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded').catch(() => undefined);
 }
 
-async function login(page: Page, email: string, password: string): Promise<void> {
-  await expect(emailInput(page)).toBeVisible();
-  await expect(passwordInput(page)).toBeVisible();
-  await emailInput(page).fill(email);
-  await passwordInput(page).fill(password);
-  await submitAuthForm(page);
+async function login(account: AccountPage, page: Page, email: string, password: string): Promise<void> {
+  await expect(emailInput(account)).toBeVisible();
+  await expect(passwordInput(account)).toBeVisible();
+  await emailInput(account).fill(email);
+  await passwordInput(account).fill(password);
+  await submitAuthForm(account);
   await page.waitForLoadState('domcontentloaded').catch(() => undefined);
   await page.waitForTimeout(1200);
 }
 
-async function logoutIfPossible(home: HomePage, page: Page): Promise<boolean> {
+async function logoutIfPossible(home: HomePage, account: AccountPage, page: Page): Promise<boolean> {
   await home.goto('/');
   await clickRobust(home.header.accountIcon);
-  const logout = page.locator(LOGOUT_TRIGGER_SELECTOR).first();
+  const logout = account.logoutTrigger;
   const visible = await logout.isVisible().catch(() => false);
   if (!visible) {
     return false;
@@ -196,34 +158,30 @@ async function logoutIfPossible(home: HomePage, page: Page): Promise<boolean> {
 }
 
 async function fillRegistrationForm(
-  page: Page,
+  account: AccountPage,
   data: { firstName: string; lastName: string; email: string; password: string; confirmPassword?: string }
 ): Promise<void> {
-  await expect(emailInput(page)).toBeVisible();
-  await expect(passwordInput(page)).toBeVisible();
+  await expect(emailInput(account)).toBeVisible();
+  await expect(passwordInput(account)).toBeVisible();
 
-  if (await firstNameInput(page).isVisible().catch(() => false)) {
-    await firstNameInput(page).fill(data.firstName);
+  if (await firstNameInput(account).isVisible().catch(() => false)) {
+    await firstNameInput(account).fill(data.firstName);
   }
-  if (await lastNameInput(page).isVisible().catch(() => false)) {
-    await lastNameInput(page).fill(data.lastName);
+  if (await lastNameInput(account).isVisible().catch(() => false)) {
+    await lastNameInput(account).fill(data.lastName);
   }
-  await emailInput(page).fill(data.email);
-  await passwordInput(page).fill(data.password);
+  await emailInput(account).fill(data.email);
+  await passwordInput(account).fill(data.password);
 
-  const confirm = confirmPasswordInput(page);
+  const confirm = confirmPasswordInput(account);
   if (await confirm.isVisible().catch(() => false)) {
     await confirm.fill(data.confirmPassword ?? data.password);
   }
 }
 
-async function assertHasValidation(page: Page, pattern: RegExp): Promise<void> {
-  const text = await bodyText(page);
-  const hasErrorContainer = await page
-    .locator('[role="alert"], .message-error, .mage-error, .error, [id*="error" i], [class*="error" i]')
-    .first()
-    .isVisible()
-    .catch(() => false);
+async function assertHasValidation(account: AccountPage, pattern: RegExp): Promise<void> {
+  const text = await bodyText(account);
+  const hasErrorContainer = await account.errorContainer.isVisible().catch(() => false);
   const hasPattern = pattern.test(text);
 
   if (hasPattern || hasErrorContainer) {
@@ -231,7 +189,7 @@ async function assertHasValidation(page: Page, pattern: RegExp): Promise<void> {
   }
 
   if (pattern === EMAIL_VALIDATION_PATTERN) {
-    const invalidEmail = await emailInput(page)
+    const invalidEmail = await emailInput(account)
       .evaluate((node) => !(node as HTMLInputElement).checkValidity())
       .catch(() => false);
     expect(invalidEmail).toBe(true);
@@ -239,11 +197,7 @@ async function assertHasValidation(page: Page, pattern: RegExp): Promise<void> {
   }
 
   if (pattern === REQUIRED_PATTERN) {
-    const invalidRequired = await page
-      .locator('input:invalid[required], select:invalid[required], textarea:invalid[required]')
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const invalidRequired = await account.requiredInvalidField.isVisible().catch(() => false);
     expect(invalidRequired).toBe(true);
     return;
   }
@@ -259,94 +213,90 @@ test.describe('my account first 20 test cases', () => {
     await expect(home.header.accountIcon).toBeVisible();
   });
 
-  test('ACC-002 Verify guest user can open sign-in page', async ({ home, page }) => {
+  test('ACC-002 Verify guest user can open sign-in page', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    expect(await isLoginGate(page)).toBe(true);
+    expect(await isLoginGate(account, page)).toBe(true);
   });
 
-  test('ACC-003 Verify login with valid credentials', async ({ home, page }) => {
+  test('ACC-003 Verify login with valid credentials', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.shared.email, accountData.shared.password);
-    expect(await isLoggedInState(page)).toBe(true);
+    await login(account, page, accountData.shared.email, accountData.shared.password);
+    expect(await isLoggedInState(account, page)).toBe(true);
   });
 
-  test('ACC-004 Verify login with invalid password', async ({ home, page }) => {
+  test('ACC-004 Verify login with invalid password', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.shared.email, accountData.invalidPassword);
-    await assertHasValidation(page, ERROR_COPY_PATTERN);
-    expect(await isLoggedInState(page)).toBe(false);
+    await login(account, page, accountData.shared.email, accountData.invalidPassword);
+    await assertHasValidation(account, ERROR_COPY_PATTERN);
+    expect(await isLoggedInState(account, page)).toBe(false);
   });
 
-  test('ACC-005 Verify login with unregistered email', async ({ home, page }) => {
+  test('ACC-005 Verify login with unregistered email', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.unregisteredEmail, 'InvalidPassword!123');
-    await assertHasValidation(page, ERROR_COPY_PATTERN);
-    expect(await isLoggedInState(page)).toBe(false);
+    await login(account, page, accountData.unregisteredEmail, 'InvalidPassword!123');
+    await assertHasValidation(account, ERROR_COPY_PATTERN);
+    expect(await isLoggedInState(account, page)).toBe(false);
   });
 
-  test('ACC-006 Verify required field validation on login form', async ({ home, page }) => {
+  test('ACC-006 Verify required field validation on login form', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await submitAuthForm(page);
-    await assertHasValidation(page, REQUIRED_PATTERN);
+    await submitAuthForm(account);
+    await assertHasValidation(account, REQUIRED_PATTERN);
   });
 
-  test('ACC-007 Verify email format validation on login form', async ({ home, page }) => {
+  test('ACC-007 Verify email format validation on login form', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await emailInput(page).fill('invalid-email-format');
-    await passwordInput(page).fill(accountData.shared.password);
-    await submitAuthForm(page);
-    await assertHasValidation(page, EMAIL_VALIDATION_PATTERN);
+    await emailInput(account).fill('invalid-email-format');
+    await passwordInput(account).fill(accountData.shared.password);
+    await submitAuthForm(account);
+    await assertHasValidation(account, EMAIL_VALIDATION_PATTERN);
   });
 
-  test('ACC-008 Verify password masking/unmasking if available', async ({ home, page }) => {
+  test('ACC-008 Verify password masking/unmasking if available', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await passwordInput(page).fill(accountData.shared.password);
+    await passwordInput(account).fill(accountData.shared.password);
 
-    const toggle = page
-      .locator(
-        'button[aria-label*="show" i], button[aria-label*="hide" i], button:has-text("Show"), button:has-text("Hide"), [class*="password" i] button'
-      )
-      .first();
+    const toggle = account.passwordToggle;
     test.skip(!(await toggle.isVisible().catch(() => false)), 'Password visibility toggle is not available.');
 
-    const before = await passwordInput(page).getAttribute('type');
+    const before = await passwordInput(account).getAttribute('type');
     await clickRobust(toggle);
-    const after = await passwordInput(page).getAttribute('type');
+    const after = await passwordInput(account).getAttribute('type');
     expect(after).not.toBe(before);
   });
 
-  test('ACC-009 Verify user remains logged in after page refresh', async ({ home, page }) => {
+  test('ACC-009 Verify user remains logged in after page refresh', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.shared.email, accountData.shared.password);
+    await login(account, page, accountData.shared.email, accountData.shared.password);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await home.dismissInterruptions();
-    expect(await isLoggedInState(page)).toBe(true);
+    expect(await isLoggedInState(account, page)).toBe(true);
   });
 
-  test('ACC-010 Verify logged-in state is reflected in header', async ({ home, page }) => {
+  test('ACC-010 Verify logged-in state is reflected in header', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.shared.email, accountData.shared.password);
+    await login(account, page, accountData.shared.email, accountData.shared.password);
     await home.goto('/');
     await clickRobust(home.header.accountIcon);
 
-    const logoutVisible = await page.locator(LOGOUT_TRIGGER_SELECTOR).first().isVisible().catch(() => false);
-    const body = await bodyText(page);
+    const logoutVisible = await account.logoutTrigger.isVisible().catch(() => false);
+    const body = await bodyText(account);
     expect(logoutVisible || /my account|account|sign out|logout/i.test(body)).toBe(true);
   });
 
-  test('ACC-011 Verify user can log out successfully', async ({ home, page }) => {
+  test('ACC-011 Verify user can log out successfully', async ({ home, account, page }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.shared.email, accountData.shared.password);
-    const didLogout = await logoutIfPossible(home, page);
+    await login(account, page, accountData.shared.email, accountData.shared.password);
+    const didLogout = await logoutIfPossible(home, account, page);
     test.skip(!didLogout, 'Logout action is not available for this account state.');
     await clickRobust(home.header.accountIcon);
-    expect(await isLoggedInState(page)).toBe(false);
+    expect(await isLoggedInState(account, page)).toBe(false);
   });
 
-  test('ACC-012 Verify protected account page is not accessible after logout', async ({ home, page, ctx }) => {
+  test('ACC-012 Verify protected account page is not accessible after logout', async ({ home, account, page, ctx }) => {
     await openLoginPage(home, page);
-    await login(page, accountData.shared.email, accountData.shared.password);
-    await logoutIfPossible(home, page);
+    await login(account, page, accountData.shared.email, accountData.shared.password);
+    await logoutIfPossible(home, account, page);
 
     let checked = false;
     for (const path of PROTECTED_ACCOUNT_PATHS) {
@@ -354,121 +304,121 @@ test.describe('my account first 20 test cases', () => {
       await page.goto(target, { waitUntil: 'domcontentloaded' });
       await home.dismissInterruptions();
       checked = true;
-      if (await isLoginGate(page)) {
+      if (await isLoginGate(account, page)) {
         break;
       }
     }
 
     expect(checked).toBe(true);
-    expect(await isLoginGate(page)).toBe(true);
+    expect(await isLoginGate(account, page)).toBe(true);
   });
 
-  test('ACC-013 Verify registration page opens correctly', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    expect(await isRegisterPage(page)).toBe(true);
-    await expect(emailInput(page)).toBeVisible();
-    await expect(passwordInput(page)).toBeVisible();
+  test('ACC-013 Verify registration page opens correctly', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    expect(await isRegisterPage(account, page)).toBe(true);
+    await expect(emailInput(account)).toBeVisible();
+    await expect(passwordInput(account)).toBeVisible();
   });
 
-  test('ACC-014 Verify account can be created with valid details', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    await fillRegistrationForm(page, {
+  test('ACC-014 Verify account can be created with valid details', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email: uniqueEmail('gra-acc014'),
       password: registrationPassword()
     });
-    await submitAuthForm(page);
+    await submitAuthForm(account);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     await page.waitForTimeout(1500);
 
-    const hasError = ERROR_COPY_PATTERN.test(await bodyText(page));
+    const hasError = ERROR_COPY_PATTERN.test(await bodyText(account));
     expect(hasError).toBe(false);
-    expect(await isLoggedInState(page)).toBe(true);
+    expect(await isLoggedInState(account, page)).toBe(true);
   });
 
-  test('ACC-015 Verify duplicate email registration is blocked', async ({ home, page }) => {
+  test('ACC-015 Verify duplicate email registration is blocked', async ({ home, account, page }) => {
     const duplicateEmail = uniqueEmail('gra-acc015');
     const password = registrationPassword();
 
-    await openRegisterPage(home, page);
-    await fillRegistrationForm(page, {
+    await openRegisterPage(home, account, page);
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email: duplicateEmail,
       password
     });
-    await submitAuthForm(page);
+    await submitAuthForm(account);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     await page.waitForTimeout(1500);
 
-    if (!(await isRegisterPage(page))) {
-      await logoutIfPossible(home, page);
-      await openRegisterPage(home, page);
+    if (!(await isRegisterPage(account, page))) {
+      await logoutIfPossible(home, account, page);
+      await openRegisterPage(home, account, page);
     }
 
-    await fillRegistrationForm(page, {
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email: duplicateEmail,
       password
     });
-    await submitAuthForm(page);
+    await submitAuthForm(account);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
-    await assertHasValidation(page, /already|exists|registered|taken|in use/i);
+    await assertHasValidation(account, /already|exists|registered|taken|in use/i);
   });
 
-  test('ACC-016 Verify required field validation on registration form', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    await submitAuthForm(page);
-    await assertHasValidation(page, REQUIRED_PATTERN);
+  test('ACC-016 Verify required field validation on registration form', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    await submitAuthForm(account);
+    await assertHasValidation(account, REQUIRED_PATTERN);
   });
 
-  test('ACC-017 Verify invalid email format validation on registration form', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    await fillRegistrationForm(page, {
+  test('ACC-017 Verify invalid email format validation on registration form', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email: 'invalid-email',
       password: registrationPassword()
     });
-    await submitAuthForm(page);
-    await assertHasValidation(page, EMAIL_VALIDATION_PATTERN);
+    await submitAuthForm(account);
+    await assertHasValidation(account, EMAIL_VALIDATION_PATTERN);
   });
 
-  test('ACC-018 Verify password rule validation', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    await fillRegistrationForm(page, {
+  test('ACC-018 Verify password rule validation', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email: uniqueEmail('gra-acc018'),
       password: '12345'
     });
-    await submitAuthForm(page);
-    await assertHasValidation(page, PASSWORD_RULE_PATTERN);
+    await submitAuthForm(account);
+    await assertHasValidation(account, PASSWORD_RULE_PATTERN);
   });
 
-  test('ACC-019 Verify confirm password validation', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    await fillRegistrationForm(page, {
+  test('ACC-019 Verify confirm password validation', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email: uniqueEmail('gra-acc019'),
       password: registrationPassword(),
       confirmPassword: 'Mismatch!123'
     });
-    await submitAuthForm(page);
-    await assertHasValidation(page, /confirm|match|same|does not match/i);
+    await submitAuthForm(account);
+    await assertHasValidation(account, /confirm|match|same|does not match/i);
   });
 
-  test('ACC-020 Verify marketing/newsletter opt-in behavior during registration', async ({ home, page }) => {
-    await openRegisterPage(home, page);
-    const optIn = page.locator(MARKETING_CHECKBOX_SELECTOR).first();
+  test('ACC-020 Verify marketing/newsletter opt-in behavior during registration', async ({ home, account, page }) => {
+    await openRegisterPage(home, account, page);
+    const optIn = account.marketingCheckbox;
     test.skip(!(await optIn.isVisible().catch(() => false)), 'Marketing opt-in checkbox is not available.');
 
     const email = uniqueEmail('gra-acc020');
     const password = registrationPassword();
-    await fillRegistrationForm(page, {
+    await fillRegistrationForm(account, {
       firstName: 'Jeff',
       lastName: 'Huynh',
       email,
@@ -478,23 +428,21 @@ test.describe('my account first 20 test cases', () => {
       await clickRobust(optIn);
     });
 
-    await submitAuthForm(page);
+    await submitAuthForm(account);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     await page.waitForTimeout(1500);
 
-    const newsletterLink = page
-      .locator('a[href*="newsletter"], a:has-text("Newsletter"), a:has-text("Communication"), [href*="account"]')
-      .first();
+    const newsletterLink = account.newsletterLink;
     if (await newsletterLink.isVisible().catch(() => false)) {
       await clickRobust(newsletterLink);
       await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     }
 
-    const subscribedCheckbox = page.locator(MARKETING_CHECKBOX_SELECTOR).first();
+    const subscribedCheckbox = account.marketingCheckbox;
     if (await subscribedCheckbox.isVisible().catch(() => false)) {
       await expect(subscribedCheckbox).toBeChecked();
     } else {
-      const text = await bodyText(page);
+      const text = await bodyText(account);
       expect(/subscribed|newsletter|marketing|communication/i.test(text)).toBe(true);
     }
   });
