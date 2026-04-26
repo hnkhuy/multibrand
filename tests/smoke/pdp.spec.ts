@@ -5,9 +5,11 @@ import type { Page } from '@playwright/test';
 
 const ERROR_UI_PATTERN =
   /application error|something went wrong|service unavailable|page not found|this site can't be reached/i;
+const WOMENS_PLP_PATH = '/shop/womens';
 const PDP_TITLE_SELECTOR = '[data-testid="product-title"], h1';
 const ADD_TO_CART_SELECTOR =
   '[data-testid="add-to-cart"], button[name="add"], button:has-text("Add to Cart"), button:has-text("Add to Bag")';
+const PLP_PRODUCT_LINK_SELECTOR = 'a[href]';
 const BREADCRUMB_SELECTOR =
   'nav[aria-label*="breadcrumb" i], [data-testid*="breadcrumb" i], .breadcrumb, [class*="breadcrumb" i]';
 const BREADCRUMB_LINK_SELECTOR =
@@ -155,10 +157,59 @@ async function readAnalyticsEvents(page: Page): Promise<string> {
   });
 }
 
+async function collectPlpProductLinks(page: Page, limit = 1): Promise<string[]> {
+  const anchors = page.locator(PLP_PRODUCT_LINK_SELECTOR);
+  const items = await anchors.evaluateAll((elements) => {
+    const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
+    const blockedProductPathPattern = /\/wishlist|\/cart|\/account|\/login|\/track-order|\/stores|\/sign-up/i;
+
+    return elements
+      .map((element) => {
+        const anchor = element as HTMLAnchorElement;
+        const href = anchor.getAttribute('href') ?? '';
+        const rect = anchor.getBoundingClientRect();
+        const style = window.getComputedStyle(anchor);
+        const visible =
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.bottom > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none';
+
+        return { href, top: rect.top, visible };
+      })
+      .filter((item) => item.visible && productPathPattern.test(item.href) && !blockedProductPathPattern.test(item.href))
+      .filter((item) => item.top > 140)
+      .slice(0, 30);
+  });
+
+  const deduped = new Set<string>();
+  for (const item of items) {
+    deduped.add(item.href);
+    if (deduped.size >= limit) {
+      break;
+    }
+  }
+
+  return Array.from(deduped);
+}
+
 async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      await home.goto('/');
+      await page.goto(WOMENS_PLP_PATH, { waitUntil: 'domcontentloaded' });
+      await home.dismissInterruptions();
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+      await page
+        .waitForFunction(() => {
+          const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
+          return Array.from(document.querySelectorAll('a[href]')).some((element) => {
+            const anchor = element as HTMLAnchorElement;
+            return productPathPattern.test(anchor.getAttribute('href') ?? '');
+          });
+        }, { timeout: 10_000 })
+        .catch(() => undefined);
+      await page.waitForTimeout(500);
       break;
     } catch (error) {
       if (attempt === 1) {
@@ -167,24 +218,24 @@ async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
       await page.waitForTimeout(1000);
     }
   }
-  const productLinks = await home.getFeaturedProductLinks(6);
+  const productLinks = await collectPlpProductLinks(page, 1);
 
-  test.skip(productLinks.length === 0, 'No valid PDP link found on homepage.');
+  test.skip(productLinks.length === 0, `No PDP product link found on ${WOMENS_PLP_PATH}.`);
 
-  for (const target of productLinks) {
-    const pdpUrl = new URL(target.href, page.url());
-    await page.goto(pdpUrl.href, { waitUntil: 'domcontentloaded' });
-    await home.dismissInterruptions();
-    await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+  const [targetHref] = productLinks;
+  const pdpUrl = new URL(targetHref, page.url());
+  await page.goto(pdpUrl.href, { waitUntil: 'domcontentloaded' });
+  await home.dismissInterruptions();
+  await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+  await page.locator(PDP_TITLE_SELECTOR).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
 
-    const hasTitle = await page.locator(PDP_TITLE_SELECTOR).first().isVisible().catch(() => false);
-    const hasAddToCart = await page.locator(ADD_TO_CART_SELECTOR).first().isVisible().catch(() => false);
-    if (hasTitle || hasAddToCart) {
-      return pdpUrl;
-    }
+  const hasTitle = await page.locator(PDP_TITLE_SELECTOR).first().isVisible().catch(() => false);
+  const hasAddToCart = await page.locator(ADD_TO_CART_SELECTOR).first().isVisible().catch(() => false);
+  if (hasTitle || hasAddToCart) {
+    return pdpUrl;
   }
 
-  test.skip(true, 'Could not find a valid PDP page from homepage product links.');
+  test.skip(true, `The first product from ${WOMENS_PLP_PATH} did not open a valid PDP.`);
   return new URL(page.url());
 }
 

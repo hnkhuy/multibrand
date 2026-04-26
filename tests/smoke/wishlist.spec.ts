@@ -6,9 +6,11 @@ import type { Locator, Page } from '@playwright/test';
 
 const ERROR_UI_PATTERN =
   /application error|something went wrong|service unavailable|page not found|this site can't be reached/i;
+const WOMENS_PLP_PATH = '/shop/womens';
 const PLP_URL_PATTERN = /\/shop\/|\/category\/|\/collections?\//i;
 const SEARCH_URL_PATTERN = /search|q=|query=|\/s\//i;
 const PRODUCT_PATH_PATTERN = /\/product\/|\/p\/|\.html(?:$|\?)/i;
+const PLP_PRODUCT_LINK_SELECTOR = 'a[href]';
 const PRODUCT_CARD_SELECTOR =
   'main [data-testid="product-card"], main [data-product-id], main .product-tile, main article[class*="product" i], main li[class*="product" i], main .product';
 const PRODUCT_NAME_SELECTOR =
@@ -98,24 +100,84 @@ async function openPlp(home: HomePage, page: Page, keyword: string): Promise<voi
   await page.waitForTimeout(1200);
 }
 
-async function openValidPdp(home: HomePage, page: Page): Promise<void> {
-  await gotoHomeWithRetry(home, page);
-  const productLinks = await home.getFeaturedProductLinks(8);
-  test.skip(productLinks.length === 0, 'No valid PDP link found on homepage.');
+async function collectPlpProductLinks(page: Page, limit = 1): Promise<string[]> {
+  const anchors = page.locator(PLP_PRODUCT_LINK_SELECTOR);
+  const items = await anchors.evaluateAll((elements) => {
+    const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
+    const blockedProductPathPattern = /\/wishlist|\/cart|\/account|\/login|\/track-order|\/stores|\/sign-up/i;
 
-  for (const target of productLinks) {
-    const pdpUrl = new URL(target.href, page.url());
-    await page.goto(pdpUrl.href, { waitUntil: 'domcontentloaded' });
-    await home.dismissInterruptions();
-    await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+    return elements
+      .map((element) => {
+        const anchor = element as HTMLAnchorElement;
+        const href = anchor.getAttribute('href') ?? '';
+        const rect = anchor.getBoundingClientRect();
+        const style = window.getComputedStyle(anchor);
+        const visible =
+          rect.width > 0 &&
+          rect.height > 0 &&
+          rect.bottom > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none';
 
-    const hasPdpTitle = await page.locator(PDP_TITLE_SELECTOR).first().isVisible().catch(() => false);
-    if (hasPdpTitle) {
-      return;
+        return { href, top: rect.top, visible };
+      })
+      .filter((item) => item.visible && productPathPattern.test(item.href) && !blockedProductPathPattern.test(item.href))
+      .filter((item) => item.top > 140)
+      .slice(0, 30);
+  });
+
+  const deduped = new Set<string>();
+  for (const item of items) {
+    deduped.add(item.href);
+    if (deduped.size >= limit) {
+      break;
     }
   }
 
-  test.skip(true, 'Could not find a valid PDP page from homepage product links.');
+  return Array.from(deduped);
+}
+
+async function openValidPdp(home: HomePage, page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await page.goto(WOMENS_PLP_PATH, { waitUntil: 'domcontentloaded' });
+      await home.dismissInterruptions();
+      await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+      await page
+        .waitForFunction(() => {
+          const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
+          return Array.from(document.querySelectorAll('a[href]')).some((element) => {
+            const anchor = element as HTMLAnchorElement;
+            return productPathPattern.test(anchor.getAttribute('href') ?? '');
+          });
+        }, { timeout: 10_000 })
+        .catch(() => undefined);
+      await page.waitForTimeout(500);
+      break;
+    } catch (error) {
+      if (attempt === 1) {
+        throw error;
+      }
+      await page.waitForTimeout(1000);
+    }
+  }
+
+  const productLinks = await collectPlpProductLinks(page, 1);
+  test.skip(productLinks.length === 0, `No PDP product link found on ${WOMENS_PLP_PATH}.`);
+
+  const [targetHref] = productLinks;
+  const pdpUrl = new URL(targetHref, page.url());
+  await page.goto(pdpUrl.href, { waitUntil: 'domcontentloaded' });
+  await home.dismissInterruptions();
+  await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
+  await page.locator(PDP_TITLE_SELECTOR).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
+
+  const hasPdpTitle = await page.locator(PDP_TITLE_SELECTOR).first().isVisible().catch(() => false);
+  if (hasPdpTitle) {
+    return;
+  }
+
+  test.skip(true, `The first product from ${WOMENS_PLP_PATH} did not open a valid PDP.`);
 }
 
 async function clickLocatorRobust(target: Locator): Promise<void> {
