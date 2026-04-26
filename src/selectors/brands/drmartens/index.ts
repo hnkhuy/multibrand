@@ -1,8 +1,2 @@
-import type { DeepPartial, Selectors } from '../../../core/types';
-import { drmartensHeaderSelectors } from './header.sel';
-import { drmartensPdpSelectors } from './pdp.sel';
-
-export const drmartensSelectors: DeepPartial<Selectors> = {
-  ...drmartensHeaderSelectors,
-  ...drmartensPdpSelectors
-};
+export { drmartensHeaderSelectors } from './header.sel';
+export { drmartensPdpSelectors } from './pdp.sel';

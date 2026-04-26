@@ -7,7 +7,7 @@ import { modalSelectors } from './modal.sel';
 import { pdpSelectors } from './pdp.sel';
 import { plpSelectors } from './plp.sel';
 
-export const commonSelectors: Selectors = {
+export const COMMON_SELECTORS: Selectors = {
   header: headerSelectors,
   plp: plpSelectors,
   pdp: pdpSelectors,
