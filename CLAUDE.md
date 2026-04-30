@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> For project overview, brands/regions, setup, and environment variables — see [README.md](README.md).
+
 ## Commands
 
 ```bash
@@ -43,11 +45,22 @@ import { test, expect } from '../../src/fixtures/test.fixture';
 - `pageFactory` — creates page objects with injected dependencies
 - `home`, `plp`, `pdp`, `cart`, `checkout`, `account`, `wishlist` — pre-built page objects
 
-### Selector Merging
+### Selector Strategy
 
-`src/selectors/index.ts` — `buildSelectors(brand)` deep-merges `COMMON_SELECTORS` with brand-specific overrides from `src/selectors/brands/{brand}/`. Currently: drmartens overrides header + pdp, platypus overrides header, skechers overrides plp, vans has no overrides.
+Selectors follow a **component-based structure** (header, pdp, plp, etc.) split into two layers:
 
-To add a brand override: create selector files under `src/selectors/brands/{brand}/`, add to `BRAND_OVERRIDES` in `src/selectors/index.ts`.
+- `src/selectors/common/` — base selectors shared across all brands (one file per component)
+- `src/selectors/brands/{brand}/` — brand-specific overrides (only the components that differ)
+
+`buildSelectors(brand)` in `src/selectors/index.ts` produces the final set via deep merge:
+
+```
+FINAL_SELECTORS = merge(COMMON_SELECTORS, BRAND_OVERRIDES[brand])
+```
+
+Current overrides: drmartens → header + pdp, platypus → header, skechers → plp, vans → none.
+
+To add a brand override: create a component selector file under `src/selectors/brands/{brand}/`, then register it in `BRAND_OVERRIDES` in `src/selectors/index.ts`.
 
 ### Page Object Model
 
@@ -59,3 +72,7 @@ To add a brand override: create selector files under `src/selectors/brands/{bran
 - Test IDs follow the pattern `HP-001`, `CO-042`, etc. — preserve these in test names
 - Smoke tests live in `tests/smoke/`, regression tests in `tests/regression/`
 - Tests use regex patterns for flexible assertions on dynamic content (e.g., `ERROR_UI_PATTERN`, `EMPTY_CART_PATTERN`)
+
+## Maintenance
+
+After each architectural change (new brand, new selector layer, new fixture, new page object, changed project structure), suggest updating this file to keep it accurate.
