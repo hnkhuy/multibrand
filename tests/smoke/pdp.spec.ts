@@ -142,7 +142,7 @@ async function openValidPdp(home: HomePage, page: Page, selectors: Selectors): P
   const plpPath = plpPaths[home.ctx.brand];
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      await page.goto(plpPath, { waitUntil: 'domcontentloaded' });
+      await page.goto(plpPath, { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await home.dismissInterruptions();
       await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
       await page

@@ -13,7 +13,7 @@ export const searchData: Record<Brand, SearchTestData> = {
 };
 
 export const plpPaths: Record<Brand, string> = {
-  drmartens: '/shop/womens',
+  drmartens: '/shop/sale',
   platypus: '/shop/womens',
   skechers: '/shop/women',
   vans: '/shop/womens'

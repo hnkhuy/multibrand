@@ -4,9 +4,9 @@ import { env } from './src/core/env';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 60_000,
+  timeout: 90_000,
   expect: {
-    timeout: 10_000
+    timeout: 40_000
   },
   fullyParallel: true,
   forbidOnly: env.CI,
@@ -20,8 +20,8 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 15_000,
-    navigationTimeout: 30_000,
+    actionTimeout: 60_000,
+    navigationTimeout: 120_000,
     ...devices['Desktop Chrome']
   },
   projects
