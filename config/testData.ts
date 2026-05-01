@@ -12,6 +12,13 @@ export const searchData: Record<Brand, SearchTestData> = {
   vans: { keyword: 'old skool' }
 };
 
+export const plpPaths: Record<Brand, string> = {
+  drmartens: '/shop/womens',
+  platypus: '/shop/womens',
+  skechers: '/shop/women',
+  vans: '/shop/womens'
+};
+
 export const checkoutData = {
   email: 'automation@example.com'
 };

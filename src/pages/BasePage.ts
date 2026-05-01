@@ -15,7 +15,7 @@ export abstract class BasePage {
   protected constructor(
     protected readonly page: Page,
     protected readonly selectors: Selectors,
-    protected readonly ctx: BrandContext
+    readonly ctx: BrandContext
   ) {
     this.header = new HeaderComponent(page, selectors);
     this.miniCart = new MiniCartComponent(page, selectors);
