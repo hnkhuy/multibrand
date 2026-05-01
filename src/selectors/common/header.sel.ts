@@ -12,6 +12,6 @@ export const headerSelectors: HeaderSelectors = {
   menuButton: '[data-testid="menu-button"], button[aria-label*="menu" i], header button[aria-label*="nav" i]',
   mobileMenuSurface: 'nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]',
   mobileMenuLink: 'nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]',
-  cartCount: '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="bag-count" i], [aria-label*="cart" i], [aria-label*="bag" i]',
+  cartCount: '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="badge" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]',
   actionTarget: 'header button, header [role="button"], header a'
 };

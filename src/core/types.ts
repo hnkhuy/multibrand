@@ -65,80 +65,80 @@ export interface HeaderSelectors {
   menuButton?: string;
   mobileMenuSurface?: string;
   mobileMenuLink?: string;
-  cartCount?: string;
+  cartCount: string;
   actionTarget?: string;
 }
 
 export interface PLPSelectors {
   productCard: string;
-  productName?: string;
-  filters?: string;
-  productLink?: string;
-  productPrice?: string;
-  productBadge?: string;
-  productImage?: string;
-  breadcrumb?: string;
-  breadcrumbLink?: string;
-  categoryTitle?: string;
-  categoryBanner?: string;
-  loadMore?: string;
-  paginationNext?: string;
-  sortControl?: string;
-  sortSelect?: string;
-  sortTrigger?: string;
-  sortLowToHighOption?: string;
-  sortHighToLowOption?: string;
-  sortAnyOption?: string;
-  filterPanel?: string;
-  filterToggle?: string;
-  filterClose?: string;
-  filterOption?: string;
-  activeFilterChip?: string;
-  activeFilterRemove?: string;
-  clearAllFilters?: string;
-  quickAdd?: string;
-  wishlistTrigger?: string;
-  countSummary?: string;
-  hoverReveal?: string;
-  variantOption?: string;
-  successFeedback?: string;
-  stickyControls?: string;
+  productName: string;
+  filters: string;
+  productLink: string;
+  productPrice: string;
+  productBadge: string;
+  productImage: string;
+  breadcrumb: string;
+  breadcrumbLink: string;
+  categoryTitle: string;
+  categoryBanner: string;
+  loadMore: string;
+  paginationNext: string;
+  sortControl: string;
+  sortSelect: string;
+  sortTrigger: string;
+  sortLowToHighOption: string;
+  sortHighToLowOption: string;
+  sortAnyOption: string;
+  filterPanel: string;
+  filterToggle: string;
+  filterClose: string;
+  filterOption: string;
+  activeFilterChip: string;
+  activeFilterRemove: string;
+  clearAllFilters: string;
+  quickAdd: string;
+  wishlistTrigger: string;
+  countSummary: string;
+  hoverReveal: string;
+  variantOption: string;
+  successFeedback: string;
+  stickyControls: string;
 }
 
 export interface PDPSelectors {
   addToCartButton: string;
-  sizeSelector?: string;
-  productTitle?: string;
-  breadcrumb?: string;
-  breadcrumbLink?: string;
-  price?: string;
-  promoBadge?: string;
-  sku?: string;
-  description?: string;
-  attribute?: string;
-  colorOption?: string;
-  sizeOption?: string;
-  galleryImage?: string;
-  thumbnail?: string;
-  galleryNext?: string;
-  galleryPrevious?: string;
-  zoomTrigger?: string;
-  zoomDialog?: string;
-  productVideo?: string;
-  sizeSelect?: string;
-  sizeButton?: string;
-  successFeedback?: string;
-  quantityInput?: string;
-  wishlistTrigger?: string;
-  findStore?: string;
-  storeDialog?: string;
-  deliveryInfo?: string;
-  pickupInfo?: string;
-  financePromo?: string;
-  financeDialog?: string;
-  recommendation?: string;
-  accordionOrTab?: string;
-  stickyAddToCart?: string;
+  sizeSelector: string;
+  productTitle: string;
+  breadcrumb: string;
+  breadcrumbLink: string;
+  price: string;
+  promoBadge: string;
+  sku: string;
+  description: string;
+  attribute: string;
+  colorOption: string;
+  sizeOption: string;
+  galleryImage: string;
+  thumbnail: string;
+  galleryNext: string;
+  galleryPrevious: string;
+  zoomTrigger: string;
+  zoomDialog: string;
+  productVideo: string;
+  sizeSelect: string;
+  sizeButton: string;
+  successFeedback: string;
+  quantityInput: string;
+  wishlistTrigger: string;
+  findStore: string;
+  storeDialog: string;
+  deliveryInfo: string;
+  pickupInfo: string;
+  financePromo: string;
+  financeDialog: string;
+  recommendation: string;
+  accordionOrTab: string;
+  stickyAddToCart: string;
 }
 
 export interface CartSelectors {
@@ -158,16 +158,16 @@ export interface CartSelectors {
 }
 
 export interface WishlistSelectors {
-  productCard?: string;
-  productName?: string;
-  plpProductLink?: string;
-  pageLink?: string;
-  pageItem?: string;
-  trigger?: string;
-  variantOption?: string;
-  toast?: string;
-  removeButton?: string;
-  price?: string;
+  productCard: string;
+  productName: string;
+  plpProductLink: string;
+  pageLink: string;
+  pageItem: string;
+  trigger: string;
+  variantOption: string;
+  toast: string;
+  removeButton: string;
+  price: string;
 }
 
 export interface AccountSelectors {

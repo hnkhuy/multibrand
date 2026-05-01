@@ -1,75 +1,19 @@
 import { env } from '../../src/core/env';
 import { test, expect } from '../../src/fixtures/test.fixture';
 import { plpPaths } from '../../config/testData';
+import type { Selectors } from '../../src/core/types';
 import type { HomePage } from '../../src/pages/Home.page';
 import type { Page } from '@playwright/test';
 
 const ERROR_UI_PATTERN =
   /application error|something went wrong|service unavailable|page not found|this site can't be reached/i;
-const PDP_TITLE_SELECTOR = '[data-testid="product-title"], h1';
-const ADD_TO_CART_SELECTOR =
-  '[data-testid="add-to-cart"], button[name="add"], button:has-text("Add to Cart"), button:has-text("Add to Bag")';
-const PLP_PRODUCT_LINK_SELECTOR = 'a[href]';
-const BREADCRUMB_SELECTOR =
-  '.bread-crumbs-root, nav[aria-label*="breadcrumb" i], [data-testid*="breadcrumb" i], .breadcrumb, [class*="breadcrumb" i], [class*="bread-crumbs-root"], [itemtype*="BreadcrumbList"]';
-const BREADCRUMB_LINK_SELECTOR =
-  '.bread-crumbs-root a[href], nav[aria-label*="breadcrumb" i] a[href], [data-testid*="breadcrumb" i] a[href], .breadcrumb a[href], [class*="breadcrumb" i] a[href], [class*="bread-crumbs-root"] a[href], [itemtype*="BreadcrumbList"] a[href]';
-const PRICE_SELECTOR = '[data-testid*="price" i], .price, [class*="price" i], [id*="price" i]';
-const PROMO_BADGE_SELECTOR =
-  '[data-testid*="badge" i], [class*="badge" i], [class*="label" i], [class*="tag" i], [class*="sale" i]';
-const SKU_SELECTOR =
-  '[data-testid*="sku" i], [data-testid*="product-code" i], [class*="sku" i], [class*="style-code" i], [class*="product-code" i]';
-const DESCRIPTION_SELECTOR =
-  '[data-testid*="description" i], [class*="description" i], [id*="description" i], [class*="product-details" i]';
-const ATTRIBUTE_SELECTOR =
-  '[data-testid*="attribute" i], [class*="attribute" i], [class*="swatch" i], [class*="size" i], [class*="color" i]';
-const COLOR_OPTION_SELECTOR =
-  '[data-testid*="color" i] button, [data-testid*="swatch" i] button, [class*="color" i] button, [class*="swatch" i] button';
-const SIZE_OPTION_SELECTOR = 'select[name*="size" i], [data-testid*="size" i] button, [class*="size" i] button';
-const GALLERY_IMAGE_SELECTOR =
-  'main img, [data-testid*="gallery" i] img, [class*="gallery" i] img, [class*="carousel" i] img, [class*="product-image" i] img, picture img';
-const THUMBNAIL_SELECTOR =
-  '[data-testid*="thumbnail" i], [class*="thumbnail" i], [class*="thumb" i], button:has(img), [role="tab"]:has(img)';
-const GALLERY_NEXT_SELECTOR =
-  'button[aria-label*="next" i], button[aria-label*="right" i], [class*="next" i] button, button[class*="next" i]';
-const GALLERY_PREV_SELECTOR =
-  'button[aria-label*="prev" i], button[aria-label*="previous" i], button[aria-label*="left" i], [class*="prev" i] button, button[class*="prev" i]';
-const ZOOM_TRIGGER_SELECTOR =
-  '[data-testid*="zoom" i], button[aria-label*="zoom" i], button:has-text("Zoom"), [class*="zoom" i] button';
-const PRODUCT_VIDEO_SELECTOR =
-  '[data-testid*="video" i] video, [class*="video" i] video, video[src], video source';
-const MINI_CART_DRAWER_SELECTOR = '[data-testid="mini-cart"], [data-testid="minicart"], .mini-cart, .cart-drawer';
-const SIZE_SELECT_SELECTOR = 'select[name*="size" i], [data-testid*="size" i] select';
-const SIZE_BUTTON_SELECTOR = '[data-testid*="size" i] button, [class*="size" i] button';
 const IN_STOCK_PATTERN = /in stock|available now|ready to ship|ships/i;
 const OUT_OF_STOCK_PATTERN = /out of stock|sold out|unavailable|currently unavailable/i;
 const LOW_STOCK_PATTERN = /low stock|only\s+\d+\s+left|hurry/i;
 const REQUIRED_OPTION_PATTERN = /select size|choose size|please select|required/i;
-const SUCCESS_FEEDBACK_SELECTOR =
-  '[data-testid*="success" i], [data-testid*="added" i], [class*="success" i], [class*="toast" i], [class*="notification" i]';
-const CART_COUNT_SELECTOR =
-  '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="badge" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]';
-const QUANTITY_INPUT_SELECTOR =
-  'input[name*="qty" i], input[name*="quantity" i], [data-testid*="quantity" i] input, select[name*="qty" i], select[name*="quantity" i]';
-const WISHLIST_ENTRY_SELECTOR =
-  '[data-testid*="wishlist" i], button[aria-label*="wishlist" i], a[href*="wishlist"], [class*="wishlist" i]';
-const FIND_STORE_SELECTOR =
-  '[data-testid*="store" i], button:has-text("Find in Store"), a:has-text("Find in Store"), [class*="store" i]';
-const DELIVERY_SELECTOR =
-  '[data-testid*="delivery" i], [class*="delivery" i], [class*="shipping" i], [id*="delivery" i]';
-const PICKUP_SELECTOR =
-  '[data-testid*="pickup" i], [class*="pickup" i], [class*="click-and-collect" i], [class*="collect" i]';
-const FINANCE_PROMO_SELECTOR =
-  '[data-testid*="finance" i], [data-testid*="payment" i], [class*="afterpay" i], [class*="klarna" i], [class*="zip" i], [class*="finance" i], [class*="payment" i]';
-const RECOMMENDATION_SELECTOR =
-  '[data-testid*="recommend" i], [class*="recommend" i], [class*="you-may-also-like" i], [class*="related" i]';
-const ACCORDION_OR_TAB_SELECTOR =
-  '[data-testid*="accordion" i], [class*="accordion" i], [role="tablist"], [role="tab"], details, summary';
 const SHIPPING_RETURNS_PATTERN = /shipping|delivery|returns|return policy|exchange/i;
-const STICKY_ATC_SELECTOR =
-  '[data-testid*="sticky" i][data-testid*="cart" i], [class*="sticky" i][class*="cart" i], [class*="sticky" i][class*="atc" i]';
 
-async function getPrimaryImageSignature(page: Page): Promise<string> {
+async function getPrimaryImageSignature(page: Page, selectors: Selectors): Promise<string> {
   return page.evaluate((selector) => {
     const images = Array.from(document.querySelectorAll(selector)) as HTMLImageElement[];
     const scored = images
@@ -96,11 +40,11 @@ async function getPrimaryImageSignature(page: Page): Promise<string> {
     }
 
     return `${target.src}|${target.alt}|${target.area}`;
-  }, GALLERY_IMAGE_SELECTOR);
+  }, selectors.pdp.galleryImage);
 }
 
-async function selectFirstAvailableSizeIfPossible(page: Page): Promise<boolean> {
-  const select = page.locator(SIZE_SELECT_SELECTOR).first();
+async function selectFirstAvailableSizeIfPossible(page: Page, selectors: Selectors): Promise<boolean> {
+  const select = page.locator(selectors.pdp.sizeSelect).first();
   if (await select.isVisible().catch(() => false)) {
     const options = select.locator('option:not([disabled])');
     const count = await options.count();
@@ -113,7 +57,7 @@ async function selectFirstAvailableSizeIfPossible(page: Page): Promise<boolean> 
     }
   }
 
-  const sizeButtons = page.locator(SIZE_BUTTON_SELECTOR);
+  const sizeButtons = page.locator(selectors.pdp.sizeButton);
   const count = await sizeButtons.count();
   for (let index = 0; index < count; index += 1) {
     const option = sizeButtons.nth(index);
@@ -130,8 +74,8 @@ async function selectFirstAvailableSizeIfPossible(page: Page): Promise<boolean> 
   return false;
 }
 
-async function readCartCount(page: Page): Promise<number | null> {
-  const countText = await page.locator(CART_COUNT_SELECTOR).first().textContent().catch(() => null);
+async function readCartCount(page: Page, selectors: Selectors): Promise<number | null> {
+  const countText = await page.locator(selectors.header.cartCount).first().textContent().catch(() => null);
   if (!countText) {
     return null;
   }
@@ -157,8 +101,8 @@ async function readAnalyticsEvents(page: Page): Promise<string> {
   });
 }
 
-async function collectPlpProductLinks(page: Page, limit = 1): Promise<string[]> {
-  const anchors = page.locator(PLP_PRODUCT_LINK_SELECTOR);
+async function collectPlpProductLinks(page: Page, selectors: Selectors, limit = 1): Promise<string[]> {
+  const anchors = page.locator(selectors.wishlist.plpProductLink);
   const items = await anchors.evaluateAll((elements) => {
     const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
     const blockedProductPathPattern = /\/wishlist|\/cart|\/account|\/login|\/track-order|\/stores|\/sign-up/i;
@@ -194,7 +138,7 @@ async function collectPlpProductLinks(page: Page, limit = 1): Promise<string[]> 
   return Array.from(deduped);
 }
 
-async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
+async function openValidPdp(home: HomePage, page: Page, selectors: Selectors): Promise<URL> {
   const plpPath = plpPaths[home.ctx.brand];
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -220,7 +164,7 @@ async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
       await page.waitForTimeout(1000);
     }
   }
-  const productLinks = await collectPlpProductLinks(page, 1);
+  const productLinks = await collectPlpProductLinks(page, selectors, 1);
 
   test.skip(productLinks.length === 0, `No PDP product link found on ${plpPath}.`);
 
@@ -229,10 +173,10 @@ async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
   await page.goto(pdpUrl.href, { waitUntil: 'domcontentloaded' });
   await home.dismissInterruptions();
   await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
-  await page.locator(PDP_TITLE_SELECTOR).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
+  await page.locator(selectors.pdp.productTitle).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
 
-  const hasTitle = await page.locator(PDP_TITLE_SELECTOR).first().isVisible().catch(() => false);
-  const hasAddToCart = await page.locator(ADD_TO_CART_SELECTOR).first().isVisible().catch(() => false);
+  const hasTitle = await page.locator(selectors.pdp.productTitle).first().isVisible().catch(() => false);
+  const hasAddToCart = await page.locator(selectors.pdp.addToCartButton).first().isVisible().catch(() => false);
   if (hasTitle || hasAddToCart) {
     return pdpUrl;
   }
@@ -244,8 +188,8 @@ async function openValidPdp(home: HomePage, page: Page): Promise<URL> {
 test.describe('pdp', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
-  test('PDP-001 PDP loads successfully', async ({ home, pdp, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-001 PDP loads successfully', async ({ home, pdp, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await pdp.expectLoaded();
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('main')).toBeVisible();
@@ -253,18 +197,18 @@ test.describe('pdp', () => {
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PDP-002 correct product is displayed on PDP', async ({ home, pdp, page }) => {
-    const pdpUrl = await openValidPdp(home, page);
+  test('PDP-002 correct product is displayed on PDP', async ({ home, pdp, page, selectors }) => {
+    const pdpUrl = await openValidPdp(home, page, selectors);
 
     await pdp.expectLoaded();
     expect(new URL(page.url()).pathname).toBe(pdpUrl.pathname);
 
-    const productTitle = (await page.locator(PDP_TITLE_SELECTOR).first().textContent())?.trim() ?? '';
+    const productTitle = (await page.locator(selectors.pdp.productTitle).first().textContent())?.trim() ?? '';
     expect(productTitle.length).toBeGreaterThan(0);
   });
 
-  test('PDP-003 correct region-specific content is displayed on PDP', async ({ ctx, home, pdp, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-003 correct region-specific content is displayed on PDP', async ({ ctx, home, pdp, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await pdp.expectLoaded();
 
     const currentUrl = new URL(page.url());
@@ -275,38 +219,38 @@ test.describe('pdp', () => {
     await expect(page.locator('body')).toContainText(/\$\s?\d|AUD|NZD/i);
   });
 
-  test('PDP-004 PDP loads over HTTPS', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-004 PDP loads over HTTPS', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     expect(new URL(page.url()).protocol).toBe('https:');
   });
 
-  test('PDP-005 no visible application error is shown on PDP', async ({ home, pdp, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-005 no visible application error is shown on PDP', async ({ home, pdp, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await pdp.expectLoaded();
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PDP-006 breadcrumb is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-006 breadcrumb is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await page.waitForTimeout(5000); // Wait for lazy loading
     await page.waitForLoadState('load', { timeout: 10_000 }).catch(() => undefined);
-    const breadcrumb = page.locator(BREADCRUMB_SELECTOR).first();
+    const breadcrumb = page.locator(selectors.pdp.breadcrumb).first();
     await breadcrumb.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
     const isVisible = await breadcrumb.isVisible().catch(() => false);
     test.skip(!isVisible, 'Breadcrumb is not available on this PDP.');
     await expect(breadcrumb).toBeVisible();
   });
 
-  test('PDP-007 breadcrumb links redirect correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-007 breadcrumb links redirect correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await page.waitForTimeout(5000); // Wait for lazy loading
     await page.waitForLoadState('load', { timeout: 10_000 }).catch(() => undefined);
-    const breadcrumb = page.locator(BREADCRUMB_SELECTOR).first();
+    const breadcrumb = page.locator(selectors.pdp.breadcrumb).first();
     await breadcrumb.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
     const breadcrumbVisible = await breadcrumb.isVisible().catch(() => false);
     test.skip(!breadcrumbVisible, 'Breadcrumb is not available on this PDP.');
 
-    const breadcrumbLinks = page.locator(BREADCRUMB_LINK_SELECTOR);
+    const breadcrumbLinks = page.locator(selectors.pdp.breadcrumbLink);
     const totalLinks = await breadcrumbLinks.count();
 
     test.skip(totalLinks === 0, 'Breadcrumb links are not available.');
@@ -350,19 +294,19 @@ test.describe('pdp', () => {
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PDP-008 product name is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const title = page.locator(PDP_TITLE_SELECTOR).first();
+  test('PDP-008 product name is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const title = page.locator(selectors.pdp.productTitle).first();
 
     await expect(title).toBeVisible();
     const text = (await title.textContent())?.trim() ?? '';
     expect(text.length).toBeGreaterThan(0);
   });
 
-  test('PDP-009 product price is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-009 product price is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
-    const hasVisiblePrice = await page.locator(PRICE_SELECTOR).evaluateAll((elements) => {
+    const hasVisiblePrice = await page.locator(selectors.pdp.price).evaluateAll((elements) => {
       const pricePattern = /\$\s?\d/;
       return elements.some((element) => {
         const html = element as HTMLElement;
@@ -385,8 +329,8 @@ test.describe('pdp', () => {
     }
   });
 
-  test('PDP-010 sale price presentation is correct', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-010 sale price presentation is correct', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const bodyText = (await page.locator('body').textContent()) ?? '';
     const priceMatches = bodyText.match(/\$\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?/g) ?? [];
     const hasSaleKeywords = /was|save|sale|discount|original price/i.test(bodyText);
@@ -402,9 +346,9 @@ test.describe('pdp', () => {
     expect(hasSaleKeywords || hasStrikethroughPrice).toBe(true);
   });
 
-  test('PDP-011 promotional label or badge is displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const badges = page.locator(PROMO_BADGE_SELECTOR);
+  test('PDP-011 promotional label or badge is displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const badges = page.locator(selectors.pdp.promoBadge);
     const visibleBadgeCount = await badges.evaluateAll((elements) => {
       return elements.filter((element) => {
         const html = element as HTMLElement;
@@ -424,8 +368,8 @@ test.describe('pdp', () => {
     expect(visibleBadgeCount).toBeGreaterThan(0);
   });
 
-  test('PDP-012 SKU or product code is displayed if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-012 SKU or product code is displayed if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const skuSignals = await page.evaluate((skuSelector) => {
       const nodes = Array.from(document.querySelectorAll(skuSelector));
       const textFromNodes = nodes.map((node) => (node.textContent ?? '').trim()).join(' ');
@@ -435,15 +379,15 @@ test.describe('pdp', () => {
         textFromNodes,
         hasSkuKeyword
       };
-    }, SKU_SELECTOR);
+    }, selectors.pdp.sku);
 
     test.skip(!skuSignals.textFromNodes && !skuSignals.hasSkuKeyword, 'SKU/product code is not displayed on this PDP.');
     expect(skuSignals.textFromNodes.length > 0 || skuSignals.hasSkuKeyword).toBe(true);
   });
 
-  test('PDP-013 product description is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const description = page.locator(DESCRIPTION_SELECTOR).first();
+  test('PDP-013 product description is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const description = page.locator(selectors.pdp.description).first();
     const descriptionVisible = await description.isVisible().catch(() => false);
 
     if (descriptionVisible) {
@@ -464,9 +408,9 @@ test.describe('pdp', () => {
     expect(hasDescriptionEntryPoint).toBe(true);
   });
 
-  test('PDP-014 product attributes are displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const attributeVisible = await page.locator(ATTRIBUTE_SELECTOR).first().isVisible().catch(() => false);
+  test('PDP-014 product attributes are displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const attributeVisible = await page.locator(selectors.pdp.attribute).first().isVisible().catch(() => false);
     const hasAttributeCopy = await page
       .locator('body')
       .textContent()
@@ -476,17 +420,17 @@ test.describe('pdp', () => {
     expect(attributeVisible || hasAttributeCopy).toBe(true);
   });
 
-  test('PDP-015 product title and description are consistent with selected variant', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-015 product title and description are consistent with selected variant', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
-    const beforeTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
+    const beforeTitle = ((await page.locator(selectors.pdp.productTitle).first().textContent()) ?? '').trim();
     const beforeDescription = await page.evaluate((descriptionSelector) => {
       const node = document.querySelector(descriptionSelector);
       return (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
-    }, DESCRIPTION_SELECTOR);
+    }, selectors.pdp.description);
 
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
-    const sizeOptions = page.locator(SIZE_OPTION_SELECTOR);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
+    const sizeOptions = page.locator(selectors.pdp.sizeOption);
     const colorCount = await colorOptions.count();
     const sizeCount = await sizeOptions.count();
 
@@ -513,11 +457,11 @@ test.describe('pdp', () => {
 
     await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
 
-    const afterTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
+    const afterTitle = ((await page.locator(selectors.pdp.productTitle).first().textContent()) ?? '').trim();
     const afterDescription = await page.evaluate((descriptionSelector) => {
       const node = document.querySelector(descriptionSelector);
       return (node?.textContent ?? '').replace(/\s+/g, ' ').trim();
-    }, DESCRIPTION_SELECTOR);
+    }, selectors.pdp.description);
 
     expect(afterTitle.length).toBeGreaterThan(0);
     expect(afterDescription.length > 0 || beforeDescription.length > 0).toBe(true);
@@ -525,16 +469,16 @@ test.describe('pdp', () => {
     expect(afterTitle !== beforeTitle || afterDescription !== beforeDescription || afterTitle.length > 0).toBe(true);
   });
 
-  test('PDP-016 main product image is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const signature = await getPrimaryImageSignature(page);
+  test('PDP-016 main product image is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const signature = await getPrimaryImageSignature(page, selectors);
     test.skip(!signature, 'No main product image found on PDP.');
     expect(signature.length).toBeGreaterThan(0);
   });
 
-  test('PDP-017 thumbnail images are displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const thumbnailCount = await page.locator(THUMBNAIL_SELECTOR).evaluateAll((elements) => {
+  test('PDP-017 thumbnail images are displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const thumbnailCount = await page.locator(selectors.pdp.thumbnail).evaluateAll((elements) => {
       return elements.filter((element) => {
         const html = element as HTMLElement;
         const rect = html.getBoundingClientRect();
@@ -547,25 +491,25 @@ test.describe('pdp', () => {
     expect(thumbnailCount).toBeGreaterThan(0);
   });
 
-  test('PDP-018 selecting thumbnail updates main image', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const thumbnails = page.locator(THUMBNAIL_SELECTOR);
+  test('PDP-018 selecting thumbnail updates main image', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const thumbnails = page.locator(selectors.pdp.thumbnail);
     const thumbnailCount = await thumbnails.count();
     test.skip(thumbnailCount < 2, 'Not enough thumbnails to validate image switching.');
 
-    const beforeSignature = await getPrimaryImageSignature(page);
+    const beforeSignature = await getPrimaryImageSignature(page, selectors);
     await thumbnails.nth(1).click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(400);
-    const afterSignature = await getPrimaryImageSignature(page);
+    const afterSignature = await getPrimaryImageSignature(page, selectors);
 
     test.skip(!beforeSignature || !afterSignature, 'Main image signal is not available for comparison.');
     expect(afterSignature).not.toBe('');
     expect(afterSignature !== beforeSignature || thumbnailCount > 0).toBe(true);
   });
 
-  test('PDP-019 zoom functionality works correctly if available', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const zoomTrigger = page.locator(ZOOM_TRIGGER_SELECTOR).first();
+  test('PDP-019 zoom functionality works correctly if available', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const zoomTrigger = page.locator(selectors.pdp.zoomTrigger).first();
     const hasZoomTrigger = await zoomTrigger.isVisible().catch(() => false);
 
     test.skip(!hasZoomTrigger, 'Zoom feature is not exposed on this PDP.');
@@ -574,36 +518,36 @@ test.describe('pdp', () => {
     await page.waitForTimeout(300);
 
     const hasZoomUi = await page
-      .locator('[role="dialog"], [data-testid*="zoom" i], [class*="zoom" i], [class*="lightbox" i]')
+      .locator(selectors.pdp.zoomDialog)
       .first()
       .isVisible()
       .catch(() => false);
     expect(hasZoomUi || hasZoomTrigger).toBe(true);
   });
 
-  test('PDP-020 media gallery navigation controls work correctly if available', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const nextButton = page.locator(GALLERY_NEXT_SELECTOR).first();
-    const prevButton = page.locator(GALLERY_PREV_SELECTOR).first();
+  test('PDP-020 media gallery navigation controls work correctly if available', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const nextButton = page.locator(selectors.pdp.galleryNext).first();
+    const prevButton = page.locator(selectors.pdp.galleryPrevious).first();
     const hasNext = await nextButton.isVisible().catch(() => false);
     const hasPrev = await prevButton.isVisible().catch(() => false);
 
     test.skip(!(hasNext || hasPrev), 'Gallery navigation controls are not available on this PDP.');
 
-    const beforeSignature = await getPrimaryImageSignature(page);
+    const beforeSignature = await getPrimaryImageSignature(page, selectors);
     if (hasNext) {
       await nextButton.click({ timeout: 5000 }).catch(() => undefined);
     } else if (hasPrev) {
       await prevButton.click({ timeout: 5000 }).catch(() => undefined);
     }
     await page.waitForTimeout(400);
-    const afterSignature = await getPrimaryImageSignature(page);
+    const afterSignature = await getPrimaryImageSignature(page, selectors);
 
     expect(afterSignature.length > 0 || beforeSignature.length > 0).toBe(true);
   });
 
-  test('PDP-021 product video is playable if available', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-021 product video is playable if available', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
     const hasVideo = await page.evaluate((videoSelector) => {
       return Array.from(document.querySelectorAll(videoSelector)).some((node) => {
@@ -620,7 +564,7 @@ test.describe('pdp', () => {
           rect.height > 60
         );
       });
-    }, PRODUCT_VIDEO_SELECTOR);
+    }, selectors.pdp.productVideo);
 
     test.skip(!hasVideo, 'No product video available on this PDP.');
 
@@ -655,23 +599,23 @@ test.describe('pdp', () => {
     expect(playbackResult.progressed).toBe(true);
   });
 
-  test('PDP-022 color options are displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+  test('PDP-022 color options are displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     const colorCount = await colorOptions.count();
 
     test.skip(colorCount === 0, 'No color options available on this PDP.');
     expect(colorCount).toBeGreaterThan(0);
   });
 
-  test('PDP-023 selecting a color updates product information correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+  test('PDP-023 selecting a color updates product information correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     const colorCount = await colorOptions.count();
     test.skip(colorCount < 2, 'Not enough color options to validate selection behavior.');
 
-    const beforeTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
-    const beforePrice = ((await page.locator(PRICE_SELECTOR).first().textContent()) ?? '').trim();
+    const beforeTitle = ((await page.locator(selectors.pdp.productTitle).first().textContent()) ?? '').trim();
+    const beforePrice = ((await page.locator(selectors.pdp.price).first().textContent()) ?? '').trim();
     const beforeSelectedState = await colorOptions.nth(1).evaluate((node) => {
       const html = node as HTMLElement;
       return (
@@ -684,8 +628,8 @@ test.describe('pdp', () => {
     await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(400);
 
-    const afterTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
-    const afterPrice = ((await page.locator(PRICE_SELECTOR).first().textContent()) ?? '').trim();
+    const afterTitle = ((await page.locator(selectors.pdp.productTitle).first().textContent()) ?? '').trim();
+    const afterPrice = ((await page.locator(selectors.pdp.price).first().textContent()) ?? '').trim();
     const afterSelectedState = await colorOptions.nth(1).evaluate((node) => {
       const html = node as HTMLElement;
       return (
@@ -699,33 +643,33 @@ test.describe('pdp', () => {
     expect(afterSelectedState !== beforeSelectedState || afterTitle !== beforeTitle || afterPrice !== beforePrice).toBe(true);
   });
 
-  test('PDP-024 selecting a color updates product images correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+  test('PDP-024 selecting a color updates product images correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     const colorCount = await colorOptions.count();
     test.skip(colorCount < 2, 'Not enough color options to validate image update.');
 
-    const beforeSignature = await getPrimaryImageSignature(page);
+    const beforeSignature = await getPrimaryImageSignature(page, selectors);
     await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(500);
-    const afterSignature = await getPrimaryImageSignature(page);
+    const afterSignature = await getPrimaryImageSignature(page, selectors);
 
     test.skip(!beforeSignature || !afterSignature, 'Main image signal is not available for comparison.');
     expect(afterSignature.length).toBeGreaterThan(0);
     expect(afterSignature !== beforeSignature || colorCount > 0).toBe(true);
   });
 
-  test('PDP-025 size options are displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const sizeOptions = page.locator(SIZE_OPTION_SELECTOR);
+  test('PDP-025 size options are displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const sizeOptions = page.locator(selectors.pdp.sizeOption);
     const sizeCount = await sizeOptions.count();
 
     test.skip(sizeCount === 0, 'No size options available on this PDP.');
     expect(sizeCount).toBeGreaterThan(0);
   });
 
-  test('PDP-026 unavailable size state is displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-026 unavailable size state is displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
     const unavailableSignals = await page.evaluate(({ selectSelector, buttonSelector }) => {
       const selectDisabledCount = Array.from(document.querySelectorAll(selectSelector))
@@ -742,17 +686,17 @@ test.describe('pdp', () => {
         selectDisabledCount,
         buttonDisabledCount
       };
-    }, { selectSelector: SIZE_SELECT_SELECTOR, buttonSelector: SIZE_BUTTON_SELECTOR });
+    }, { selectSelector: selectors.pdp.sizeSelect, buttonSelector: selectors.pdp.sizeButton });
 
     const disabledTotal = unavailableSignals.selectDisabledCount + unavailableSignals.buttonDisabledCount;
     test.skip(disabledTotal === 0, 'No unavailable size state found on this PDP.');
     expect(disabledTotal).toBeGreaterThan(0);
   });
 
-  test('PDP-027 selecting a size updates selected state correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-027 selecting a size updates selected state correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
-    const select = page.locator(SIZE_SELECT_SELECTOR).first();
+    const select = page.locator(selectors.pdp.sizeSelect).first();
     const hasSelect = await select.isVisible().catch(() => false);
 
     if (hasSelect) {
@@ -768,7 +712,7 @@ test.describe('pdp', () => {
       return;
     }
 
-    const sizeButtons = page.locator(SIZE_BUTTON_SELECTOR);
+    const sizeButtons = page.locator(selectors.pdp.sizeButton);
     const buttonCount = await sizeButtons.count();
     test.skip(buttonCount < 2, 'Not enough size buttons to validate selected state.');
 
@@ -796,10 +740,10 @@ test.describe('pdp', () => {
     expect(afterState !== beforeState || buttonCount > 0).toBe(true);
   });
 
-  test('PDP-028 add to cart is blocked when required options are not selected', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-028 add to cart is blocked when required options are not selected', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     test.skip(!atcVisible, 'Add to cart button is not available on this PDP.');
 
@@ -824,7 +768,7 @@ test.describe('pdp', () => {
       });
 
       return { hasSizeControl: true, hasUnselectedRequired: selectedButtons.length === 0 };
-    }, { selectSelector: SIZE_SELECT_SELECTOR, buttonSelector: SIZE_BUTTON_SELECTOR });
+    }, { selectSelector: selectors.pdp.sizeSelect, buttonSelector: selectors.pdp.sizeButton });
 
     test.skip(!state.hasSizeControl || !state.hasUnselectedRequired, 'Required option state not detected on this PDP.');
 
@@ -833,20 +777,20 @@ test.describe('pdp', () => {
     await page.waitForTimeout(500);
 
     const validationVisible = await page.locator('body').textContent().then((text) => REQUIRED_OPTION_PATTERN.test(text ?? ''));
-    const miniCartVisible = await page.locator(MINI_CART_DRAWER_SELECTOR).first().isVisible().catch(() => false);
+    const miniCartVisible = await page.locator(selectors.minicart.drawer).first().isVisible().catch(() => false);
     const urlChanged = page.url() !== previousUrl;
 
     expect(validationVisible || (!miniCartVisible && !urlChanged)).toBe(true);
   });
 
-  test('PDP-029 variant selection is retained correctly before add to cart', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-029 variant selection is retained correctly before add to cart', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     const colorCount = await colorOptions.count();
-    const sizeSelect = page.locator(SIZE_SELECT_SELECTOR).first();
+    const sizeSelect = page.locator(selectors.pdp.sizeSelect).first();
     const hasSizeSelect = await sizeSelect.isVisible().catch(() => false);
-    const sizeButtons = page.locator(SIZE_BUTTON_SELECTOR);
+    const sizeButtons = page.locator(selectors.pdp.sizeButton);
     const sizeButtonCount = await sizeButtons.count();
 
     test.skip(colorCount < 2 || (!hasSizeSelect && sizeButtonCount < 2), 'Not enough variant options for retention check.');
@@ -888,10 +832,10 @@ test.describe('pdp', () => {
     expect(sizeRetained).toBe(true);
   });
 
-  test('PDP-030 in-stock state is displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-030 in-stock state is displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
     const hasInStockText = await page.locator('body').textContent().then((text) => IN_STOCK_PATTERN.test(text ?? ''));
@@ -900,11 +844,11 @@ test.describe('pdp', () => {
     expect(atcEnabled || hasInStockText).toBe(true);
   });
 
-  test('PDP-031 out-of-stock state is displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-031 out-of-stock state is displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
     const hasOosText = await page.locator('body').textContent().then((text) => OUT_OF_STOCK_PATTERN.test(text ?? ''));
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcDisabled = atcVisible ? !(await addToCart.isEnabled().catch(() => true)) : false;
 
@@ -912,11 +856,11 @@ test.describe('pdp', () => {
     expect(hasOosText || atcDisabled).toBe(true);
   });
 
-  test('PDP-032 Add to Cart is unavailable for out-of-stock product', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-032 Add to Cart is unavailable for out-of-stock product', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
     const hasOosText = await page.locator('body').textContent().then((text) => OUT_OF_STOCK_PATTERN.test(text ?? ''));
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     test.skip(!hasOosText || !atcVisible, 'Out-of-stock Add to Cart state is not available on this PDP.');
 
@@ -924,52 +868,52 @@ test.describe('pdp', () => {
     expect(atcEnabled).toBe(false);
   });
 
-  test('PDP-033 low-stock messaging is displayed correctly if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-033 low-stock messaging is displayed correctly if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
     const hasLowStock = await page.locator('body').textContent().then((text) => LOW_STOCK_PATTERN.test(text ?? ''));
     test.skip(!hasLowStock, 'No low-stock messaging found on this PDP.');
     expect(hasLowStock).toBe(true);
   });
 
-  test('PDP-034 Add to Cart button is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+  test('PDP-034 Add to Cart button is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     test.skip(!atcVisible, 'Add to Cart is not visible on this PDP.');
     await expect(addToCart).toBeVisible();
   });
 
-  test('PDP-035 product can be added to cart successfully from PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+  test('PDP-035 product can be added to cart successfully from PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
 
     test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
 
-    await selectFirstAvailableSizeIfPossible(page);
+    await selectFirstAvailableSizeIfPossible(page, selectors);
     await addToCart.click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(700);
 
-    const miniCartVisible = await page.locator(MINI_CART_DRAWER_SELECTOR).first().isVisible().catch(() => false);
-    const successVisible = await page.locator(SUCCESS_FEEDBACK_SELECTOR).first().isVisible().catch(() => false);
+    const miniCartVisible = await page.locator(selectors.minicart.drawer).first().isVisible().catch(() => false);
+    const successVisible = await page.locator(selectors.pdp.successFeedback).first().isVisible().catch(() => false);
     expect(miniCartVisible || successVisible).toBe(true);
   });
 
-  test('PDP-036 correct variant is added to cart', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+  test('PDP-036 correct variant is added to cart', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
     test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
 
-    const productTitle = ((await page.locator(PDP_TITLE_SELECTOR).first().textContent()) ?? '').trim();
-    await selectFirstAvailableSizeIfPossible(page);
+    const productTitle = ((await page.locator(selectors.pdp.productTitle).first().textContent()) ?? '').trim();
+    await selectFirstAvailableSizeIfPossible(page, selectors);
     await addToCart.click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(700);
 
-    const miniCart = page.locator(MINI_CART_DRAWER_SELECTOR).first();
+    const miniCart = page.locator(selectors.minicart.drawer).first();
     const miniCartVisible = await miniCart.isVisible().catch(() => false);
     test.skip(!miniCartVisible, 'Mini cart did not open after add to cart.');
 
@@ -978,18 +922,18 @@ test.describe('pdp', () => {
     expect(miniCartText.includes(productTitle.toLowerCase()) || miniCartText.length > 0).toBe(true);
   });
 
-  test('PDP-037 cart count updates after successful add to cart', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+  test('PDP-037 cart count updates after successful add to cart', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
     test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
 
-    const beforeCount = await readCartCount(page);
-    await selectFirstAvailableSizeIfPossible(page);
+    const beforeCount = await readCartCount(page, selectors);
+    await selectFirstAvailableSizeIfPossible(page, selectors);
     await addToCart.click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(800);
-    const afterCount = await readCartCount(page);
+    const afterCount = await readCartCount(page, selectors);
 
     if (beforeCount === null || afterCount === null) {
       test.skip(true, 'Cart count badge is not available on this storefront.');
@@ -998,19 +942,19 @@ test.describe('pdp', () => {
     expect(afterCount).toBeGreaterThanOrEqual(beforeCount);
   });
 
-  test('PDP-038 add-to-cart success feedback is shown', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+  test('PDP-038 add-to-cart success feedback is shown', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
     test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
 
-    await selectFirstAvailableSizeIfPossible(page);
+    await selectFirstAvailableSizeIfPossible(page, selectors);
     await addToCart.click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(700);
 
-    const miniCartVisible = await page.locator(MINI_CART_DRAWER_SELECTOR).first().isVisible().catch(() => false);
-    const successVisible = await page.locator(SUCCESS_FEEDBACK_SELECTOR).first().isVisible().catch(() => false);
+    const miniCartVisible = await page.locator(selectors.minicart.drawer).first().isVisible().catch(() => false);
+    const successVisible = await page.locator(selectors.pdp.successFeedback).first().isVisible().catch(() => false);
     const bodyHasConfirmation = await page
       .locator('body')
       .textContent()
@@ -1018,9 +962,9 @@ test.describe('pdp', () => {
     expect(miniCartVisible || successVisible || bodyHasConfirmation).toBe(true);
   });
 
-  test('PDP-039 quantity defaults correctly before add to cart if quantity selector exists', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const quantityInput = page.locator(QUANTITY_INPUT_SELECTOR).first();
+  test('PDP-039 quantity defaults correctly before add to cart if quantity selector exists', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const quantityInput = page.locator(selectors.pdp.quantityInput).first();
     const quantityVisible = await quantityInput.isVisible().catch(() => false);
     test.skip(!quantityVisible, 'Quantity selector is not available on this PDP.');
 
@@ -1035,9 +979,9 @@ test.describe('pdp', () => {
     expect(value === '' || value === '1').toBe(true);
   });
 
-  test('PDP-040 quantity can be updated before add to cart if supported', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const quantityInput = page.locator(QUANTITY_INPUT_SELECTOR).first();
+  test('PDP-040 quantity can be updated before add to cart if supported', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const quantityInput = page.locator(selectors.pdp.quantityInput).first();
     const quantityVisible = await quantityInput.isVisible().catch(() => false);
     test.skip(!quantityVisible, 'Quantity selector is not available on this PDP.');
 
@@ -1059,17 +1003,17 @@ test.describe('pdp', () => {
     expect(updated).toBe('2');
   });
 
-  test('PDP-041 wishlist entry point is displayed', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+  test('PDP-041 wishlist entry point is displayed', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const wishlistEntry = page.locator(selectors.pdp.wishlistTrigger).first();
     const visible = await wishlistEntry.isVisible().catch(() => false);
     test.skip(!visible, 'Wishlist entry point is not available on this PDP.');
     await expect(wishlistEntry).toBeVisible();
   });
 
-  test('PDP-042 product can be added to wishlist', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+  test('PDP-042 product can be added to wishlist', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const wishlistEntry = page.locator(selectors.pdp.wishlistTrigger).first();
     const visible = await wishlistEntry.isVisible().catch(() => false);
     test.skip(!visible, 'Wishlist entry point is not available on this PDP.');
 
@@ -1083,14 +1027,14 @@ test.describe('pdp', () => {
     expect(successSignal || loginSignal).toBe(true);
   });
 
-  test('PDP-043 selected variant is handled correctly in wishlist flow', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+  test('PDP-043 selected variant is handled correctly in wishlist flow', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const wishlistEntry = page.locator(selectors.pdp.wishlistTrigger).first();
     const wishlistVisible = await wishlistEntry.isVisible().catch(() => false);
     test.skip(!wishlistVisible, 'Wishlist entry point is not available on this PDP.');
 
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
-    const sizeOptions = page.locator(SIZE_OPTION_SELECTOR);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
+    const sizeOptions = page.locator(selectors.pdp.sizeOption);
     const colorCount = await colorOptions.count();
     const sizeCount = await sizeOptions.count();
     test.skip(colorCount < 2 && sizeCount < 2, 'Not enough variant options for wishlist variant check.');
@@ -1099,7 +1043,7 @@ test.describe('pdp', () => {
       await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
     }
     if (sizeCount > 1) {
-      await selectFirstAvailableSizeIfPossible(page);
+      await selectFirstAvailableSizeIfPossible(page, selectors);
     }
 
     await wishlistEntry.click({ timeout: 5000 }).catch(() => undefined);
@@ -1110,17 +1054,17 @@ test.describe('pdp', () => {
     expect(hasSignal).toBe(true);
   });
 
-  test('PDP-044 Find in Store entry point is displayed if feature is enabled', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const findStore = page.locator(FIND_STORE_SELECTOR).first();
+  test('PDP-044 Find in Store entry point is displayed if feature is enabled', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const findStore = page.locator(selectors.pdp.findStore).first();
     const visible = await findStore.isVisible().catch(() => false);
     test.skip(!visible, 'Find in Store entry point is not available on this PDP.');
     await expect(findStore).toBeVisible();
   });
 
-  test('PDP-045 Find in Store opens correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const findStore = page.locator(FIND_STORE_SELECTOR).first();
+  test('PDP-045 Find in Store opens correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const findStore = page.locator(selectors.pdp.findStore).first();
     const visible = await findStore.isVisible().catch(() => false);
     test.skip(!visible, 'Find in Store entry point is not available on this PDP.');
 
@@ -1129,7 +1073,7 @@ test.describe('pdp', () => {
     await page.waitForTimeout(700);
 
     const modalVisible = await page
-      .locator('[role="dialog"], [data-testid*="store" i], [class*="store-locator" i], [class*="find-store" i]')
+      .locator(selectors.pdp.storeDialog)
       .first()
       .isVisible()
       .catch(() => false);
@@ -1138,9 +1082,9 @@ test.describe('pdp', () => {
     expect(modalVisible || urlChanged).toBe(true);
   });
 
-  test('PDP-046 delivery messaging is displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const delivery = page.locator(DELIVERY_SELECTOR).first();
+  test('PDP-046 delivery messaging is displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const delivery = page.locator(selectors.pdp.deliveryInfo).first();
     const visible = await delivery.isVisible().catch(() => false);
     const hasDeliveryCopy = await page
       .locator('body')
@@ -1151,9 +1095,9 @@ test.describe('pdp', () => {
     expect(visible || hasDeliveryCopy).toBe(true);
   });
 
-  test('PDP-047 pickup messaging is displayed correctly if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const pickup = page.locator(PICKUP_SELECTOR).first();
+  test('PDP-047 pickup messaging is displayed correctly if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const pickup = page.locator(selectors.pdp.pickupInfo).first();
     const visible = await pickup.isVisible().catch(() => false);
     const hasPickupCopy = await page
       .locator('body')
@@ -1164,9 +1108,9 @@ test.describe('pdp', () => {
     expect(visible || hasPickupCopy).toBe(true);
   });
 
-  test('PDP-048 finance/payment promotional messaging is displayed correctly if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const financePromo = page.locator(FINANCE_PROMO_SELECTOR).first();
+  test('PDP-048 finance/payment promotional messaging is displayed correctly if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const financePromo = page.locator(selectors.pdp.financePromo).first();
     const visible = await financePromo.isVisible().catch(() => false);
     const hasFinanceCopy = await page
       .locator('body')
@@ -1177,9 +1121,9 @@ test.describe('pdp', () => {
     expect(visible || hasFinanceCopy).toBe(true);
   });
 
-  test('PDP-049 finance/payment CTA or modal opens correctly if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const financePromo = page.locator(FINANCE_PROMO_SELECTOR).first();
+  test('PDP-049 finance/payment CTA or modal opens correctly if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const financePromo = page.locator(selectors.pdp.financePromo).first();
     const visible = await financePromo.isVisible().catch(() => false);
     test.skip(!visible, 'Finance/payment promotional CTA is not available on this PDP.');
 
@@ -1188,7 +1132,7 @@ test.describe('pdp', () => {
     await page.waitForTimeout(700);
 
     const modalVisible = await page
-      .locator('[role="dialog"], [data-testid*="finance" i], [class*="finance" i], [class*="payment" i]')
+      .locator(selectors.pdp.financeDialog)
       .first()
       .isVisible()
       .catch(() => false);
@@ -1197,12 +1141,12 @@ test.describe('pdp', () => {
     expect(modalVisible || urlChanged).toBe(true);
   });
 
-  test('PDP-050 recommendation module is displayed if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-050 recommendation module is displayed if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await page.mouse.wheel(0, 1800);
     await page.waitForTimeout(300);
 
-    const recommendation = page.locator(RECOMMENDATION_SELECTOR).first();
+    const recommendation = page.locator(selectors.pdp.recommendation).first();
     const visible = await recommendation.isVisible().catch(() => false);
     const hasRecommendationCopy = await page
       .locator('body')
@@ -1213,12 +1157,12 @@ test.describe('pdp', () => {
     expect(visible || hasRecommendationCopy).toBe(true);
   });
 
-  test('PDP-051 clicking recommended product redirects correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-051 clicking recommended product redirects correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await page.mouse.wheel(0, 2000);
     await page.waitForTimeout(300);
 
-    const recommendation = page.locator(RECOMMENDATION_SELECTOR).first();
+    const recommendation = page.locator(selectors.pdp.recommendation).first();
     const recommendationVisible = await recommendation.isVisible().catch(() => false);
     test.skip(!recommendationVisible, 'Recommendation module is not visible on this PDP.');
 
@@ -1246,16 +1190,16 @@ test.describe('pdp', () => {
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PDP-052 accordion/tab sections are displayed correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const sections = page.locator(ACCORDION_OR_TAB_SELECTOR);
+  test('PDP-052 accordion/tab sections are displayed correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const sections = page.locator(selectors.pdp.accordionOrTab);
     const count = await sections.count();
     test.skip(count === 0, 'No accordion/tab content sections found on this PDP.');
     expect(count).toBeGreaterThan(0);
   });
 
-  test('PDP-053 accordion/tab expansion and collapse behavior', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-053 accordion/tab expansion and collapse behavior', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const triggers = page.locator('summary, [role="tab"], button[aria-expanded], [data-testid*="accordion" i] button');
     const count = await triggers.count();
     test.skip(count === 0, 'No expandable accordion/tab trigger found on this PDP.');
@@ -1269,19 +1213,19 @@ test.describe('pdp', () => {
     expect(beforeExpanded !== afterExpanded || count > 0).toBe(true);
   });
 
-  test('PDP-054 shipping and returns information is displayed correctly if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-054 shipping and returns information is displayed correctly if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const bodyText = (await page.locator('body').textContent()) ?? '';
     const hasShippingReturns = SHIPPING_RETURNS_PATTERN.test(bodyText);
     test.skip(!hasShippingReturns, 'Shipping/returns information is not visible on this PDP.');
     expect(hasShippingReturns).toBe(true);
   });
 
-  test('PDP-055 no overlapping UI elements on PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-055 no overlapping UI elements on PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const overlapSignals = await page.evaluate(() => {
-      const selectors = ['header', 'main', 'footer'];
-      const rects = selectors
+      const elemSelectors = ['header', 'main', 'footer'];
+      const rects = elemSelectors
         .map((selector) => document.querySelector(selector))
         .filter((node): node is HTMLElement => Boolean(node))
         .map((node) => {
@@ -1313,16 +1257,16 @@ test.describe('pdp', () => {
     expect(overlapSignals.overlapCount).toBeLessThanOrEqual(1);
   });
 
-  test('PDP-056 text is readable on PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-056 text is readable on PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     await expect(page.locator('main')).toBeVisible();
     const bodyText = ((await page.locator('main').textContent()) ?? '').replace(/\s+/g, ' ').trim();
     test.skip(bodyText.length === 0, 'No readable main content detected on this PDP.');
     expect(bodyText.length).toBeGreaterThan(20);
   });
 
-  test('PDP-057 images are rendered without distortion', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-057 images are rendered without distortion', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const invalidImageCount = await page.evaluate(() => {
       const images = Array.from(document.querySelectorAll('main img')) as HTMLImageElement[];
       return images.filter((img) => {
@@ -1338,9 +1282,9 @@ test.describe('pdp', () => {
     expect(invalidImageCount).toBe(0);
   });
 
-  test('PDP-058 sticky add-to-cart behavior if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const stickyAtc = page.locator(STICKY_ATC_SELECTOR).first();
+  test('PDP-058 sticky add-to-cart behavior if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const stickyAtc = page.locator(selectors.pdp.stickyAddToCart).first();
     const exists = await stickyAtc.isVisible().catch(() => false);
     test.skip(!exists, 'Sticky add-to-cart is not available on this PDP.');
 
@@ -1350,59 +1294,59 @@ test.describe('pdp', () => {
     expect(visibleAfterScroll).toBe(true);
   });
 
-  test('PDP-059 PDP layout on desktop viewport', async ({ home, page }) => {
+  test('PDP-059 PDP layout on desktop viewport', async ({ home, page, selectors }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await openValidPdp(home, page);
+    await openValidPdp(home, page, selectors);
 
     await expect(page.locator('main')).toBeVisible();
     const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     expect(hasHorizontalOverflow).toBe(false);
   });
 
-  test('PDP-060 PDP layout on tablet viewport', async ({ home, page }) => {
+  test('PDP-060 PDP layout on tablet viewport', async ({ home, page, selectors }) => {
     await page.setViewportSize({ width: 1024, height: 1366 });
-    await openValidPdp(home, page);
+    await openValidPdp(home, page, selectors);
 
     await expect(page.locator('main')).toBeVisible();
     const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     expect(hasHorizontalOverflow).toBe(false);
   });
 
-  test('PDP-061 PDP layout on mobile viewport', async ({ home, page }) => {
+  test('PDP-061 PDP layout on mobile viewport', async ({ home, page, selectors }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await openValidPdp(home, page);
+    await openValidPdp(home, page, selectors);
 
     await expect(page.locator('main')).toBeVisible();
     const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
     expect(hasHorizontalOverflow).toBe(false);
   });
 
-  test('PDP-062 product gallery behavior on mobile', async ({ home, page }) => {
+  test('PDP-062 product gallery behavior on mobile', async ({ home, page, selectors }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await openValidPdp(home, page);
+    await openValidPdp(home, page, selectors);
 
-    const beforeSignature = await getPrimaryImageSignature(page);
+    const beforeSignature = await getPrimaryImageSignature(page, selectors);
     test.skip(!beforeSignature, 'No product gallery signal available on mobile PDP.');
 
-    const nextButton = page.locator(GALLERY_NEXT_SELECTOR).first();
+    const nextButton = page.locator(selectors.pdp.galleryNext).first();
     const hasNext = await nextButton.isVisible().catch(() => false);
     if (hasNext) {
       await nextButton.click({ timeout: 5000 }).catch(() => undefined);
     } else {
-      const gallery = page.locator(GALLERY_IMAGE_SELECTOR).first();
+      const gallery = page.locator(selectors.pdp.galleryImage).first();
       test.skip(!(await gallery.isVisible().catch(() => false)), 'No mobile gallery interaction available.');
       await page.touchscreen.tap(300, 350).catch(() => undefined);
       await page.mouse.wheel(0, 200);
     }
 
     await page.waitForTimeout(400);
-    const afterSignature = await getPrimaryImageSignature(page);
+    const afterSignature = await getPrimaryImageSignature(page, selectors);
     expect(afterSignature.length).toBeGreaterThan(0);
   });
 
-  test('PDP-063 PDP load performance is acceptable', async ({ home, page }) => {
+  test('PDP-063 PDP load performance is acceptable', async ({ home, page, selectors }) => {
     const startedAt = Date.now();
-    await openValidPdp(home, page);
+    await openValidPdp(home, page, selectors);
     const elapsedMs = Date.now() - startedAt;
 
     const navTiming = await page.evaluate(() => {
@@ -1421,9 +1365,9 @@ test.describe('pdp', () => {
     expect(elapsedMs).toBeLessThan(25_000);
   });
 
-  test('PDP-064 repeated variant switching does not break PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+  test('PDP-064 repeated variant switching does not break PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     const count = await colorOptions.count();
     test.skip(count < 2, 'Not enough variants for repeated switching test.');
 
@@ -1434,22 +1378,22 @@ test.describe('pdp', () => {
       await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
     }
 
-    await expect(page.locator(PDP_TITLE_SELECTOR).first()).toBeVisible();
+    await expect(page.locator(selectors.pdp.productTitle).first()).toBeVisible();
   });
 
-  test('PDP-065 browser refresh retains valid PDP state', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-065 browser refresh retains valid PDP state', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const beforePath = new URL(page.url()).pathname;
     await page.reload({ waitUntil: 'domcontentloaded' });
     await home.dismissInterruptions();
 
     const afterPath = new URL(page.url()).pathname;
     expect(afterPath).toBe(beforePath);
-    await expect(page.locator(PDP_TITLE_SELECTOR).first()).toBeVisible();
+    await expect(page.locator(selectors.pdp.productTitle).first()).toBeVisible();
   });
 
-  test('PDP-066 invalid or unavailable product URL is handled correctly', async ({ home, page }) => {
-    const pdpUrl = await openValidPdp(home, page);
+  test('PDP-066 invalid or unavailable product URL is handled correctly', async ({ home, page, selectors }) => {
+    const pdpUrl = await openValidPdp(home, page, selectors);
     const invalidUrl = `${pdpUrl.origin}${pdpUrl.pathname.replace(/\/$/, '')}-invalid-automation`;
     await page.goto(invalidUrl, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
     await home.dismissInterruptions();
@@ -1463,8 +1407,8 @@ test.describe('pdp', () => {
     expect(isHandled).toBe(true);
   });
 
-  test('PDP-067 product view tracking is fired on PDP load', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-067 product view tracking is fired on PDP load', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
     const analyticsPayload = await readAnalyticsEvents(page);
     const hasAnalyticsObject = analyticsPayload !== '{"datalayer":[],"utagdata":{}}';
     test.skip(!hasAnalyticsObject, 'Analytics object is not available in this storefront runtime.');
@@ -1473,9 +1417,9 @@ test.describe('pdp', () => {
     expect(hasViewSignal).toBe(true);
   });
 
-  test('PDP-068 variant selection tracking is fired', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+  test('PDP-068 variant selection tracking is fired', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     const count = await colorOptions.count();
     test.skip(count < 2, 'Not enough variants to validate variant selection tracking.');
 
@@ -1489,14 +1433,14 @@ test.describe('pdp', () => {
     expect(/variant|color|size|select/i.test(afterPayload)).toBe(true);
   });
 
-  test('PDP-069 add-to-cart tracking is fired from PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+  test('PDP-069 add-to-cart tracking is fired from PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     const atcVisible = await addToCart.isVisible().catch(() => false);
     const atcEnabled = atcVisible ? await addToCart.isEnabled().catch(() => false) : false;
     test.skip(!atcVisible || !atcEnabled, 'Add to Cart is not actionable on this PDP.');
 
-    await selectFirstAvailableSizeIfPossible(page);
+    await selectFirstAvailableSizeIfPossible(page, selectors);
     const beforePayload = await readAnalyticsEvents(page);
     await addToCart.click({ timeout: 5000 }).catch(() => undefined);
     await page.waitForTimeout(700);
@@ -1507,9 +1451,9 @@ test.describe('pdp', () => {
     expect(/add[_\s-]?to[_\s-]?cart|add[_\s-]?to[_\s-]?bag|cart/i.test(afterPayload)).toBe(true);
   });
 
-  test('PDP-070 Find in Store click tracking is fired if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const findStore = page.locator(FIND_STORE_SELECTOR).first();
+  test('PDP-070 Find in Store click tracking is fired if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const findStore = page.locator(selectors.pdp.findStore).first();
     const visible = await findStore.isVisible().catch(() => false);
     test.skip(!visible, 'Find in Store entry point is not available on this PDP.');
 
@@ -1525,9 +1469,9 @@ test.describe('pdp', () => {
     expect(hasStoreTrackingSignal).toBe(true);
   });
 
-  test('PDP-071 wishlist click tracking is fired if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const wishlistEntry = page.locator(WISHLIST_ENTRY_SELECTOR).first();
+  test('PDP-071 wishlist click tracking is fired if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const wishlistEntry = page.locator(selectors.pdp.wishlistTrigger).first();
     const visible = await wishlistEntry.isVisible().catch(() => false);
     test.skip(!visible, 'Wishlist entry point is not available on this PDP.');
 
@@ -1543,19 +1487,19 @@ test.describe('pdp', () => {
     expect(hasWishlistSignal).toBe(true);
   });
 
-  test('PDP-072 event metadata is correct for PDP interactions', async ({ home, page }) => {
-    await openValidPdp(home, page);
+  test('PDP-072 event metadata is correct for PDP interactions', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
 
     const beforePayload = await readAnalyticsEvents(page);
-    const colorOptions = page.locator(COLOR_OPTION_SELECTOR);
+    const colorOptions = page.locator(selectors.pdp.colorOption);
     if ((await colorOptions.count()) > 1) {
       await colorOptions.nth(1).click({ timeout: 5000 }).catch(() => undefined);
       await page.waitForTimeout(300);
     }
 
-    const addToCart = page.locator(ADD_TO_CART_SELECTOR).first();
+    const addToCart = page.locator(selectors.pdp.addToCartButton).first();
     if (await addToCart.isVisible().catch(() => false)) {
-      await selectFirstAvailableSizeIfPossible(page);
+      await selectFirstAvailableSizeIfPossible(page, selectors);
       await addToCart.click({ timeout: 5000 }).catch(() => undefined);
       await page.waitForTimeout(500);
     }

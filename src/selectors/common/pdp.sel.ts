@@ -4,9 +4,9 @@ export const pdpSelectors: PDPSelectors = {
   addToCartButton: '[data-testid="add-to-cart"], button[name="add"], button:has-text("Add to Cart"), button:has-text("Add to Bag")',
   sizeSelector: '[data-testid="size-selector"], select[name*="size" i], button[aria-label*="size" i]',
   productTitle: '[data-testid="product-title"], h1',
-  breadcrumb: 'nav[aria-label*="breadcrumb" i], [data-testid*="breadcrumb" i], .breadcrumb, [class*="breadcrumb" i]',
+  breadcrumb: '.bread-crumbs-root, nav[aria-label*="breadcrumb" i], [data-testid*="breadcrumb" i], .breadcrumb, [class*="breadcrumb" i], [class*="bread-crumbs-root"], [itemtype*="BreadcrumbList"]',
   breadcrumbLink:
-    'nav[aria-label*="breadcrumb" i] a[href], [data-testid*="breadcrumb" i] a[href], .breadcrumb a[href], [class*="breadcrumb" i] a[href]',
+    '.bread-crumbs-root a[href], nav[aria-label*="breadcrumb" i] a[href], [data-testid*="breadcrumb" i] a[href], .breadcrumb a[href], [class*="breadcrumb" i] a[href], [class*="bread-crumbs-root"] a[href], [itemtype*="BreadcrumbList"] a[href]',
   price: '[data-testid*="price" i], .price, [class*="price" i], [id*="price" i]',
   promoBadge: '[data-testid*="badge" i], [class*="badge" i], [class*="label" i], [class*="tag" i], [class*="sale" i]',
   sku: '[data-testid*="sku" i], [data-testid*="product-code" i], [class*="sku" i], [class*="style-code" i], [class*="product-code" i]',

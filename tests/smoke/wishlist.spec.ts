@@ -1,6 +1,7 @@
 import { accountData, searchData } from '../../config/testData';
 import { env, getEnv } from '../../src/core/env';
 import { test, expect } from '../../src/fixtures/test.fixture';
+import type { Selectors } from '../../src/core/types';
 import type { HomePage } from '../../src/pages/Home.page';
 import type { Locator, Page } from '@playwright/test';
 
@@ -10,18 +11,6 @@ const WOMENS_PLP_PATH = '/shop/womens';
 const PLP_URL_PATTERN = /\/shop\/|\/category\/|\/collections?\//i;
 const SEARCH_URL_PATTERN = /search|q=|query=|\/s\//i;
 const PRODUCT_PATH_PATTERN = /\/product\/|\/p\/|\.html(?:$|\?)/i;
-const PLP_PRODUCT_LINK_SELECTOR = 'a[href]';
-const PRODUCT_CARD_SELECTOR =
-  'main [data-testid="product-card"], main [data-product-id], main .product-tile, main article[class*="product" i], main li[class*="product" i], main .product';
-const PRODUCT_NAME_SELECTOR =
-  '[data-testid*="product-name" i], [class*="product-name" i], [class*="product-title" i], h1';
-const PDP_TITLE_SELECTOR = '[data-testid="product-title"], h1';
-const WISHLIST_TRIGGER_SELECTOR =
-  '[data-testid*="wishlist" i], button[aria-label*="wishlist" i], button[aria-label*="favourite" i], button[aria-label*="favorite" i], [class*="wishlist" i], [class*="favourite" i], [class*="favorite" i], a[href*="wishlist"]';
-const WISHLIST_PAGE_LINK_SELECTOR =
-  'a[href*="wishlist"], button[aria-label*="wishlist" i], button:has-text("Wishlist"), a:has-text("Wishlist")';
-const WISHLIST_ITEM_SELECTOR =
-  'main [data-testid*="wishlist-item" i], main [class*="wishlist-item" i], main li[class*="wishlist" i], main article[class*="wishlist" i], main [data-product-id]';
 const WISHLIST_EMPTY_PATTERN = /empty wishlist|your wishlist is empty|no items|start shopping|continue shopping/i;
 const LOGIN_PATTERN = /\/login|\/sign-in|\/account/i;
 const LOGIN_TEXT_PATTERN = /sign in|log in|login|create account|email|password/i;
@@ -29,13 +18,6 @@ const SUCCESS_PATTERN = /added to wishlist|saved to wishlist|saved|favourite|fav
 const PRICE_PATTERN = /\$\s?\d|aud|nzd/i;
 const SALE_PATTERN = /sale|was|now|save/i;
 const REQUIRED_OPTION_PATTERN = /select size|choose size|please select|required/i;
-const VARIANT_SELECTOR =
-  '[data-testid*="size" i] button, [class*="size" i] button, select[name*="size" i], [data-testid*="color" i] button, [class*="swatch" i] button';
-const TOAST_SELECTOR =
-  '[data-testid*="toast" i], [class*="toast" i], [data-testid*="notification" i], [class*="notification" i], [data-testid*="success" i], [class*="success" i]';
-const REMOVE_WISHLIST_ITEM_SELECTOR =
-  '[data-testid*="remove" i], button[aria-label*="remove" i], button:has-text("Remove"), button:has-text("Delete"), [class*="remove" i]';
-const PRICE_SELECTOR = '[data-testid*="price" i], [class*="price" i], [id*="price" i]';
 
 function requireDefined<T>(value: T | null | undefined, skipMessage: string): T {
   test.skip(value == null, skipMessage);
@@ -100,8 +82,8 @@ async function openPlp(home: HomePage, page: Page, keyword: string): Promise<voi
   await page.waitForTimeout(1200);
 }
 
-async function collectPlpProductLinks(page: Page, limit = 1): Promise<string[]> {
-  const anchors = page.locator(PLP_PRODUCT_LINK_SELECTOR);
+async function collectPlpProductLinks(page: Page, selectors: Selectors, limit = 1): Promise<string[]> {
+  const anchors = page.locator(selectors.wishlist.plpProductLink);
   const items = await anchors.evaluateAll((elements) => {
     const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
     const blockedProductPathPattern = /\/wishlist|\/cart|\/account|\/login|\/track-order|\/stores|\/sign-up/i;
@@ -137,7 +119,7 @@ async function collectPlpProductLinks(page: Page, limit = 1): Promise<string[]> 
   return Array.from(deduped);
 }
 
-async function openValidPdp(home: HomePage, page: Page): Promise<void> {
+async function openValidPdp(home: HomePage, page: Page, selectors: Selectors): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       await page.goto(WOMENS_PLP_PATH, { waitUntil: 'domcontentloaded' });
@@ -162,7 +144,7 @@ async function openValidPdp(home: HomePage, page: Page): Promise<void> {
     }
   }
 
-  const productLinks = await collectPlpProductLinks(page, 1);
+  const productLinks = await collectPlpProductLinks(page, selectors, 1);
   test.skip(productLinks.length === 0, `No PDP product link found on ${WOMENS_PLP_PATH}.`);
 
   const [targetHref] = productLinks;
@@ -170,9 +152,9 @@ async function openValidPdp(home: HomePage, page: Page): Promise<void> {
   await page.goto(pdpUrl.href, { waitUntil: 'domcontentloaded' });
   await home.dismissInterruptions();
   await page.waitForLoadState('domcontentloaded', { timeout: 10_000 }).catch(() => undefined);
-  await page.locator(PDP_TITLE_SELECTOR).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
+  await page.locator(selectors.pdp.productTitle).first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => undefined);
 
-  const hasPdpTitle = await page.locator(PDP_TITLE_SELECTOR).first().isVisible().catch(() => false);
+  const hasPdpTitle = await page.locator(selectors.pdp.productTitle).first().isVisible().catch(() => false);
   if (hasPdpTitle) {
     return;
   }
@@ -187,8 +169,8 @@ async function clickLocatorRobust(target: Locator): Promise<void> {
   });
 }
 
-async function getFirstVisibleProductCard(page: Page): Promise<Locator | null> {
-  const cards = page.locator(PRODUCT_CARD_SELECTOR);
+async function getFirstVisibleProductCard(page: Page, selectors: Selectors): Promise<Locator | null> {
+  const cards = page.locator(selectors.wishlist.productCard);
   const total = await cards.count();
   for (let index = 0; index < Math.min(total, 20); index += 1) {
     const card = cards.nth(index);
@@ -199,17 +181,17 @@ async function getFirstVisibleProductCard(page: Page): Promise<Locator | null> {
   return null;
 }
 
-async function getWishlistTriggerFromProductCard(page: Page): Promise<Locator | null> {
-  const card = await getFirstVisibleProductCard(page);
+async function getWishlistTriggerFromProductCard(page: Page, selectors: Selectors): Promise<Locator | null> {
+  const card = await getFirstVisibleProductCard(page, selectors);
   if (!card) {
     return null;
   }
-  const trigger = card.locator(WISHLIST_TRIGGER_SELECTOR).first();
+  const trigger = card.locator(selectors.wishlist.trigger).first();
   return (await trigger.isVisible().catch(() => false)) ? trigger : null;
 }
 
-async function getWishlistTriggerFromPdp(page: Page): Promise<Locator | null> {
-  const trigger = page.locator(`main ${WISHLIST_TRIGGER_SELECTOR}`).first();
+async function getWishlistTriggerFromPdp(page: Page, selectors: Selectors): Promise<Locator | null> {
+  const trigger = page.locator(`main ${selectors.wishlist.trigger}`).first();
   return (await trigger.isVisible().catch(() => false)) ? trigger : null;
 }
 
@@ -260,9 +242,9 @@ async function tryLoginIfNeeded(page: Page): Promise<boolean> {
   return !(await isLoginGate(page));
 }
 
-async function openWishlistPage(page: Page, home: HomePage): Promise<void> {
+async function openWishlistPage(page: Page, home: HomePage, selectors: Selectors): Promise<void> {
   const current = page.url();
-  const headerLink = page.locator(WISHLIST_PAGE_LINK_SELECTOR).first();
+  const headerLink = page.locator(selectors.wishlist.pageLink).first();
   if (await headerLink.isVisible().catch(() => false)) {
     await Promise.all([
       page.waitForURL((url) => url.href !== current, { timeout: 12_000 }).catch(() => undefined),
@@ -276,9 +258,9 @@ async function openWishlistPage(page: Page, home: HomePage): Promise<void> {
   await home.dismissInterruptions();
 }
 
-async function selectConfigurableVariantIfPossible(page: Page): Promise<string[]> {
+async function selectConfigurableVariantIfPossible(page: Page, selectors: Selectors): Promise<string[]> {
   const selectedValues: string[] = [];
-  const variants = page.locator(VARIANT_SELECTOR);
+  const variants = page.locator(selectors.wishlist.variantOption);
   const total = await variants.count();
   for (let index = 0; index < Math.min(total, 8); index += 1) {
     const option = variants.nth(index);
@@ -332,9 +314,9 @@ async function selectConfigurableVariantIfPossible(page: Page): Promise<string[]
   return selectedValues;
 }
 
-async function ensureWishlistHasProduct(page: Page, home: HomePage): Promise<void> {
-  await openValidPdp(home, page);
-  const trigger = await getWishlistTriggerFromPdp(page);
+async function ensureWishlistHasProduct(page: Page, home: HomePage, selectors: Selectors): Promise<void> {
+  await openValidPdp(home, page, selectors);
+  const trigger = await getWishlistTriggerFromPdp(page, selectors);
   test.skip(!trigger, 'Wishlist button is not available on PDP.');
   await clickLocatorRobust(trigger!);
   await page.waitForTimeout(1200);
@@ -342,21 +324,21 @@ async function ensureWishlistHasProduct(page: Page, home: HomePage): Promise<voi
   const loggedIn = await tryLoginIfNeeded(page);
   test.skip(!loggedIn, 'Logged-in account is required. Provide TEST_ACCOUNT_EMAIL/TEST_ACCOUNT_PASSWORD.');
 
-  await openWishlistPage(page, home);
+  await openWishlistPage(page, home, selectors);
   await page.waitForLoadState('domcontentloaded');
-  const itemCount = await page.locator(WISHLIST_ITEM_SELECTOR).count();
+  const itemCount = await page.locator(selectors.wishlist.pageItem).count();
   test.skip(itemCount === 0, 'Could not prepare wishlist with at least one product.');
 }
 
-async function clearWishlistIfPossible(page: Page): Promise<boolean> {
+async function clearWishlistIfPossible(page: Page, selectors: Selectors): Promise<boolean> {
   for (let attempts = 0; attempts < 20; attempts += 1) {
-    const items = page.locator(WISHLIST_ITEM_SELECTOR);
+    const items = page.locator(selectors.wishlist.pageItem);
     const count = await items.count();
     if (count === 0) {
       return true;
     }
 
-    const removeBtn = items.first().locator(REMOVE_WISHLIST_ITEM_SELECTOR).first();
+    const removeBtn = items.first().locator(selectors.wishlist.removeButton).first();
     const visible = await removeBtn.isVisible().catch(() => false);
     if (!visible) {
       return false;
@@ -365,29 +347,29 @@ async function clearWishlistIfPossible(page: Page): Promise<boolean> {
     await page.waitForTimeout(900);
   }
 
-  return (await page.locator(WISHLIST_ITEM_SELECTOR).count()) === 0;
+  return (await page.locator(selectors.wishlist.pageItem).count()) === 0;
 }
 
 test.describe('wishlist', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
-  test('WL-001 wishlist icon is displayed on product card', async ({ ctx, home, page }) => {
+  test('WL-001 wishlist icon is displayed on product card', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const trigger = await getWishlistTriggerFromProductCard(page);
+    const trigger = await getWishlistTriggerFromProductCard(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on product cards for this PLP.');
     await expect(trigger!).toBeVisible();
   });
 
-  test('WL-002 wishlist icon is displayed on PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
+  test('WL-002 wishlist icon is displayed on PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
     await expect(trigger!).toBeVisible();
   });
 
-  test('WL-003 guest user is redirected to login when adding product to wishlist', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
+  test('WL-003 guest user is redirected to login when adding product to wishlist', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
 
     await clickLocatorRobust(trigger!);
@@ -398,9 +380,9 @@ test.describe('wishlist', () => {
     expect(redirected).toBe(true);
   });
 
-  test('WL-004 wishlist action is preserved after login if applicable', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
+  test('WL-004 wishlist action is preserved after login if applicable', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
 
     const pdpBefore = page.url();
@@ -421,9 +403,9 @@ test.describe('wishlist', () => {
     expect(preserved).toBe(true);
   });
 
-  test('WL-005 logged-in user can add product to wishlist from PLP', async ({ ctx, home, page }) => {
+  test('WL-005 logged-in user can add product to wishlist from PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const trigger = await getWishlistTriggerFromProductCard(page);
+    const trigger = await getWishlistTriggerFromProductCard(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on PLP product cards.');
 
     await clickLocatorRobust(trigger!);
@@ -435,9 +417,9 @@ test.describe('wishlist', () => {
     expect(SUCCESS_PATTERN.test(body) || /wishlist/.test(page.url().toLowerCase())).toBe(true);
   });
 
-  test('WL-006 logged-in user can add product to wishlist from PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
+  test('WL-006 logged-in user can add product to wishlist from PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
 
     await clickLocatorRobust(trigger!);
@@ -449,12 +431,12 @@ test.describe('wishlist', () => {
     expect(SUCCESS_PATTERN.test(body) || /wishlist/.test(page.url().toLowerCase())).toBe(true);
   });
 
-  test('WL-007 selected variant is added to wishlist from PDP', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const selected = await selectConfigurableVariantIfPossible(page);
+  test('WL-007 selected variant is added to wishlist from PDP', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const selected = await selectConfigurableVariantIfPossible(page, selectors);
     test.skip(selected.length === 0, 'No configurable variant option available on this PDP.');
 
-    const trigger = await getWishlistTriggerFromPdp(page);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
     await clickLocatorRobust(trigger!);
     await page.waitForTimeout(1200);
@@ -462,21 +444,21 @@ test.describe('wishlist', () => {
     const loggedIn = await tryLoginIfNeeded(page);
     test.skip(!loggedIn, 'Logged-in account is required. Provide TEST_ACCOUNT_EMAIL/TEST_ACCOUNT_PASSWORD.');
 
-    await openWishlistPage(page, home);
-    const firstItemText = ((await page.locator(WISHLIST_ITEM_SELECTOR).first().innerText().catch(() => '')) || '').toLowerCase();
+    await openWishlistPage(page, home, selectors);
+    const firstItemText = ((await page.locator(selectors.wishlist.pageItem).first().innerText().catch(() => '')) || '').toLowerCase();
     test.skip(firstItemText.length === 0, 'Wishlist item details are not visible.');
 
     const hasVariantSignal = selected.some((value) => firstItemText.includes(value.toLowerCase()));
     expect(hasVariantSignal || /size|colour|color|variant/.test(firstItemText)).toBe(true);
   });
 
-  test('WL-008 configurable product validation works without selecting required options', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const variantControls = page.locator(VARIANT_SELECTOR);
+  test('WL-008 configurable product validation works without selecting required options', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const variantControls = page.locator(selectors.wishlist.variantOption);
     const variantCount = await variantControls.count();
     test.skip(variantCount === 0, 'PDP is not configurable or has no variant selectors.');
 
-    const trigger = await getWishlistTriggerFromPdp(page);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
     await clickLocatorRobust(trigger!);
     await page.waitForTimeout(1200);
@@ -487,9 +469,9 @@ test.describe('wishlist', () => {
     expect(hasExpectedBehavior).toBe(true);
   });
 
-  test('WL-009 wishlist icon state updates after adding product', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
+  test('WL-009 wishlist icon state updates after adding product', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
 
     const classBefore = await trigger!.getAttribute('class').catch(() => '');
@@ -513,9 +495,9 @@ test.describe('wishlist', () => {
     ).toBe(true);
   });
 
-  test('WL-010 success message is displayed after adding product', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = await getWishlistTriggerFromPdp(page);
+  test('WL-010 success message is displayed after adding product', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
 
     await clickLocatorRobust(trigger!);
@@ -523,7 +505,7 @@ test.describe('wishlist', () => {
     const loggedIn = await tryLoginIfNeeded(page);
     test.skip(!loggedIn, 'Logged-in account is required. Provide TEST_ACCOUNT_EMAIL/TEST_ACCOUNT_PASSWORD.');
 
-    const toast = page.locator(TOAST_SELECTOR).first();
+    const toast = page.locator(selectors.wishlist.toast).first();
     const toastVisible = await toast.isVisible().catch(() => false);
     if (toastVisible) {
       await expect(toast).toBeVisible();
@@ -534,9 +516,9 @@ test.describe('wishlist', () => {
     await expect(page.locator('body')).toContainText(/wishlist|saved|added/i);
   });
 
-  test('WL-011 duplicate wishlist add is handled correctly', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const trigger = requireDefined(await getWishlistTriggerFromPdp(page), 'Wishlist icon is not displayed on this PDP.');
+  test('WL-011 duplicate wishlist add is handled correctly', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const trigger = requireDefined(await getWishlistTriggerFromPdp(page, selectors), 'Wishlist icon is not displayed on this PDP.');
 
     await clickLocatorRobust(trigger);
     await page.waitForTimeout(1000);
@@ -560,7 +542,8 @@ test.describe('wishlist', () => {
 
   test('WL-012 wishlist page loads successfully', async ({ home, page }) => {
     await gotoHomeWithRetry(home, page);
-    await openWishlistPage(page, home);
+    await page.goto('/wishlist', { waitUntil: 'domcontentloaded' });
+    await home.dismissInterruptions();
 
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('body')).toBeVisible();
@@ -571,30 +554,30 @@ test.describe('wishlist', () => {
     expect(isWishlistUrl || /wishlist/.test(body)).toBe(true);
   });
 
-  test('WL-013 empty wishlist state is displayed correctly', async ({ home, page }) => {
+  test('WL-013 empty wishlist state is displayed correctly', async ({ home, page, selectors }) => {
     await gotoHomeWithRetry(home, page);
-    await openWishlistPage(page, home);
+    await openWishlistPage(page, home, selectors);
 
     const loggedIn = await tryLoginIfNeeded(page);
     test.skip(!loggedIn, 'Logged-in account is required to validate empty wishlist state.');
 
-    const cleared = await clearWishlistIfPossible(page);
+    const cleared = await clearWishlistIfPossible(page, selectors);
     test.skip(!cleared, 'Could not clear existing wishlist items to reach empty state.');
 
     const body = await readBodyText(page);
     expect(WISHLIST_EMPTY_PATTERN.test(body)).toBe(true);
   });
 
-  test('WL-014 wishlist with products displays correctly', async ({ home, page }) => {
-    await ensureWishlistHasProduct(page, home);
-    const items = page.locator(WISHLIST_ITEM_SELECTOR);
+  test('WL-014 wishlist with products displays correctly', async ({ home, page, selectors }) => {
+    await ensureWishlistHasProduct(page, home, selectors);
+    const items = page.locator(selectors.wishlist.pageItem);
     await expect(items.first()).toBeVisible();
     expect(await items.count()).toBeGreaterThan(0);
   });
 
-  test('WL-015 product image is displayed in wishlist', async ({ home, page }) => {
-    await ensureWishlistHasProduct(page, home);
-    const image = page.locator(`${WISHLIST_ITEM_SELECTOR} img`).first();
+  test('WL-015 product image is displayed in wishlist', async ({ home, page, selectors }) => {
+    await ensureWishlistHasProduct(page, home, selectors);
+    const image = page.locator(`${selectors.wishlist.pageItem} img`).first();
     await expect(image).toBeVisible();
     const rendered = await image.evaluate((node) => {
       const img = node as HTMLImageElement;
@@ -603,12 +586,12 @@ test.describe('wishlist', () => {
     expect(rendered).toBe(true);
   });
 
-  test('WL-016 product name is displayed in wishlist', async ({ home, page }) => {
-    await ensureWishlistHasProduct(page, home);
-    const item = page.locator(WISHLIST_ITEM_SELECTOR).first();
+  test('WL-016 product name is displayed in wishlist', async ({ home, page, selectors }) => {
+    await ensureWishlistHasProduct(page, home, selectors);
+    const item = page.locator(selectors.wishlist.pageItem).first();
     await expect(item).toBeVisible();
 
-    const name = ((await item.locator(PRODUCT_NAME_SELECTOR).first().innerText().catch(() => '')) || '').trim();
+    const name = ((await item.locator(selectors.wishlist.productName).first().innerText().catch(() => '')) || '').trim();
     if (name.length > 0) {
       expect(name.length).toBeGreaterThan(0);
       return;
@@ -618,23 +601,23 @@ test.describe('wishlist', () => {
     expect(fallback.length).toBeGreaterThan(0);
   });
 
-  test('WL-017 product price is displayed in wishlist with AU/NZ format', async ({ home, page }) => {
-    await ensureWishlistHasProduct(page, home);
-    const item = page.locator(WISHLIST_ITEM_SELECTOR).first();
+  test('WL-017 product price is displayed in wishlist with AU/NZ format', async ({ home, page, selectors }) => {
+    await ensureWishlistHasProduct(page, home, selectors);
+    const item = page.locator(selectors.wishlist.pageItem).first();
     await expect(item).toBeVisible();
 
     const priceText =
-      ((await item.locator(PRICE_SELECTOR).first().innerText().catch(() => '')) || '').trim() ||
+      ((await item.locator(selectors.wishlist.price).first().innerText().catch(() => '')) || '').trim() ||
       ((await item.innerText().catch(() => '')) || '').trim();
     expect(PRICE_PATTERN.test(priceText.toLowerCase())).toBe(true);
   });
 
-  test('WL-018 selected variant details are displayed in wishlist', async ({ home, page }) => {
-    await openValidPdp(home, page);
-    const selected = await selectConfigurableVariantIfPossible(page);
+  test('WL-018 selected variant details are displayed in wishlist', async ({ home, page, selectors }) => {
+    await openValidPdp(home, page, selectors);
+    const selected = await selectConfigurableVariantIfPossible(page, selectors);
     test.skip(selected.length === 0, 'No configurable variant option available on this PDP.');
 
-    const trigger = await getWishlistTriggerFromPdp(page);
+    const trigger = await getWishlistTriggerFromPdp(page, selectors);
     test.skip(!trigger, 'Wishlist icon is not displayed on this PDP.');
     await clickLocatorRobust(trigger!);
     await page.waitForTimeout(1200);
@@ -642,24 +625,24 @@ test.describe('wishlist', () => {
     const loggedIn = await tryLoginIfNeeded(page);
     test.skip(!loggedIn, 'Logged-in account is required. Provide TEST_ACCOUNT_EMAIL/TEST_ACCOUNT_PASSWORD.');
 
-    await openWishlistPage(page, home);
-    const firstItemText = ((await page.locator(WISHLIST_ITEM_SELECTOR).first().innerText().catch(() => '')) || '').toLowerCase();
+    await openWishlistPage(page, home, selectors);
+    const firstItemText = ((await page.locator(selectors.wishlist.pageItem).first().innerText().catch(() => '')) || '').toLowerCase();
     const hasVariant = selected.some((value) => firstItemText.includes(value.toLowerCase()));
     expect(hasVariant || /size|colour|color|variant/.test(firstItemText)).toBe(true);
   });
 
-  test('WL-019 sale price is displayed correctly', async ({ home, page }) => {
-    await ensureWishlistHasProduct(page, home);
-    const item = page.locator(WISHLIST_ITEM_SELECTOR).first();
+  test('WL-019 sale price is displayed correctly', async ({ home, page, selectors }) => {
+    await ensureWishlistHasProduct(page, home, selectors);
+    const item = page.locator(selectors.wishlist.pageItem).first();
     await expect(item).toBeVisible();
     const text = ((await item.innerText().catch(() => '')) || '').toLowerCase();
     const hasTwoPriceTokens = (text.match(/\$\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?/g) ?? []).length >= 2;
     expect(SALE_PATTERN.test(text) || hasTwoPriceTokens || PRICE_PATTERN.test(text)).toBe(true);
   });
 
-  test('WL-020 clicking wishlist product redirects to PDP', async ({ home, page }) => {
-    await ensureWishlistHasProduct(page, home);
-    const item = page.locator(WISHLIST_ITEM_SELECTOR).first();
+  test('WL-020 clicking wishlist product redirects to PDP', async ({ home, page, selectors }) => {
+    await ensureWishlistHasProduct(page, home, selectors);
+    const item = page.locator(selectors.wishlist.pageItem).first();
     await expect(item).toBeVisible();
 
     const productLink = item

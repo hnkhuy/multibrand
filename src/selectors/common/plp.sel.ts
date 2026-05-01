@@ -1,8 +1,8 @@
 import type { PLPSelectors } from '../../core/types';
 
 export const plpSelectors: PLPSelectors = {
-  productCard: '[data-testid="product-card"], [data-product-id], .product, .product-tile',
-  productName: '[data-testid="product-name"], .product-name, .product-title, a[href*="/product"]',
+  productCard: 'main [data-testid="product-card"], main [data-product-id], main .product-tile, main article[class*="product" i], main li[class*="product" i], main .product',
+  productName: '[data-testid*="product-name" i], [class*="product-name" i], [class*="product-title" i], a[href*="/product/"], a[href*=".html"]',
   filters: '[data-testid="filters"], aside, .filters',
   productLink: 'main a[href*="/product/"], main a[href*="/p/"], main a[href*=".html"], main a[href]',
   productPrice: '[data-testid*="price" i], [class*="price" i], [id*="price" i]',

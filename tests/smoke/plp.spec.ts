@@ -1,6 +1,7 @@
 import { searchData } from '../../config/testData';
 import { env } from '../../src/core/env';
 import { test, expect } from '../../src/fixtures/test.fixture';
+import type { Selectors } from '../../src/core/types';
 import type { HomePage } from '../../src/pages/Home.page';
 import type { Locator, Page } from '@playwright/test';
 
@@ -11,46 +12,7 @@ const NO_RESULTS_PATTERN =
 const PLP_URL_PATTERN = /\/shop\/|\/category\/|\/collections?\//i;
 const SEARCH_URL_PATTERN = /search|q=|query=|\/s\//i;
 const PRODUCT_PATH_PATTERN = /\/product\/|\/p\/|\.html(?:$|\?)/i;
-const BLOCKED_PRODUCT_PATH_PATTERN = /\/wishlist|\/cart|\/account|\/login|\/track-order|\/stores|\/sign-up/i;
-const PRODUCT_CARD_SELECTOR =
-  'main [data-testid="product-card"], main [data-product-id], main .product-tile, main article[class*="product" i], main li[class*="product" i], main .product';
-const LOAD_MORE_SELECTOR =
-  'button:has-text("Load More"), button:has-text("Show More"), button:has-text("View More"), [data-testid*="load-more" i], [class*="load-more" i]';
-const PAGINATION_NEXT_SELECTOR =
-  'a[aria-label*="next" i], button[aria-label*="next" i], .pagination a[rel="next"], .pagination button:has-text("Next"), [class*="pagination" i] a:has-text("Next")';
-const SORT_CONTROL_SELECTOR =
-  'select[name*="sort" i], select[id*="sort" i], [data-testid*="sort" i], button:has-text("Sort"), button[aria-label*="sort" i], [class*="sort" i]';
-const FILTER_PANEL_SELECTOR =
-  '[data-testid*="filter" i], [class*="filter-panel" i], [class*="filters" i], aside:has([type="checkbox"])';
-const FILTER_TOGGLE_SELECTOR =
-  'button:has-text("Filter"), button[aria-label*="filter" i], [data-testid*="filter-toggle" i], [class*="filter-toggle" i]';
-const FILTER_CLOSE_SELECTOR =
-  'button:has-text("Close"), button[aria-label*="close" i], [data-testid*="filter-close" i], [class*="close" i]';
-const ACTIVE_FILTER_CHIP_SELECTOR =
-  '[data-testid*="filter-chip" i], [class*="filter-chip" i], [class*="active-filter" i], [class*="selected-filter" i]';
-const CLEAR_ALL_FILTER_SELECTOR =
-  'button:has-text("Clear All"), button:has-text("Clear"), a:has-text("Clear All"), [data-testid*="clear" i]';
-const FILTER_OPTION_SELECTOR =
-  'input[type="checkbox"], [role="checkbox"], label, button, a';
-const QUICK_ADD_SELECTOR =
-  'button:has-text("Quick Add"), button:has-text("Add"), [data-testid*="quick-add" i], [class*="quick-add" i]';
-const WISHLIST_SELECTOR =
-  '[data-testid*="wishlist" i], button[aria-label*="wishlist" i], [class*="wishlist" i], a[href*="wishlist"]';
-const CART_COUNT_SELECTOR =
-  '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="badge" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]';
 const OOS_PATTERN = /out of stock|sold out|unavailable|currently unavailable/i;
-const BREADCRUMB_SELECTOR =
-  'nav[aria-label*="breadcrumb" i], [data-testid*="breadcrumb" i], .breadcrumb, [class*="breadcrumb" i]';
-const BREADCRUMB_LINK_SELECTOR = `${BREADCRUMB_SELECTOR} a[href]`;
-const CATEGORY_TITLE_SELECTOR =
-  'h1, [data-testid*="category-title" i], [data-testid*="plp-title" i], [class*="category-title" i], [class*="plp-title" i], [class*="page-title" i]';
-const CATEGORY_BANNER_SELECTOR =
-  '[data-testid*="category-banner" i], [data-testid*="banner" i], [class*="category-banner" i], [class*="category-description" i], main picture, main img';
-const PRODUCT_NAME_SELECTOR =
-  '[data-testid*="product-name" i], [class*="product-name" i], [class*="product-title" i], a[href*="/product/"], a[href*=".html"]';
-const PRODUCT_PRICE_SELECTOR = '[data-testid*="price" i], [class*="price" i], [id*="price" i]';
-const PRODUCT_BADGE_SELECTOR =
-  '[data-testid*="badge" i], [class*="badge" i], [class*="label" i], [class*="tag" i], [class*="promo" i], [class*="sale" i]';
 
 interface ProductTarget {
   href: string;
@@ -153,8 +115,8 @@ async function gotoHomeWithRetry(home: HomePage, page: Page): Promise<void> {
   }
 }
 
-async function collectProductTargets(page: Page, limit = 20): Promise<ProductTarget[]> {
-  const anchors = page.locator('main a[href]');
+async function collectProductTargets(page: Page, selectors: Selectors, limit = 20): Promise<ProductTarget[]> {
+  const anchors = page.locator(selectors.plp.productLink);
   const items = await anchors.evaluateAll((elements) => {
     const productPathPattern = /\/product\/|\/p\/|\.html(?:$|\?)/i;
     const blockedPattern = /\/wishlist|\/cart|\/account|\/login|\/track-order|\/stores|\/sign-up/i;
@@ -189,8 +151,8 @@ async function collectProductTargets(page: Page, limit = 20): Promise<ProductTar
   return Array.from(deduped.values()).slice(0, limit);
 }
 
-async function collectVisiblePrices(page: Page, maxCards = 10): Promise<number[]> {
-  const cards = page.locator(PRODUCT_CARD_SELECTOR);
+async function collectVisiblePrices(page: Page, selectors: Selectors, maxCards = 10): Promise<number[]> {
+  const cards = page.locator(selectors.plp.productCard);
   const count = Math.min(await cards.count(), maxCards);
   const prices: number[] = [];
 
@@ -210,8 +172,8 @@ async function collectVisiblePrices(page: Page, maxCards = 10): Promise<number[]
   return prices;
 }
 
-async function firstVisibleProductCard(page: Page): Promise<Locator | null> {
-  const cards = page.locator(PRODUCT_CARD_SELECTOR);
+async function firstVisibleProductCard(page: Page, selectors: Selectors): Promise<Locator | null> {
+  const cards = page.locator(selectors.plp.productCard);
   const count = await cards.count();
   for (let index = 0; index < count; index += 1) {
     const card = cards.nth(index);
@@ -222,8 +184,8 @@ async function firstVisibleProductCard(page: Page): Promise<Locator | null> {
   return null;
 }
 
-async function readProductNameFromCard(card: Locator): Promise<string> {
-  const primary = card.locator(PRODUCT_NAME_SELECTOR).first();
+async function readProductNameFromCard(card: Locator, selectors: Selectors): Promise<string> {
+  const primary = card.locator(selectors.plp.productName).first();
   let text = (await primary.innerText().catch(() => '')).trim();
   if (text.length > 1) {
     return text;
@@ -244,8 +206,8 @@ async function readProductNameFromCard(card: Locator): Promise<string> {
   return withoutPrice;
 }
 
-async function productHrefSnapshot(page: Page, limit = 20): Promise<string[]> {
-  const targets = await collectProductTargets(page, limit);
+async function productHrefSnapshot(page: Page, selectors: Selectors, limit = 20): Promise<string[]> {
+  const targets = await collectProductTargets(page, selectors, limit);
   return targets.map((item) => item.href);
 }
 
@@ -258,14 +220,14 @@ async function clickLocatorRobust(target: Locator): Promise<void> {
   });
 }
 
-async function ensureFilterPanelOpen(page: Page): Promise<Locator | null> {
-  const panel = page.locator(FILTER_PANEL_SELECTOR).first();
+async function ensureFilterPanelOpen(page: Page, selectors: Selectors): Promise<Locator | null> {
+  const panel = page.locator(selectors.plp.filterPanel).first();
   const panelVisible = await panel.isVisible().catch(() => false);
   if (panelVisible) {
     return panel;
   }
 
-  const toggle = page.locator(FILTER_TOGGLE_SELECTOR).first();
+  const toggle = page.locator(selectors.plp.filterToggle).first();
   const toggleVisible = await toggle.isVisible().catch(() => false);
   if (!toggleVisible) {
     return null;
@@ -277,13 +239,13 @@ async function ensureFilterPanelOpen(page: Page): Promise<Locator | null> {
   return opened ? panel : null;
 }
 
-async function applyFirstFilterOption(page: Page, startIndex = 0): Promise<boolean> {
-  const panel = await ensureFilterPanelOpen(page);
+async function applyFirstFilterOption(page: Page, selectors: Selectors, startIndex = 0): Promise<boolean> {
+  const panel = await ensureFilterPanelOpen(page, selectors);
   if (!panel) {
     return false;
   }
 
-  const options = panel.locator(FILTER_OPTION_SELECTOR);
+  const options = panel.locator(selectors.plp.filterOption);
   const count = await options.count();
   for (let index = startIndex; index < Math.min(count, startIndex + 30); index += 1) {
     const option = options.nth(index);
@@ -311,8 +273,8 @@ async function applyFirstFilterOption(page: Page, startIndex = 0): Promise<boole
   return false;
 }
 
-async function applyFilterByKeyword(page: Page, keyword: RegExp): Promise<boolean> {
-  const panel = await ensureFilterPanelOpen(page);
+async function applyFilterByKeyword(page: Page, selectors: Selectors, keyword: RegExp): Promise<boolean> {
+  const panel = await ensureFilterPanelOpen(page, selectors);
   if (!panel) {
     return false;
   }
@@ -329,15 +291,15 @@ async function applyFilterByKeyword(page: Page, keyword: RegExp): Promise<boolea
   return true;
 }
 
-async function findFirstCardWithQuickAdd(page: Page): Promise<{ card: Locator; button: Locator } | null> {
-  const cards = page.locator(PRODUCT_CARD_SELECTOR);
+async function findFirstCardWithQuickAdd(page: Page, selectors: Selectors): Promise<{ card: Locator; button: Locator } | null> {
+  const cards = page.locator(selectors.plp.productCard);
   const count = await cards.count();
   for (let index = 0; index < Math.min(count, 20); index += 1) {
     const card = cards.nth(index);
     if (!(await card.isVisible().catch(() => false))) {
       continue;
     }
-    const button = card.locator(QUICK_ADD_SELECTOR).first();
+    const button = card.locator(selectors.plp.quickAdd).first();
     if (await button.isVisible().catch(() => false)) {
       return { card, button };
     }
@@ -345,8 +307,8 @@ async function findFirstCardWithQuickAdd(page: Page): Promise<{ card: Locator; b
   return null;
 }
 
-async function readCartCount(page: Page): Promise<number | null> {
-  const text = await page.locator(CART_COUNT_SELECTOR).first().textContent().catch(() => null);
+async function readCartCount(page: Page, selectors: Selectors): Promise<number | null> {
+  const text = await page.locator(selectors.header.cartCount).first().textContent().catch(() => null);
   if (!text) {
     return null;
   }
@@ -416,21 +378,21 @@ test.describe('plp', () => {
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PLP-006 breadcrumb is displayed', async ({ ctx, home, page }) => {
+  test('PLP-006 breadcrumb is displayed', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const breadcrumb = page.locator(BREADCRUMB_SELECTOR).first();
+    const breadcrumb = page.locator(selectors.plp.breadcrumb).first();
     const visible = await breadcrumb.isVisible().catch(() => false);
     test.skip(!visible, 'Breadcrumb is not available on this PLP.');
     await expect(breadcrumb).toBeVisible();
   });
 
-  test('PLP-007 breadcrumb links redirect correctly', async ({ ctx, home, page }) => {
+  test('PLP-007 breadcrumb links redirect correctly', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const breadcrumb = page.locator(BREADCRUMB_SELECTOR).first();
+    const breadcrumb = page.locator(selectors.plp.breadcrumb).first();
     const visible = await breadcrumb.isVisible().catch(() => false);
     test.skip(!visible, 'Breadcrumb is not available on this PLP.');
 
-    const links = page.locator(BREADCRUMB_LINK_SELECTOR);
+    const links = page.locator(selectors.plp.breadcrumbLink);
     const total = await links.count();
     test.skip(total === 0, 'Breadcrumb links are not available.');
 
@@ -458,9 +420,9 @@ test.describe('plp', () => {
     expect(new URL(page.url()).href).not.toBe(previousUrl);
   });
 
-  test('PLP-008 category title is displayed', async ({ ctx, home, page }) => {
+  test('PLP-008 category title is displayed', async ({ ctx, home, page, selectors }) => {
     const plp = await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const title = page.locator(CATEGORY_TITLE_SELECTOR).first();
+    const title = page.locator(selectors.plp.categoryTitle).first();
     const visible = await title.isVisible().catch(() => false);
     test.skip(!visible, 'Category title is not available on this PLP.');
 
@@ -476,9 +438,9 @@ test.describe('plp', () => {
     }
   });
 
-  test('PLP-009 category description/banner is displayed if configured', async ({ ctx, home, page }) => {
+  test('PLP-009 category description/banner is displayed if configured', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const banner = page.locator(CATEGORY_BANNER_SELECTOR).first();
+    const banner = page.locator(selectors.plp.categoryBanner).first();
     const visible = await banner.isVisible().catch(() => false);
     test.skip(!visible, 'Category description/banner is not configured on this PLP.');
 
@@ -487,23 +449,23 @@ test.describe('plp', () => {
     expect((box?.width ?? 0) > 0 || (box?.height ?? 0) > 0).toBe(true);
   });
 
-  test('PLP-010 product grid is displayed', async ({ ctx, home, page }) => {
+  test('PLP-010 product grid is displayed', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page, selectors), 'No visible product card found on PLP.');
     await expect(card).toBeVisible();
   });
 
-  test('PLP-011 product cards are displayed correctly', async ({ ctx, home, page }) => {
+  test('PLP-011 product cards are displayed correctly', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page, selectors), 'No visible product card found on PLP.');
 
     const image = card.locator('img').first();
-    const name = card.locator(PRODUCT_NAME_SELECTOR).first();
-    const price = card.locator(PRODUCT_PRICE_SELECTOR).first();
+    const name = card.locator(selectors.plp.productName).first();
+    const price = card.locator(selectors.plp.productPrice).first();
 
     await expect(image).toBeVisible();
     await expect(name).toBeVisible().catch(() => undefined);
-    const nameText = await readProductNameFromCard(card);
+    const nameText = await readProductNameFromCard(card, selectors);
     expect(nameText.length).toBeGreaterThan(0);
 
     const priceVisible = await price.isVisible().catch(() => false);
@@ -514,9 +476,9 @@ test.describe('plp', () => {
     }
   });
 
-  test('PLP-012 product card image is rendered correctly', async ({ ctx, home, page }) => {
+  test('PLP-012 product card image is rendered correctly', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page, selectors), 'No visible product card found on PLP.');
 
     const image = card.locator('img').first();
     await expect(image).toBeVisible();
@@ -534,21 +496,21 @@ test.describe('plp', () => {
     expect(rendered.naturalHeight).toBeGreaterThan(0);
   });
 
-  test('PLP-013 product name is displayed', async ({ ctx, home, page }) => {
+  test('PLP-013 product name is displayed', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page, selectors), 'No visible product card found on PLP.');
 
-    const name = card.locator(PRODUCT_NAME_SELECTOR).first();
+    const name = card.locator(selectors.plp.productName).first();
     await expect(name).toBeVisible().catch(() => undefined);
-    const text = await readProductNameFromCard(card);
+    const text = await readProductNameFromCard(card, selectors);
     expect(text.length).toBeGreaterThan(1);
   });
 
-  test('PLP-014 product price is displayed', async ({ ctx, home, page }) => {
+  test('PLP-014 product price is displayed', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const card = requireDefined(await firstVisibleProductCard(page), 'No visible product card found on PLP.');
+    const card = requireDefined(await firstVisibleProductCard(page, selectors), 'No visible product card found on PLP.');
 
-    const price = card.locator(PRODUCT_PRICE_SELECTOR).first();
+    const price = card.locator(selectors.plp.productPrice).first();
     const priceVisible = await price.isVisible().catch(() => false);
     if (priceVisible) {
       await expect(price).toContainText(/\$\s?\d|AUD|NZD/i);
@@ -557,9 +519,9 @@ test.describe('plp', () => {
     }
   });
 
-  test('PLP-015 sale price presentation is correct', async ({ ctx, home, page }) => {
+  test('PLP-015 sale price presentation is correct', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const cards = page.locator(selectors.plp.productCard);
     const count = Math.min(await cards.count(), 16);
     test.skip(count === 0, 'No visible product card found on PLP.');
 
@@ -596,15 +558,15 @@ test.describe('plp', () => {
     test.skip(!saleFound, 'No sale-product card found on current PLP.');
   });
 
-  test('PLP-016 product badge/label is displayed correctly', async ({ ctx, home, page }) => {
+  test('PLP-016 product badge/label is displayed correctly', async ({ ctx, home, page, selectors }) => {
     await openCategoryPlp(home, page, searchData[ctx.brand].keyword);
-    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const cards = page.locator(selectors.plp.productCard);
     const count = Math.min(await cards.count(), 16);
     test.skip(count === 0, 'No visible product card found on PLP.');
 
     let badgeText = '';
     for (let index = 0; index < count; index += 1) {
-      const badge = cards.nth(index).locator(PRODUCT_BADGE_SELECTOR).first();
+      const badge = cards.nth(index).locator(selectors.plp.productBadge).first();
       const visible = await badge.isVisible().catch(() => false);
       if (!visible) {
         continue;
@@ -619,11 +581,11 @@ test.describe('plp', () => {
     expect(badgeText.length).toBeGreaterThan(0);
   });
 
-  test('PLP-017 clicking product card redirects to PDP', async ({ ctx, home, page }) => {
+  test('PLP-017 clicking product card redirects to PDP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
 
     const previousUrl = page.url();
-    const productTargets = await collectProductTargets(page, 8);
+    const productTargets = await collectProductTargets(page, selectors, 8);
     test.skip(productTargets.length === 0, 'No PDP product links available on current PLP.');
 
     const target = productTargets[0];
@@ -655,9 +617,9 @@ test.describe('plp', () => {
     }
   });
 
-  test('PLP-018 product card hover behavior on desktop if applicable', async ({ ctx, home, page }) => {
+  test('PLP-018 product card hover behavior on desktop if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const targets = await collectProductTargets(page, 6);
+    const targets = await collectProductTargets(page, selectors, 6);
     test.skip(targets.length === 0, 'No product card available on PLP.');
 
     const link = await home.bestProductLinkByHref(targets[0].href);
@@ -666,7 +628,7 @@ test.describe('plp', () => {
     test.skip(!cardVisible, 'Product card container is not available.');
 
     const hasHoverIndicator = await card
-      .locator('[class*="hover" i], [class*="secondary" i], [data-testid*="quick" i], button:has-text("Quick")')
+      .locator(selectors.plp.hoverReveal)
       .first()
       .isVisible()
       .catch(() => false);
@@ -687,11 +649,9 @@ test.describe('plp', () => {
     await expect(link).toBeVisible();
   });
 
-  test('PLP-019 product count is displayed correctly if available', async ({ ctx, home, page }) => {
+  test('PLP-019 product count is displayed correctly if available', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const countElement = page
-      .locator('[data-testid*="count" i], [class*="count" i], [id*="count" i], text=/\\b\\d+\\s*(products|items|results)\\b/i')
-      .first();
+    const countElement = page.locator(selectors.plp.countSummary).first();
     const visible = await countElement.isVisible().catch(() => false);
     test.skip(!visible, 'Product count UI is not available on this PLP.');
 
@@ -715,10 +675,10 @@ test.describe('plp', () => {
     await expect(page.locator('body')).toContainText(NO_RESULTS_PATTERN);
   });
 
-  test('PLP-021 pagination or load-more control is displayed when applicable', async ({ ctx, home, page }) => {
+  test('PLP-021 pagination or load-more control is displayed when applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const loadMore = page.locator(LOAD_MORE_SELECTOR).first();
-    const paginationNext = page.locator(PAGINATION_NEXT_SELECTOR).first();
+    const loadMore = page.locator(selectors.plp.loadMore).first();
+    const paginationNext = page.locator(selectors.plp.paginationNext).first();
     const hasLoadMore = await loadMore.isVisible().catch(() => false);
     const hasPagination = await paginationNext.isVisible().catch(() => false);
 
@@ -726,31 +686,31 @@ test.describe('plp', () => {
     expect(hasLoadMore || hasPagination).toBe(true);
   });
 
-  test('PLP-022 load more displays additional products', async ({ ctx, home, page }) => {
+  test('PLP-022 load more displays additional products', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const loadMore = page.locator(LOAD_MORE_SELECTOR).first();
+    const loadMore = page.locator(selectors.plp.loadMore).first();
     const loadMoreVisible = await loadMore.isVisible().catch(() => false);
     test.skip(!loadMoreVisible, 'Load more is not enabled on this PLP.');
 
-    const before = await collectProductTargets(page, 60);
+    const before = await collectProductTargets(page, selectors, 60);
     const beforeCount = before.length;
     await loadMore.scrollIntoViewIfNeeded();
     await loadMore.click({ timeout: 10_000 });
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     await page.waitForTimeout(1500);
 
-    const after = await collectProductTargets(page, 80);
+    const after = await collectProductTargets(page, selectors, 80);
     expect(after.length).toBeGreaterThan(beforeCount);
   });
 
-  test('PLP-023 pagination redirects or updates product list correctly', async ({ ctx, home, page }) => {
+  test('PLP-023 pagination redirects or updates product list correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const next = page.locator(PAGINATION_NEXT_SELECTOR).first();
+    const next = page.locator(selectors.plp.paginationNext).first();
     const visible = await next.isVisible().catch(() => false);
     test.skip(!visible, 'Pagination next control is not available on this PLP.');
 
     const beforeUrl = page.url();
-    const beforeProducts = await collectProductTargets(page, 8);
+    const beforeProducts = await collectProductTargets(page, selectors, 8);
     test.skip(beforeProducts.length === 0, 'No products available before pagination.');
 
     await next.scrollIntoViewIfNeeded();
@@ -760,18 +720,18 @@ test.describe('plp', () => {
     ]);
     await page.waitForTimeout(1200);
 
-    const afterProducts = await collectProductTargets(page, 8);
+    const afterProducts = await collectProductTargets(page, selectors, 8);
     const changedUrl = page.url() !== beforeUrl;
     const changedFirstProduct = afterProducts[0]?.href !== beforeProducts[0]?.href;
     expect(changedUrl || changedFirstProduct).toBe(true);
   });
 
-  test('PLP-024 browser back behavior after pagination or load more', async ({ ctx, home, page }) => {
+  test('PLP-024 browser back behavior after pagination or load more', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
 
     const beforeUrl = page.url();
-    const loadMore = page.locator(LOAD_MORE_SELECTOR).first();
-    const next = page.locator(PAGINATION_NEXT_SELECTOR).first();
+    const loadMore = page.locator(selectors.plp.loadMore).first();
+    const next = page.locator(selectors.plp.paginationNext).first();
     const canLoadMore = await loadMore.isVisible().catch(() => false);
     const canPaginate = await next.isVisible().catch(() => false);
     test.skip(!canLoadMore && !canPaginate, 'No pagination/load more control is available on this PLP.');
@@ -790,7 +750,7 @@ test.describe('plp', () => {
     }
 
     const stateUrl = page.url();
-    const products = await collectProductTargets(page, 8);
+    const products = await collectProductTargets(page, selectors, 8);
     test.skip(products.length === 0, 'No product link available after pagination/load more.');
 
     const productLink = await home.bestProductLinkByHref(products[0].href);
@@ -810,17 +770,17 @@ test.describe('plp', () => {
     expect(current.pathname).toBe(expected.pathname);
   });
 
-  test('PLP-025 sort dropdown is displayed', async ({ ctx, home, page }) => {
+  test('PLP-025 sort dropdown is displayed', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortControl = page.locator(SORT_CONTROL_SELECTOR).first();
+    const sortControl = page.locator(selectors.plp.sortControl).first();
     const visible = await sortControl.isVisible().catch(() => false);
     test.skip(!visible, 'Sort control is not available on this PLP.');
     await expect(sortControl).toBeVisible();
   });
 
-  test('PLP-026 sorting by price low to high', async ({ ctx, home, page }) => {
+  test('PLP-026 sorting by price low to high', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     const sortSelectVisible = await sortSelect.isVisible().catch(() => false);
 
     if (sortSelectVisible) {
@@ -834,9 +794,7 @@ test.describe('plp', () => {
       test.skip(!matchedValue, 'Low-to-high sort option is not available.');
       await sortSelect.selectOption(matchedValue);
     } else {
-      const sortTrigger = page
-        .locator('button:has-text("Sort"), [data-testid*="sort" i], [class*="sort" i]')
-        .first();
+      const sortTrigger = page.locator(selectors.plp.sortTrigger).first();
       const triggerVisible = await sortTrigger.isVisible().catch(() => false);
       test.skip(!triggerVisible, 'Sort UI is not available on this PLP.');
       await page.keyboard.press('Escape').catch(() => undefined);
@@ -844,9 +802,7 @@ test.describe('plp', () => {
         (node as HTMLElement).click();
       });
 
-      const lowHighOption = page
-        .locator('button:has-text("Low to High"), [role="option"]:has-text("Low to High"), a:has-text("Low to High")')
-        .first();
+      const lowHighOption = page.locator(selectors.plp.sortLowToHighOption).first();
       const optionVisible = await lowHighOption.isVisible().catch(() => false);
       test.skip(!optionVisible, 'Low-to-high sort option is not available.');
       await lowHighOption.evaluate((node) => {
@@ -857,15 +813,15 @@ test.describe('plp', () => {
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     await page.waitForTimeout(1200);
 
-    const prices = await collectVisiblePrices(page, 12);
+    const prices = await collectVisiblePrices(page, selectors, 12);
     test.skip(prices.length < 3, 'Not enough product prices to validate sorting.');
     expect(isNonDecreasing(prices.slice(0, Math.min(6, prices.length)))).toBe(true);
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PLP-027 sorting by price high to low', async ({ ctx, home, page }) => {
+  test('PLP-027 sorting by price high to low', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     const sortSelectVisible = await sortSelect.isVisible().catch(() => false);
 
     if (sortSelectVisible) {
@@ -879,28 +835,26 @@ test.describe('plp', () => {
       test.skip(!matchedValue, 'High-to-low sort option is not available.');
       await sortSelect.selectOption(matchedValue);
     } else {
-      const sortTrigger = page.locator('button:has-text("Sort"), [data-testid*="sort" i], [class*="sort" i]').first();
+      const sortTrigger = page.locator(selectors.plp.sortTrigger).first();
       const triggerVisible = await sortTrigger.isVisible().catch(() => false);
       test.skip(!triggerVisible, 'Sort UI is not available on this PLP.');
       await clickLocatorRobust(sortTrigger);
 
-      const highLowOption = page
-        .locator('button:has-text("High to Low"), [role="option"]:has-text("High to Low"), a:has-text("High to Low")')
-        .first();
+      const highLowOption = page.locator(selectors.plp.sortHighToLowOption).first();
       const optionVisible = await highLowOption.isVisible().catch(() => false);
       test.skip(!optionVisible, 'High-to-low sort option is not available.');
       await clickLocatorRobust(highLowOption);
     }
 
     await page.waitForTimeout(1200);
-    const prices = await collectVisiblePrices(page, 12);
+    const prices = await collectVisiblePrices(page, selectors, 12);
     test.skip(prices.length < 3, 'Not enough product prices to validate sorting.');
     expect(isNonIncreasing(prices.slice(0, Math.min(6, prices.length)))).toBe(true);
   });
 
-  test('PLP-028 sorting by newest/relevance/default if applicable', async ({ ctx, home, page }) => {
+  test('PLP-028 sorting by newest/relevance/default if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     const sortSelectVisible = await sortSelect.isVisible().catch(() => false);
 
     if (sortSelectVisible) {
@@ -914,7 +868,7 @@ test.describe('plp', () => {
       test.skip(!value, 'Newest/relevance/default sort option is not available.');
       await sortSelect.selectOption(value);
     } else {
-      const sortTrigger = page.locator('button:has-text("Sort"), [data-testid*="sort" i], [class*="sort" i]').first();
+      const sortTrigger = page.locator(selectors.plp.sortTrigger).first();
       const triggerVisible = await sortTrigger.isVisible().catch(() => false);
       test.skip(!triggerVisible, 'Sort UI is not available on this PLP.');
       await clickLocatorRobust(sortTrigger);
@@ -932,9 +886,9 @@ test.describe('plp', () => {
     await expect(page.locator('body')).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('PLP-029 selected sort option persists after page refresh', async ({ ctx, home, page }) => {
+  test('PLP-029 selected sort option persists after page refresh', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     const visible = await sortSelect.isVisible().catch(() => false);
     test.skip(!visible, 'Sort select is not available to verify persistence.');
 
@@ -955,23 +909,23 @@ test.describe('plp', () => {
     expect(selectedAfter === value || urlHasSort).toBe(true);
   });
 
-  test('PLP-030 filter panel is displayed', async ({ ctx, home, page }) => {
+  test('PLP-030 filter panel is displayed', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const panel = requireDefined(await ensureFilterPanelOpen(page), 'Filter panel is not available on this PLP.');
+    const panel = requireDefined(await ensureFilterPanelOpen(page, selectors), 'Filter panel is not available on this PLP.');
     await expect(panel).toBeVisible();
   });
 
-  test('PLP-031 filter panel opens and closes correctly', async ({ ctx, home, page }) => {
+  test('PLP-031 filter panel opens and closes correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const toggle = page.locator(FILTER_TOGGLE_SELECTOR).first();
+    const toggle = page.locator(selectors.plp.filterToggle).first();
     const toggleVisible = await toggle.isVisible().catch(() => false);
     test.skip(!toggleVisible, 'Filter toggle is not available on this PLP.');
 
     await clickLocatorRobust(toggle);
-    const panel = page.locator(FILTER_PANEL_SELECTOR).first();
+    const panel = page.locator(selectors.plp.filterPanel).first();
     await expect(panel).toBeVisible();
 
-    const close = page.locator(FILTER_CLOSE_SELECTOR).first();
+    const close = page.locator(selectors.plp.filterClose).first();
     const closeVisible = await close.isVisible().catch(() => false);
     if (closeVisible) {
       await clickLocatorRobust(close);
@@ -984,90 +938,88 @@ test.describe('plp', () => {
     expect(hidden).toBe(true);
   });
 
-  test('PLP-032 applying single filter updates product list', async ({ ctx, home, page }) => {
+  test('PLP-032 applying single filter updates product list', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
     const beforeUrl = page.url();
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFirstFilterOption(page, 0);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No applicable filter option found.');
 
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     const urlChanged = page.url() !== beforeUrl;
     const listChanged = after[0] !== before[0] || after.length !== before.length;
     expect(urlChanged || listChanged).toBe(true);
   });
 
-  test('PLP-033 applying multiple filters updates product list', async ({ ctx, home, page }) => {
+  test('PLP-033 applying multiple filters updates product list', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const first = await applyFirstFilterOption(page, 0);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const first = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!first, 'No first filter option found.');
-    const second = await applyFirstFilterOption(page, 3);
+    const second = await applyFirstFilterOption(page, selectors, 3);
     test.skip(!second, 'No second filter option found.');
 
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length).toBe(true);
   });
 
-  test('PLP-034 selected filters are displayed as active chips/tags if applicable', async ({ ctx, home, page }) => {
+  test('PLP-034 selected filters are displayed as active chips/tags if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const applied = await applyFirstFilterOption(page, 0);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available to apply.');
 
-    const chip = page.locator(ACTIVE_FILTER_CHIP_SELECTOR).first();
+    const chip = page.locator(selectors.plp.activeFilterChip).first();
     const visible = await chip.isVisible().catch(() => false);
     test.skip(!visible, 'Active filter chips/tags are not implemented on this PLP.');
     await expect(chip).toBeVisible();
   });
 
-  test('PLP-035 removing one selected filter updates product list', async ({ ctx, home, page }) => {
+  test('PLP-035 removing one selected filter updates product list', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const first = await applyFirstFilterOption(page, 0);
-    const second = await applyFirstFilterOption(page, 3);
+    const first = await applyFirstFilterOption(page, selectors, 0);
+    const second = await applyFirstFilterOption(page, selectors, 3);
     test.skip(!first || !second, 'Not enough filter options to validate remove-one behavior.');
 
-    const beforeRemove = await productHrefSnapshot(page, 20);
-    const removeChip = page
-      .locator(`${ACTIVE_FILTER_CHIP_SELECTOR} button, ${ACTIVE_FILTER_CHIP_SELECTOR} [aria-label*="remove" i], ${ACTIVE_FILTER_CHIP_SELECTOR}`)
-      .first();
+    const beforeRemove = await productHrefSnapshot(page, selectors, 20);
+    const removeChip = page.locator(selectors.plp.activeFilterRemove).first();
     const canRemove = await removeChip.isVisible().catch(() => false);
     test.skip(!canRemove, 'No removable active filter chip found.');
     await clickLocatorRobust(removeChip);
     await page.waitForTimeout(1000);
 
-    const afterRemove = await productHrefSnapshot(page, 20);
+    const afterRemove = await productHrefSnapshot(page, selectors, 20);
     expect(afterRemove[0] !== beforeRemove[0] || afterRemove.length !== beforeRemove.length).toBe(true);
   });
 
-  test('PLP-036 Clear All filters works correctly', async ({ ctx, home, page }) => {
+  test('PLP-036 Clear All filters works correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const baseline = await productHrefSnapshot(page, 20);
-    const applied = await applyFirstFilterOption(page, 0);
+    const baseline = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available to apply.');
 
-    const clearAll = page.locator(CLEAR_ALL_FILTER_SELECTOR).first();
+    const clearAll = page.locator(selectors.plp.clearAllFilters).first();
     const visible = await clearAll.isVisible().catch(() => false);
     test.skip(!visible, 'Clear All control is not available on this PLP.');
     await clickLocatorRobust(clearAll);
     await page.waitForTimeout(1200);
 
-    const currentChips = await page.locator(ACTIVE_FILTER_CHIP_SELECTOR).count();
-    const after = await productHrefSnapshot(page, 20);
+    const currentChips = await page.locator(selectors.plp.activeFilterChip).count();
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(currentChips === 0 || after[0] === baseline[0] || after.length === baseline.length).toBe(true);
   });
 
-  test('PLP-037 filter result count updates correctly', async ({ ctx, home, page }) => {
+  test('PLP-037 filter result count updates correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const beforeCount = (await productHrefSnapshot(page, 60)).length;
-    const applied = await applyFirstFilterOption(page, 0);
+    const beforeCount = (await productHrefSnapshot(page, selectors, 60)).length;
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available to apply.');
-    const afterCount = (await productHrefSnapshot(page, 60)).length;
+    const afterCount = (await productHrefSnapshot(page, selectors, 60)).length;
     expect(afterCount).not.toBe(beforeCount);
   });
 
-  test('PLP-038 filter options with zero products are handled correctly', async ({ ctx, home, page }) => {
+  test('PLP-038 filter options with zero products are handled correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const panel = requireDefined(await ensureFilterPanelOpen(page), 'Filter panel is not available on this PLP.');
+    const panel = requireDefined(await ensureFilterPanelOpen(page, selectors), 'Filter panel is not available on this PLP.');
 
     const zeroOption = panel
       .locator('label, button, a, [role="checkbox"]')
@@ -1081,58 +1033,58 @@ test.describe('plp', () => {
     await expect(page.locator('body')).toContainText(/no results|0 results|0 products|no products/i);
   });
 
-  test('PLP-039 size filter works correctly', async ({ ctx, home, page }) => {
+  test('PLP-039 size filter works correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFilterByKeyword(page, /size|us\s?\d|eu\s?\d|uk\s?\d/i);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFilterByKeyword(page, selectors, /size|us\s?\d|eu\s?\d|uk\s?\d/i);
     test.skip(!applied, 'Size filter is not available on this PLP.');
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length).toBe(true);
   });
 
-  test('PLP-040 colour filter works correctly', async ({ ctx, home, page }) => {
+  test('PLP-040 colour filter works correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFilterByKeyword(page, /colour|color|black|white|red|blue|brown|green/i);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFilterByKeyword(page, selectors, /colour|color|black|white|red|blue|brown|green/i);
     test.skip(!applied, 'Colour filter is not available on this PLP.');
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length).toBe(true);
   });
 
-  test('PLP-041 brand filter works correctly if applicable', async ({ ctx, home, page }) => {
+  test('PLP-041 brand filter works correctly if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFilterByKeyword(page, /brand|dr\.?\s?martens|vans|skechers|platypus/i);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFilterByKeyword(page, selectors, /brand|dr\.?\s?martens|vans|skechers|platypus/i);
     test.skip(!applied, 'Brand filter is not available on this PLP.');
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length).toBe(true);
   });
 
-  test('PLP-042 price filter works correctly', async ({ ctx, home, page }) => {
+  test('PLP-042 price filter works correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFilterByKeyword(page, /price|\$|under|over|to/i);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFilterByKeyword(page, selectors, /price|\$|under|over|to/i);
     test.skip(!applied, 'Price filter is not available on this PLP.');
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length).toBe(true);
   });
 
-  test('PLP-043 category/subcategory filter works correctly', async ({ ctx, home, page }) => {
+  test('PLP-043 category/subcategory filter works correctly', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFilterByKeyword(page, /category|subcategory|men|women|kids|boots|shoes|sandals/i);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFilterByKeyword(page, selectors, /category|subcategory|men|women|kids|boots|shoes|sandals/i);
     test.skip(!applied, 'Category/subcategory filter is not available on this PLP.');
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length).toBe(true);
   });
 
-  test('PLP-044 filters persist after opening PDP and returning to PLP', async ({ ctx, home, page }) => {
+  test('PLP-044 filters persist after opening PDP and returning to PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const applied = await applyFirstFilterOption(page, 0);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available to apply.');
     const filteredUrl = page.url();
 
-    const products = await collectProductTargets(page, 8);
+    const products = await collectProductTargets(page, selectors, 8);
     test.skip(products.length === 0, 'No product available to open PDP.');
     const productLink = await home.bestProductLinkByHref(products[0].href);
     await clickLocatorRobust(productLink);
@@ -1141,30 +1093,30 @@ test.describe('plp', () => {
     await page.goBack({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1000);
     expect(new URL(page.url()).pathname).toBe(new URL(filteredUrl).pathname);
-    const chips = await page.locator(ACTIVE_FILTER_CHIP_SELECTOR).count();
+    const chips = await page.locator(selectors.plp.activeFilterChip).count();
     const filterInUrl = /filter|price|size|color|brand/i.test(page.url());
     const retained = chips > 0 || filterInUrl;
     test.skip(!retained, 'Filter retention is reset by design on this storefront.');
     expect(retained).toBe(true);
   });
 
-  test('PLP-045 filter state persists after page refresh', async ({ ctx, home, page }) => {
+  test('PLP-045 filter state persists after page refresh', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const applied = await applyFirstFilterOption(page, 0);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available to apply.');
     const beforeRefreshUrl = page.url();
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1000);
 
-    const chips = await page.locator(ACTIVE_FILTER_CHIP_SELECTOR).count();
+    const chips = await page.locator(selectors.plp.activeFilterChip).count();
     const filterInUrl = /filter|price|size|color|brand/i.test(page.url());
     expect(chips > 0 || filterInUrl || page.url() === beforeRefreshUrl).toBe(true);
   });
 
-  test('PLP-046 filter URL/query parameters are updated correctly if applicable', async ({ ctx, home, page }) => {
+  test('PLP-046 filter URL/query parameters are updated correctly if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
     const beforeUrl = page.url();
-    const applied = await applyFirstFilterOption(page, 0);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available to apply.');
     const afterUrl = page.url();
     const hasFilterParam = /filter|price|size|color|brand|cat|query|q=|attribute/i.test(afterUrl);
@@ -1181,14 +1133,14 @@ test.describe('plp', () => {
     await expect(page.locator('body')).toContainText(new RegExp(keyword, 'i'));
   });
 
-  test('PLP-048 search result products match searched keyword', async ({ ctx, home, page }) => {
+  test('PLP-048 search result products match searched keyword', async ({ ctx, home, page, selectors }) => {
     const keyword = searchData[ctx.brand].keyword;
     await gotoHomeWithRetry(home, page);
     await home.search(keyword);
     await page.keyboard.press('Escape').catch(() => undefined);
 
-    const card = requireDefined(await firstVisibleProductCard(page), 'No product card available in search result PLP.');
-    const name = (await readProductNameFromCard(card)).toLowerCase();
+    const card = requireDefined(await firstVisibleProductCard(page, selectors), 'No product card available in search result PLP.');
+    const name = (await readProductNameFromCard(card, selectors)).toLowerCase();
     const keywordToken = keyword.toLowerCase().split(/\s+/)[0];
     expect(name.includes(keywordToken) || keywordToken.length <= 2).toBe(true);
   });
@@ -1203,50 +1155,44 @@ test.describe('plp', () => {
     await expect(page.locator('body')).toContainText(NO_RESULTS_PATTERN);
   });
 
-  test('PLP-050 quick add entry point is displayed if enabled', async ({ ctx, home, page }) => {
+  test('PLP-050 quick add entry point is displayed if enabled', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const quickAdd = page.locator(QUICK_ADD_SELECTOR).first();
+    const quickAdd = page.locator(selectors.plp.quickAdd).first();
     const visible = await quickAdd.isVisible().catch(() => false);
     test.skip(!visible, 'Quick Add entry point is not enabled on this PLP.');
     await expect(quickAdd).toBeVisible();
   });
 
-  test('PLP-051 quick add opens size/variant selector if required', async ({ ctx, home, page }) => {
+  test('PLP-051 quick add opens size/variant selector if required', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page, selectors), 'Quick Add is not available on this PLP.');
 
     await clickLocatorRobust(target.button);
-    const variantSelector = page
-      .locator('select[name*="size" i], [class*="size" i] button, [data-testid*="size" i], [class*="swatch" i], [data-testid*="variant" i]')
-      .first();
+    const variantSelector = page.locator(selectors.plp.variantOption).first();
     const visible = await variantSelector.isVisible().catch(() => false);
     test.skip(!visible, 'Quick Add does not require variant selection on current card.');
     await expect(variantSelector).toBeVisible();
   });
 
-  test('PLP-052 product can be added to cart from PLP', async ({ ctx, home, page }) => {
+  test('PLP-052 product can be added to cart from PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page, selectors), 'Quick Add is not available on this PLP.');
 
-    const before = await readCartCount(page);
+    const before = await readCartCount(page, selectors);
     await clickLocatorRobust(target.button);
     await page.waitForTimeout(1200);
-    const after = await readCartCount(page);
-    const successUI = await page
-      .locator('[data-testid*="success" i], [class*="success" i], [class*="toast" i], [class*="notification" i]')
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const after = await readCartCount(page, selectors);
+    const successUI = await page.locator(selectors.plp.successFeedback).first().isVisible().catch(() => false);
     const added = (before !== null && after !== null && after >= before) || successUI;
     test.skip(!added, 'No reliable add-to-cart success signal on current quick-add flow.');
     expect(added).toBe(true);
   });
 
-  test('PLP-053 correct variant is added to cart from PLP', async ({ ctx, home, page }) => {
+  test('PLP-053 correct variant is added to cart from PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page, selectors), 'Quick Add is not available on this PLP.');
 
-    const cardName = (await readProductNameFromCard(target.card)).toLowerCase();
+    const cardName = (await readProductNameFromCard(target.card, selectors)).toLowerCase();
     await clickLocatorRobust(target.button);
     await page.waitForTimeout(1200);
     await clickLocatorRobust(home.header.cartIcon);
@@ -1258,9 +1204,9 @@ test.describe('plp', () => {
     expect(miniCartText.includes(token) || miniCartText.includes('cart') || miniCartText.includes('bag')).toBe(true);
   });
 
-  test('PLP-054 validation when adding configurable product without required option', async ({ ctx, home, page }) => {
+  test('PLP-054 validation when adding configurable product without required option', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const target = requireDefined(await findFirstCardWithQuickAdd(page), 'Quick Add is not available on this PLP.');
+    const target = requireDefined(await findFirstCardWithQuickAdd(page, selectors), 'Quick Add is not available on this PLP.');
 
     await clickLocatorRobust(target.button);
     await page.waitForTimeout(1000);
@@ -1270,17 +1216,17 @@ test.describe('plp', () => {
     expect(hasValidation).toBe(true);
   });
 
-  test('PLP-055 wishlist icon/button is displayed if enabled', async ({ ctx, home, page }) => {
+  test('PLP-055 wishlist icon/button is displayed if enabled', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const wishlist = page.locator(WISHLIST_SELECTOR).first();
+    const wishlist = page.locator(selectors.plp.wishlistTrigger).first();
     const visible = await wishlist.isVisible().catch(() => false);
     test.skip(!visible, 'Wishlist feature is not enabled on this PLP.');
     await expect(wishlist).toBeVisible();
   });
 
-  test('PLP-056 product can be added to wishlist from PLP', async ({ ctx, home, page }) => {
+  test('PLP-056 product can be added to wishlist from PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const wishlist = page.locator(WISHLIST_SELECTOR).first();
+    const wishlist = page.locator(selectors.plp.wishlistTrigger).first();
     const visible = await wishlist.isVisible().catch(() => false);
     test.skip(!visible, 'Wishlist feature is not enabled on this PLP.');
 
@@ -1291,9 +1237,9 @@ test.describe('plp', () => {
     expect(/wishlist|login|account/.test(current) || /wishlist|saved|login|sign in/.test(body)).toBe(true);
   });
 
-  test('PLP-057 wishlist state updates correctly after action', async ({ ctx, home, page }) => {
+  test('PLP-057 wishlist state updates correctly after action', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const wishlist = page.locator(WISHLIST_SELECTOR).first();
+    const wishlist = page.locator(selectors.plp.wishlistTrigger).first();
     const visible = await wishlist.isVisible().catch(() => false);
     test.skip(!visible, 'Wishlist feature is not enabled on this PLP.');
 
@@ -1309,9 +1255,9 @@ test.describe('plp', () => {
     expect(updated).toBe(true);
   });
 
-  test('PLP-058 out-of-stock product card state', async ({ ctx, home, page }) => {
+  test('PLP-058 out-of-stock product card state', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const cards = page.locator(selectors.plp.productCard);
     const count = Math.min(await cards.count(), 20);
     test.skip(count === 0, 'No product card available on PLP.');
 
@@ -1328,9 +1274,9 @@ test.describe('plp', () => {
     expect(found).toBe(true);
   });
 
-  test('PLP-059 unavailable products cannot be added via quick add', async ({ ctx, home, page }) => {
+  test('PLP-059 unavailable products cannot be added via quick add', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const cards = page.locator(selectors.plp.productCard);
     const count = Math.min(await cards.count(), 20);
     let targetButton: Locator | null = null;
 
@@ -1340,7 +1286,7 @@ test.describe('plp', () => {
       if (!OOS_PATTERN.test(text)) {
         continue;
       }
-      const btn = card.locator(QUICK_ADD_SELECTOR).first();
+      const btn = card.locator(selectors.plp.quickAdd).first();
       if (await btn.isVisible().catch(() => false)) {
         targetButton = btn;
         break;
@@ -1373,9 +1319,9 @@ test.describe('plp', () => {
     expect(hasHorizontalOverflow).toBe(false);
   });
 
-  test('PLP-062 product grid alignment', async ({ ctx, home, page }) => {
+  test('PLP-062 product grid alignment', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const cards = page.locator(selectors.plp.productCard);
     const count = Math.min(await cards.count(), 6);
     test.skip(count < 2, 'Not enough product cards to validate grid alignment.');
 
@@ -1435,11 +1381,9 @@ test.describe('plp', () => {
     test.skip(checked === 0, 'No visible product image to validate distortion.');
   });
 
-  test('PLP-065 sticky filter/sort behavior if applicable', async ({ ctx, home, page }) => {
+  test('PLP-065 sticky filter/sort behavior if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sticky = page
-      .locator('[class*="sticky" i][class*="filter" i], [class*="sticky" i][class*="sort" i], [data-testid*="sticky" i]')
-      .first();
+    const sticky = page.locator(selectors.plp.stickyControls).first();
     const visible = await sticky.isVisible().catch(() => false);
     test.skip(!visible, 'Sticky filter/sort is not enabled on this PLP.');
 
@@ -1473,18 +1417,18 @@ test.describe('plp', () => {
     expect(overflow).toBe(false);
   });
 
-  test('PLP-069 mobile filter panel opens and closes correctly', async ({ ctx, home, page }) => {
+  test('PLP-069 mobile filter panel opens and closes correctly', async ({ ctx, home, page, selectors }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openPlp(home, page, searchData[ctx.brand].keyword);
 
-    const toggle = page.locator(FILTER_TOGGLE_SELECTOR).first();
+    const toggle = page.locator(selectors.plp.filterToggle).first();
     const toggleVisible = await toggle.isVisible().catch(() => false);
     test.skip(!toggleVisible, 'Mobile filter toggle is not available.');
     await clickLocatorRobust(toggle);
 
-    const panel = page.locator(FILTER_PANEL_SELECTOR).first();
+    const panel = page.locator(selectors.plp.filterPanel).first();
     await expect(panel).toBeVisible();
-    const close = page.locator(FILTER_CLOSE_SELECTOR).first();
+    const close = page.locator(selectors.plp.filterClose).first();
     if (await close.isVisible().catch(() => false)) {
       await clickLocatorRobust(close);
     } else {
@@ -1495,12 +1439,12 @@ test.describe('plp', () => {
     expect(hidden).toBe(true);
   });
 
-  test('PLP-070 mobile sort control works correctly', async ({ ctx, home, page }) => {
+  test('PLP-070 mobile sort control works correctly', async ({ ctx, home, page, selectors }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 10);
+    const before = await productHrefSnapshot(page, selectors, 10);
 
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     if (await sortSelect.isVisible().catch(() => false)) {
       const value = await sortSelect.evaluate((node) => {
         const select = node as HTMLSelectElement;
@@ -1510,37 +1454,35 @@ test.describe('plp', () => {
       test.skip(!value, 'No mobile sort option available.');
       await sortSelect.selectOption(value);
     } else {
-      const sortTrigger = page.locator(SORT_CONTROL_SELECTOR).first();
+      const sortTrigger = page.locator(selectors.plp.sortControl).first();
       const visible = await sortTrigger.isVisible().catch(() => false);
       test.skip(!visible, 'Mobile sort control is not available.');
       await clickLocatorRobust(sortTrigger);
-      const option = page
-        .locator('button:has-text("Low"), button:has-text("High"), button:has-text("Newest"), [role="option"]')
-        .first();
+      const option = page.locator(selectors.plp.sortAnyOption).first();
       const optionVisible = await option.isVisible().catch(() => false);
       test.skip(!optionVisible, 'No mobile sort option available.');
       await clickLocatorRobust(option);
     }
 
     await page.waitForTimeout(1000);
-    const after = await productHrefSnapshot(page, 10);
+    const after = await productHrefSnapshot(page, selectors, 10);
     expect(after[0] !== before[0] || after.length !== before.length || /sort|order|dir/i.test(page.url())).toBe(true);
   });
 
-  test('PLP-071 applying filters on mobile updates product list correctly', async ({ ctx, home, page }) => {
+  test('PLP-071 applying filters on mobile updates product list correctly', async ({ ctx, home, page, selectors }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const before = await productHrefSnapshot(page, 20);
-    const applied = await applyFirstFilterOption(page, 0);
+    const before = await productHrefSnapshot(page, selectors, 20);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No mobile filter option available.');
-    const after = await productHrefSnapshot(page, 20);
+    const after = await productHrefSnapshot(page, selectors, 20);
     expect(after[0] !== before[0] || after.length !== before.length || /filter|size|color|price|brand/i.test(page.url())).toBe(true);
   });
 
-  test('PLP-072 mobile product card layout', async ({ ctx, home, page }) => {
+  test('PLP-072 mobile product card layout', async ({ ctx, home, page, selectors }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const cards = page.locator(PRODUCT_CARD_SELECTOR);
+    const cards = page.locator(selectors.plp.productCard);
     const count = Math.min(await cards.count(), 4);
     test.skip(count < 2, 'Not enough product cards to validate mobile layout.');
 
@@ -1564,19 +1506,19 @@ test.describe('plp', () => {
     expect(duration).toBeLessThan(30_000);
   });
 
-  test('PLP-074 filtering performance is acceptable', async ({ ctx, home, page }) => {
+  test('PLP-074 filtering performance is acceptable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
     const started = Date.now();
-    const applied = await applyFirstFilterOption(page, 0);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter option available for performance measurement.');
     const duration = Date.now() - started;
     expect(duration).toBeLessThan(20_000);
   });
 
-  test('PLP-075 sorting performance is acceptable', async ({ ctx, home, page }) => {
+  test('PLP-075 sorting performance is acceptable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
     const started = Date.now();
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     if (await sortSelect.isVisible().catch(() => false)) {
       const value = await sortSelect.evaluate((node) => {
         const select = node as HTMLSelectElement;
@@ -1586,11 +1528,11 @@ test.describe('plp', () => {
       test.skip(!value, 'No sort option available for performance measurement.');
       await sortSelect.selectOption(value);
     } else {
-      const trigger = page.locator(SORT_CONTROL_SELECTOR).first();
+      const trigger = page.locator(selectors.plp.sortControl).first();
       const triggerVisible = await trigger.isVisible().catch(() => false);
       test.skip(!triggerVisible, 'Sort control is not available for performance measurement.');
       await clickLocatorRobust(trigger);
-      const option = page.locator('button:has-text("Low"), button:has-text("High"), button:has-text("Newest"), [role="option"]').first();
+      const option = page.locator(selectors.plp.sortAnyOption).first();
       const optionVisible = await option.isVisible().catch(() => false);
       test.skip(!optionVisible, 'No sort option available for performance measurement.');
       await clickLocatorRobust(option);
@@ -1600,11 +1542,11 @@ test.describe('plp', () => {
     expect(duration).toBeLessThan(20_000);
   });
 
-  test('PLP-076 repeated filter changes do not break PLP', async ({ ctx, home, page }) => {
+  test('PLP-076 repeated filter changes do not break PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
     let changes = 0;
     for (let index = 0; index < 3; index += 1) {
-      const applied = await applyFirstFilterOption(page, index);
+      const applied = await applyFirstFilterOption(page, selectors, index);
       if (!applied) {
         continue;
       }
@@ -1615,9 +1557,9 @@ test.describe('plp', () => {
     await expect(page.locator('main')).toBeVisible();
   });
 
-  test('PLP-077 repeated sort changes do not break PLP', async ({ ctx, home, page }) => {
+  test('PLP-077 repeated sort changes do not break PLP', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     const visible = await sortSelect.isVisible().catch(() => false);
     test.skip(!visible, 'Sort select is not available for repeated sort changes.');
 
@@ -1692,9 +1634,9 @@ test.describe('plp', () => {
     expect(hasEvent).toBe(true);
   });
 
-  test('PLP-081 product card click tracking is fired', async ({ ctx, home, page }) => {
+  test('PLP-081 product card click tracking is fired', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const products = await collectProductTargets(page, 6);
+    const products = await collectProductTargets(page, selectors, 6);
     test.skip(products.length === 0, 'No product card available for click-tracking validation.');
 
     const link = await home.bestProductLinkByHref(products[0].href);
@@ -1707,9 +1649,9 @@ test.describe('plp', () => {
     expect(hasEvent).toBe(true);
   });
 
-  test('PLP-082 filter interaction tracking is fired', async ({ ctx, home, page }) => {
+  test('PLP-082 filter interaction tracking is fired', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const applied = await applyFirstFilterOption(page, 0);
+    const applied = await applyFirstFilterOption(page, selectors, 0);
     test.skip(!applied, 'No filter action available for tracking validation.');
     const analytics = await readAnalyticsSnapshot(page);
     test.skip(!analytics.supported, 'Analytics payload source (dataLayer/utag) is not available.');
@@ -1718,9 +1660,9 @@ test.describe('plp', () => {
     expect(hasEvent).toBe(true);
   });
 
-  test('PLP-083 sort interaction tracking is fired', async ({ ctx, home, page }) => {
+  test('PLP-083 sort interaction tracking is fired', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const sortSelect = page.locator('select[name*="sort" i], select[id*="sort" i]').first();
+    const sortSelect = page.locator(selectors.plp.sortSelect).first();
     if (await sortSelect.isVisible().catch(() => false)) {
       const value = await sortSelect.evaluate((node) => {
         const select = node as HTMLSelectElement;
@@ -1730,11 +1672,11 @@ test.describe('plp', () => {
       test.skip(!value, 'No sort option available for tracking validation.');
       await sortSelect.selectOption(value);
     } else {
-      const trigger = page.locator(SORT_CONTROL_SELECTOR).first();
+      const trigger = page.locator(selectors.plp.sortControl).first();
       const visible = await trigger.isVisible().catch(() => false);
       test.skip(!visible, 'Sort control is not available for tracking validation.');
       await clickLocatorRobust(trigger);
-      const option = page.locator('button:has-text("Low"), button:has-text("High"), button:has-text("Newest"), [role="option"]').first();
+      const option = page.locator(selectors.plp.sortAnyOption).first();
       const optionVisible = await option.isVisible().catch(() => false);
       test.skip(!optionVisible, 'No sort option available for tracking validation.');
       await clickLocatorRobust(option);
@@ -1747,10 +1689,10 @@ test.describe('plp', () => {
     expect(hasEvent).toBe(true);
   });
 
-  test('PLP-084 pagination/load-more tracking is fired', async ({ ctx, home, page }) => {
+  test('PLP-084 pagination/load-more tracking is fired', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
-    const loadMore = page.locator(LOAD_MORE_SELECTOR).first();
-    const next = page.locator(PAGINATION_NEXT_SELECTOR).first();
+    const loadMore = page.locator(selectors.plp.loadMore).first();
+    const next = page.locator(selectors.plp.paginationNext).first();
     if (await loadMore.isVisible().catch(() => false)) {
       await clickLocatorRobust(loadMore);
     } else if (await next.isVisible().catch(() => false)) {
@@ -1766,10 +1708,10 @@ test.describe('plp', () => {
     expect(hasEvent).toBe(true);
   });
 
-  test('PLP-085 quick add tracking is fired if applicable', async ({ ctx, home, page }) => {
+  test('PLP-085 quick add tracking is fired if applicable', async ({ ctx, home, page, selectors }) => {
     await openPlp(home, page, searchData[ctx.brand].keyword);
     const target = requireDefined(
-      await findFirstCardWithQuickAdd(page),
+      await findFirstCardWithQuickAdd(page, selectors),
       'Quick Add is not available for tracking validation.'
     );
 
