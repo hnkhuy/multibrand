@@ -76,3 +76,5 @@ To add a brand override: create a component selector file under `src/selectors/b
 ## Maintenance
 
 After each architectural change (new brand, new selector layer, new fixture, new page object, changed project structure), suggest updating this file to keep it accurate.
+
+At the end of each working session, update this file with: what we just did, important technical decisions made, and what needs to be done next.

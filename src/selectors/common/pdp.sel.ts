@@ -2,7 +2,7 @@ import type { PDPSelectors } from '../../core/types';
 
 export const pdpSelectors: PDPSelectors = {
   addToCartButton: '[data-testid="add-to-cart"], button[name="add"], button:has-text("Add to Cart"), button:has-text("Add to Bag")',
-  sizeSelector: '[data-testid="size-selector"], select[name*="size" i], button[aria-label*="size" i]',
+  sizeSelector: '[data-testid="size-selector"], select[name*="size" i], button[aria-label*="size" i], button[class*="available"]',
   productTitle: '[data-testid="product-title"], h1',
   breadcrumb: '.bread-crumbs-root, nav[aria-label*="breadcrumb" i], [data-testid*="breadcrumb" i], .breadcrumb, [class*="breadcrumb" i], [class*="bread-crumbs-root"], [itemtype*="BreadcrumbList"]',
   breadcrumbLink:
@@ -13,8 +13,8 @@ export const pdpSelectors: PDPSelectors = {
   description: '[data-testid*="description" i], [class*="description" i], [id*="description" i], [class*="product-details" i]',
   attribute: '[data-testid*="attribute" i], [class*="attribute" i], [class*="swatch" i], [class*="size" i], [class*="color" i]',
   colorOption:
-    '[data-testid*="color" i] button, [data-testid*="swatch" i] button, [class*="color" i] button, [class*="swatch" i] button',
-  sizeOption: 'select[name*="size" i], [data-testid*="size" i] button, [class*="size" i] button',
+    '.swiper-slide a[href$=".html"], [data-testid*="color" i] button, [data-testid*="swatch" i] button, [class*="color" i] button, [class*="swatch" i] button',
+  sizeOption: 'select[name*="size" i], [data-testid*="size" i] button, [class*="size" i] button, button[class*="available"]',
   galleryImage:
     'main img, [data-testid*="gallery" i] img, [class*="gallery" i] img, [class*="carousel" i] img, [class*="product-image" i] img, picture img',
   thumbnail: '[data-testid*="thumbnail" i], [class*="thumbnail" i], [class*="thumb" i], button:has(img), [role="tab"]:has(img)',
@@ -26,7 +26,7 @@ export const pdpSelectors: PDPSelectors = {
   zoomDialog: '[role="dialog"], [data-testid*="zoom" i], [class*="zoom" i], [class*="lightbox" i]',
   productVideo: '[data-testid*="video" i] video, [class*="video" i] video, video[src], video source',
   sizeSelect: 'select[name*="size" i], [data-testid*="size" i] select',
-  sizeButton: '[data-testid*="size" i] button, [class*="size" i] button',
+  sizeButton: '[data-testid*="size" i] button, [class*="size" i] button, button[class*="available"]',
   successFeedback:
     '[data-testid*="success" i], [data-testid*="added" i], [class*="success" i], [class*="toast" i], [class*="notification" i]',
   quantityInput: 'input[name*="qty" i], input[name*="quantity" i], [data-testid*="quantity" i] input, select[name*="qty" i], select[name*="quantity" i]',

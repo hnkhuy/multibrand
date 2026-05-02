@@ -18,3 +18,6 @@ yarn-error.log*
 .aider.tags.cache.v4/cache.db
 .aider.tags.cache.v4/cache.db-shm
 .aider.tags.cache.v4/cache.db-wal
+results
+src/documents/instruction
+tests/diagnostic
