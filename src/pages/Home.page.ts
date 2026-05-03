@@ -350,7 +350,13 @@ export class HomePage extends BasePage {
   }
 
   productLinkByHref(href: string): Locator {
-    return this.page.locator(`main a[href="${href.replace(/"/g, '\\"')}"]`);
+    const escaped = href.replace(/"/g, '\\"');
+    // Use starts-with selector on path-only to avoid query-param encoding mismatches
+    const pathPart = href.split('?')[0].replace(/"/g, '\\"');
+    if (pathPart && href.includes('?')) {
+      return this.page.locator(`main a[href^="${pathPart}"]`);
+    }
+    return this.page.locator(`main a[href="${escaped}"]`);
   }
 
   footerLinkByHref(href: string): Locator {
