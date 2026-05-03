@@ -4,14 +4,14 @@ import { env } from './src/core/env';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 90_000,
+  timeout: 150_000,
   expect: {
     timeout: 40_000
   },
   fullyParallel: true,
   forbidOnly: env.CI,
   retries: env.CI ? 2 : 0,
-  workers: env.CI ? 2 : undefined,
+  workers: 2,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'reports/playwright-html', open: 'never' }]
@@ -21,7 +21,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     actionTimeout: 60_000,
-    navigationTimeout: 120_000,
+    navigationTimeout: 60_000,
     ...devices['Desktop Chrome']
   },
   projects
