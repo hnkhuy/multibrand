@@ -262,10 +262,10 @@ test.describe('homepage', () => {
     expect(box?.height).toBeGreaterThan(120);
   });
 
-  test('HP-019 promotional carousel can be navigated manually', async ({ home, page }) => {
+  test('HP-019 promotional carousel can be navigated manually', async ({ features, home, page }) => {
+    if (!features.promoCarousel) test.skip(true, 'Brand does not have a promotional carousel.');
     await home.goto('/');
-
-    test.skip(!(await home.hasPromoCarousel()), 'Promotional carousel controls are not available.');
+    expect(await home.hasPromoCarousel(), 'Promotional carousel controls should be available.').toBe(true);
 
     const before = await home.promoCarouselSignature();
     await home.promoCarouselButton('next').click();
@@ -282,10 +282,11 @@ test.describe('homepage', () => {
     await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('HP-020 promotional carousel auto-rotation works if enabled', async ({ home, page }) => {
+  test('HP-020 promotional carousel auto-rotation works if enabled', { tag: ['@data-dependent'] }, async ({ features, home, page }) => {
+    if (!features.promoCarousel) test.skip(true, 'Brand does not have a promotional carousel.');
     await home.goto('/');
 
-    test.skip(!(await home.hasPromoCarousel()), 'Promotional carousel controls are not available.');
+    expect(await home.hasPromoCarousel(), 'Promotional carousel should be available.').toBe(true);
 
     const before = await home.promoCarouselSignature();
     await page.waitForTimeout(6_000);
@@ -297,7 +298,8 @@ test.describe('homepage', () => {
     await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('HP-021 promotional tiles/cards are displayed', async ({ home, page }) => {
+  test('HP-021 promotional tiles/cards are displayed', async ({ features, home, page }) => {
+    if (!features.promoTiles) test.skip(true, 'Brand does not have promotional tiles.');
     await home.goto('/');
     const promoLinks = await home.getPromoTileLinks();
 
@@ -306,11 +308,12 @@ test.describe('homepage', () => {
     await expect(home.mainLinks.nth(promoLinks[0].index)).toBeVisible();
   });
 
-  test('HP-022 promotional tile CTA redirects correctly', async ({ home, page }) => {
+  test('HP-022 promotional tile CTA redirects correctly', async ({ features, home, page }) => {
+    if (!features.promoTiles) test.skip(true, 'Brand does not have promotional tiles.');
     await home.goto('/');
     const promoLinks = await home.getPromoTileLinks(3);
 
-    test.skip(promoLinks.length === 0, 'Promotional tile CTA is not available.');
+    expect(promoLinks.length, 'Promotional tile CTAs should be available.').toBeGreaterThan(0);
 
     for (const link of promoLinks) {
       await home.goto('/');
@@ -332,18 +335,20 @@ test.describe('homepage', () => {
     }
   });
 
-  test('HP-023 category entry points are displayed', async ({ home }) => {
+  test('HP-023 category entry points are displayed', async ({ features, home }) => {
+    if (!features.categoryEntries) test.skip(true, 'Brand does not have category entry points.');
     await home.goto('/');
     const categoryLinks = await home.getCategoryEntryLinks();
 
     expect(categoryLinks.length).toBeGreaterThan(0);
   });
 
-  test('HP-024 category entry points redirect to correct PLP', async ({ home, page }) => {
+  test('HP-024 category entry points redirect to correct PLP', async ({ features, home, page }) => {
+    if (!features.categoryEntries) test.skip(true, 'Brand does not have category entry points.');
     await home.goto('/');
     const categoryLinks = await home.getCategoryEntryLinks(3);
 
-    test.skip(categoryLinks.length === 0, 'Category entry links are not available.');
+    expect(categoryLinks.length, 'Category entry links should be available.').toBeGreaterThan(0);
 
     for (const category of categoryLinks) {
       await home.goto('/');
@@ -365,11 +370,12 @@ test.describe('homepage', () => {
     }
   });
 
-  test('HP-025 destination category content is relevant', async ({ home, page }) => {
+  test('HP-025 destination category content is relevant', async ({ features, home, page }) => {
+    if (!features.categoryEntries) test.skip(true, 'Brand does not have category entry points.');
     await home.goto('/');
     const categoryLinks = await home.getCategoryEntryLinks(2);
 
-    test.skip(categoryLinks.length === 0, 'Category entry links are not available.');
+    expect(categoryLinks.length, 'Category entry links should be available.').toBeGreaterThan(0);
 
     for (const category of categoryLinks) {
       await home.goto('/');
@@ -392,7 +398,8 @@ test.describe('homepage', () => {
     }
   });
 
-  test('HP-026 featured product module is displayed', async ({ home }) => {
+  test('HP-026 featured product module is displayed', async ({ features, home }) => {
+    if (!features.featuredProducts) test.skip(true, 'Brand does not have a featured product module.');
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks();
 
@@ -402,11 +409,12 @@ test.describe('homepage', () => {
     await expect(firstCard).toBeVisible();
   });
 
-  test('HP-027 product card displays required elements', async ({ home }) => {
+  test('HP-027 product card displays required elements', async ({ features, home }) => {
+    if (!features.featuredProducts) test.skip(true, 'Brand does not have a featured product module.');
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks();
 
-    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+    expect(productLinks.length, 'Featured product cards should be available.').toBeGreaterThan(0);
 
     const first = productLinks[0];
     const firstCard = await home.bestProductLinkByHref(first.href);
@@ -418,11 +426,12 @@ test.describe('homepage', () => {
     expect(snapshot.prices.length).toBeGreaterThan(0);
   });
 
-  test('HP-028 clicking product card redirects to PDP', async ({ home, page }) => {
+  test('HP-028 clicking product card redirects to PDP', async ({ features, home, page }) => {
+    if (!features.featuredProducts) test.skip(true, 'Brand does not have a featured product module.');
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks(3);
 
-    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+    expect(productLinks.length, 'Featured product cards should be available.').toBeGreaterThan(0);
 
     const target = productLinks[0];
     const card = await home.bestProductLinkByHref(target.href);
@@ -442,11 +451,12 @@ test.describe('homepage', () => {
     await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('HP-029 product price format matches selected region', async ({ home }) => {
+  test('HP-029 product price format matches selected region', async ({ features, home }) => {
+    if (!features.featuredProducts) test.skip(true, 'Brand does not have a featured product module.');
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks();
 
-    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+    expect(productLinks.length, 'Featured product cards should be available.').toBeGreaterThan(0);
 
     const first = productLinks[0];
     const firstCard = home.productLinkByHref(first.href).first();
@@ -459,11 +469,12 @@ test.describe('homepage', () => {
     }
   });
 
-  test('HP-030 sale price presentation is correct', async ({ home }) => {
+  test('HP-030 sale price presentation is correct', { tag: ['@data-dependent'] }, async ({ features, home }) => {
+    if (!features.featuredProducts) test.skip(true, 'Brand does not have a featured product module.');
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks(8);
 
-    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+    expect(productLinks.length, 'Featured product cards should be available.').toBeGreaterThan(0);
 
     let saleValidated = false;
     for (const product of productLinks) {
@@ -492,11 +503,12 @@ test.describe('homepage', () => {
     test.skip(!saleValidated, 'No sale product card with both current/original price was found.');
   });
 
-  test('HP-031 product availability state is represented correctly', async ({ home, page }) => {
+  test('HP-031 product availability state is represented correctly', { tag: ['@data-dependent'] }, async ({ features, home, page }) => {
+    if (!features.featuredProducts) test.skip(true, 'Brand does not have a featured product module.');
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks(12);
 
-    test.skip(productLinks.length === 0, 'Featured product cards are not available.');
+    expect(productLinks.length, 'Featured product cards should be available.').toBeGreaterThan(0);
 
     const availabilityPattern = /out of stock|sold out|in stock|pre-?order|coming soon|low stock|back in stock/i;
 
@@ -526,7 +538,8 @@ test.describe('homepage', () => {
     await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
   });
 
-  test('HP-032 quick action opens correctly if feature exists', async ({ home, page }) => {
+  test('HP-032 quick action opens correctly if feature exists', async ({ features, home, page }) => {
+    if (!features.quickView) test.skip(true, 'Brand does not have a quick view/add feature.');
     await home.goto('/');
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.2));
     await page.waitForTimeout(500);
@@ -557,7 +570,7 @@ test.describe('homepage', () => {
         return true;
       });
 
-    test.skip(!quickActionClicked, 'Quick action feature is not available on homepage.');
+    expect(quickActionClicked, 'Quick action button should be available on homepage.').toBe(true);
 
     const quickViewOpened = await home.dialogSurface
       .first()
@@ -577,7 +590,8 @@ test.describe('homepage', () => {
     await expect(footer).not.toBeEmpty();
   });
 
-  test('HP-034 footer links redirect correctly', async ({ home, page }) => {
+  test('HP-034 footer links redirect correctly', async ({ features, home, page }) => {
+    if (!features.footerLinks) test.skip(true, 'Brand does not have footer links.');
     await home.goto('/');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
@@ -610,7 +624,7 @@ test.describe('homepage', () => {
       return Array.from(new Set(links)).slice(0, 2);
     }, baseHost);
 
-    test.skip(footerLinks.length === 0, 'Footer links are not available.');
+    expect(footerLinks.length, 'Footer links should be available.').toBeGreaterThan(0);
 
     for (const expectedHref of footerLinks) {
       await home.goto('/');
@@ -655,7 +669,8 @@ test.describe('homepage', () => {
     }
   });
 
-  test('HP-035 social links redirect correctly', async ({ home, page }) => {
+  test('HP-035 social links redirect correctly', async ({ features, home, page }) => {
+    if (!features.socialLinks) test.skip(true, 'Brand does not have social links in footer.');
     await home.goto('/');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
@@ -678,7 +693,7 @@ test.describe('homepage', () => {
       return Array.from(new Set(links)).slice(0, 2);
     });
 
-    test.skip(socialLinks.length === 0, 'Social links are not available in footer.');
+    expect(socialLinks.length, 'Social links should be available in footer.').toBeGreaterThan(0);
 
     for (const href of socialLinks) {
       await home.goto('/');
@@ -838,7 +853,8 @@ test.describe('homepage', () => {
     expect(problematicImages).toBe(0);
   });
 
-  test('HP-040 sticky header behavior on scroll', async ({ home, page }) => {
+  test('HP-040 sticky header behavior on scroll', async ({ features, home, page }) => {
+    if (!features.stickyHeader) test.skip(true, 'Brand does not have a sticky header.');
     await home.goto('/');
 
     const stickyInfo = await page.evaluate(() => {
@@ -854,8 +870,8 @@ test.describe('homepage', () => {
       return { exists: true, sticky, top: rect.top };
     });
 
-    test.skip(!stickyInfo.exists, 'Header element is not available.');
-    test.skip(!stickyInfo.sticky, 'Sticky header is not enabled on this site.');
+    expect(stickyInfo.exists, 'Header element should be present.').toBe(true);
+    expect(stickyInfo.sticky, 'Header should have sticky/fixed positioning.').toBe(true);
 
     const initialTop = stickyInfo.top ?? 0;
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 1.5));
@@ -1005,7 +1021,7 @@ test.describe('homepage', () => {
         .slice(0, 3);
     });
 
-    test.skip(links.length === 0, 'No visible homepage links available for repeated navigation.');
+    expect(links.length, 'Visible homepage links should be available.').toBeGreaterThan(0);
 
     for (const href of links) {
       await home.goto('/');
@@ -1045,7 +1061,7 @@ test.describe('homepage', () => {
         .slice(0, 3);
     });
 
-    test.skip(links.length === 0, 'No visible homepage links available for broken-link check.');
+    expect(links.length, 'Visible homepage links should be available.').toBeGreaterThan(0);
 
     for (const href of links) {
       await home.goto('/');
@@ -1066,7 +1082,7 @@ test.describe('homepage', () => {
     }
   });
 
-  test('HP-049 hero banner click tracking is fired', async ({ home, page }) => {
+  test('HP-049 hero banner click tracking is fired', { tag: ['@data-dependent'] }, async ({ home, page }) => {
     await page.addInitScript(() => {
       const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
       win.__capturedDataLayerEvents = [];
@@ -1111,7 +1127,7 @@ test.describe('homepage', () => {
     test.skip(!/click|select|promotion|banner|hero|cms|navigation|home/i.test(serialized), 'No identifiable hero click analytics payload.');
   });
 
-  test('HP-050 category click tracking is fired', async ({ home, page }) => {
+  test('HP-050 category click tracking is fired', { tag: ['@data-dependent'] }, async ({ home, page }) => {
     await page.addInitScript(() => {
       const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
       win.__capturedDataLayerEvents = [];
@@ -1126,7 +1142,7 @@ test.describe('homepage', () => {
 
     await home.goto('/');
     const categoryLinks = await home.getCategoryEntryLinks(1);
-    test.skip(categoryLinks.length === 0, 'No category entry point found for tracking check.');
+    expect(categoryLinks.length, 'Category entry point should be found for tracking check.').toBeGreaterThan(0);
 
     const target = categoryLinks[0];
     const previousUrl = page.url();
@@ -1173,7 +1189,7 @@ test.describe('homepage', () => {
     test.skip(!/category|navigation|menu|home|click|select/i.test(serialized), 'No identifiable category click analytics payload.');
   });
 
-  test('HP-051 product click tracking is fired', async ({ home, page }) => {
+  test('HP-051 product click tracking is fired', { tag: ['@data-dependent'] }, async ({ home, page }) => {
     await page.addInitScript(() => {
       const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
       win.__capturedDataLayerEvents = [];
@@ -1188,7 +1204,7 @@ test.describe('homepage', () => {
 
     await home.goto('/');
     const productLinks = await home.getFeaturedProductLinks(1);
-    test.skip(productLinks.length === 0, 'No product card found for tracking check.');
+    expect(productLinks.length, 'Product card should be found for tracking check.').toBeGreaterThan(0);
 
     const target = productLinks[0];
     const previousUrl = page.url();
@@ -1237,7 +1253,7 @@ test.describe('homepage', () => {
     test.skip(!/product|item|listing|click|select/i.test(serialized), 'No identifiable product click analytics payload.');
   });
 
-  test('HP-052 click-event metadata is correct', async ({ home, page }) => {
+  test('HP-052 click-event metadata is correct', { tag: ['@data-dependent'] }, async ({ home, page }) => {
     await page.addInitScript(() => {
       const win = window as Window & { __capturedDataLayerEvents?: unknown[]; dataLayer?: unknown[] };
       win.__capturedDataLayerEvents = [];
@@ -1252,7 +1268,7 @@ test.describe('homepage', () => {
 
     await home.goto('/');
     const categoryLinks = await home.getCategoryEntryLinks(1);
-    test.skip(categoryLinks.length === 0, 'No category entry point found for metadata validation.');
+    expect(categoryLinks.length, 'Category entry point should be found for metadata validation.').toBeGreaterThan(0);
 
     const target = categoryLinks[0];
     const beforeEvents = await page.evaluate(() => {

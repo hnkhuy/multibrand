@@ -2,6 +2,8 @@ import { test as base } from '@playwright/test';
 import type { BrandContext, ProjectMeta, Selectors } from '../core/types';
 import { buildSelectors } from '../factories/selectors.factory';
 import { PageFactory } from '../factories/pages.factory';
+import type { BrandFeatures } from '../../config/brandFeatures';
+import { getBrandFeatures } from '../../config/brandFeatures';
 import { HomePage } from '../pages/Home.page';
 import { PLPPage } from '../pages/PLP.page';
 import { PDPPage } from '../pages/PDP.page';
@@ -12,6 +14,7 @@ import { WishlistPage } from '../pages/Wishlist.page';
 
 export interface AppFixtures {
   ctx: BrandContext;
+  features: BrandFeatures;
   selectors: Selectors;
   pageFactory: PageFactory;
   home: HomePage;
@@ -31,6 +34,10 @@ export const test = base.extend<AppFixtures>({
       region: meta.region,
       baseURL: meta.baseURL
     });
+  },
+
+  features: async ({ ctx }, use) => {
+    await use(getBrandFeatures(ctx.brand));
   },
 
   selectors: async ({ ctx }, use) => {

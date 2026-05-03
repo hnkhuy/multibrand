@@ -102,13 +102,15 @@ test.describe('cart', () => {
     await assertNoCriticalError(cart);
   });
 
-  test('CART-002 empty cart state', async ({ cart, page }) => {
+  test('CART-002 empty cart state', async ({ features, cart, page }) => {
+    if (!features.emptyCartUI) test.skip(true, 'Brand does not expose empty cart UI.');
+
     await cart.gotoCart();
     await clearCartIfPossible(cart);
     await cart.expectLoaded();
 
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length > 0, 'Precondition not met: cart is not empty and remove action is not available.');
+    expect(rows.length, 'Precondition: cart could not be emptied before empty-state check.').toBe(0);
 
     const message = cart.emptyMessage;
     const cta = cart.continueShopping;
@@ -116,15 +118,14 @@ test.describe('cart', () => {
     const hasEmptySignal = EMPTY_CART_PATTERN.test(bodyText) || (await message.isVisible().catch(() => false));
     const hasContinueShoppingCta = await cta.isVisible().catch(() => false);
 
-    test.skip(!hasEmptySignal || !hasContinueShoppingCta, 'Empty cart message/continue shopping CTA not exposed for this brand.');
-    expect(hasEmptySignal).toBe(true);
-    expect(hasContinueShoppingCta).toBe(true);
+    expect(hasEmptySignal, 'Empty cart message should be displayed.').toBe(true);
+    expect(hasContinueShoppingCta, 'Continue shopping CTA should be visible.').toBe(true);
   });
 
   test('CART-003 cart with product loads successfully', async ({ ctx, home, plp, pdp, cart, page }) => {
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     await assertNoCriticalError(cart);
   });
 
@@ -142,10 +143,12 @@ test.describe('cart', () => {
     expect(new URL(page.url()).protocol).toBe('https:');
   });
 
-  test('CART-006 header cart count matches cart quantity', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-006 header cart count matches cart quantity', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.headerCartCount) test.skip(true, 'Brand does not expose header cart count.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
 
     let itemQuantity = 0;
     for (const row of rows) {
@@ -153,14 +156,14 @@ test.describe('cart', () => {
     }
 
     const headerCount = await getHeaderCartCount(cart);
-    test.skip(headerCount === null, 'Header cart count not detectable for this brand layout.');
+    expect(headerCount, 'Header cart count should be readable.').not.toBeNull();
     expect(headerCount).toBe(itemQuantity);
   });
 
   test('CART-007 product image is displayed', async ({ ctx, home, plp, pdp, cart, page }) => {
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
 
     const image = cart.itemImage(row);
@@ -172,7 +175,7 @@ test.describe('cart', () => {
   test('CART-008 product name is displayed', async ({ ctx, home, plp, pdp, cart, page }) => {
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const name = cart.itemName(row);
     await expect(name).toBeVisible();
@@ -180,17 +183,21 @@ test.describe('cart', () => {
     expect(text.length).toBeGreaterThan(1);
   });
 
-  test('CART-009 product attributes are displayed', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-009 product attributes are displayed', { tag: ['@data-dependent'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const attributes = cart.itemAttributes(row);
     const hasVisibleAttribute = (await attributes.count()) > 0 && (await attributes.first().isVisible().catch(() => false));
 
     const rowText = await row.innerText();
     const textHasVariant = /size|colour|color|us|eu|uk|men|women|kids|width|fit/i.test(rowText);
-    test.skip(!hasVisibleAttribute && !textHasVariant, 'No visible variant attributes for selected product.');
+
+    if (!hasVisibleAttribute && !textHasVariant) {
+      test.skip(true, 'Selected product has no visible variant attributes on staging.');
+      return;
+    }
 
     expect(hasVisibleAttribute || textHasVariant).toBe(true);
   });
@@ -198,7 +205,7 @@ test.describe('cart', () => {
   test('CART-010 product price is displayed', async ({ ctx, home, plp, pdp, cart, page }) => {
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const priceNode = cart.itemPrice(row);
     const rowText = await row.innerText();
@@ -207,27 +214,34 @@ test.describe('cart', () => {
     expect(hasPriceNode || hasPriceText).toBe(true);
   });
 
-  test('CART-011 sale price is displayed correctly', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-011 sale price is displayed correctly', { tag: ['@data-dependent'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const text = (await row.innerText()).replace(/\s+/g, ' ');
     const prices = text.match(/\$\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?/g) ?? [];
     const hasSaleSignal = /sale|was|now|save|discount|original/i.test(text);
 
-    test.skip(!(hasSaleSignal && prices.length >= 2), 'No sale product/pricing presentation detected in this run.');
+    if (!(hasSaleSignal && prices.length >= 2)) {
+      test.skip(true, 'No sale product with dual-price presentation in cart on staging.');
+      return;
+    }
+
     expect(prices.length).toBeGreaterThanOrEqual(2);
   });
 
-  test('CART-012 product link redirects to PDP', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-012 product link redirects to PDP', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.productLinkInCart) test.skip(true, 'Brand does not include product links in cart rows.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const link = cart.productLink(row);
     const href = await link.getAttribute('href');
-    test.skip(!(await link.isVisible().catch(() => false)) || !href, 'Product link is not available in cart row.');
+    expect(await link.isVisible().catch(() => false), 'Product link in cart row should be visible.').toBe(true);
+    expect(href, 'Product link href should not be null.').not.toBeNull();
     const targetHref = href as string;
 
     const targetUrl = new URL(targetHref, page.url()).href;
@@ -239,10 +253,12 @@ test.describe('cart', () => {
     await assertNoCriticalError(cart);
   });
 
-  test('CART-013 quantity selector/input is displayed', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-013 quantity selector/input is displayed', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const qtyControl = cart.quantityControl(row);
     const plus = cart.quantityPlusButton(row);
@@ -252,13 +268,15 @@ test.describe('cart', () => {
       (await qtyControl.isVisible().catch(() => false)) ||
       (await plus.isVisible().catch(() => false)) ||
       (await minus.isVisible().catch(() => false));
-    expect(hasControl).toBe(true);
+    expect(hasControl, 'Quantity control (+/-/input) should be visible.').toBe(true);
   });
 
-  test('CART-014 increasing quantity updates cart', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-014 increasing quantity updates cart', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const before = (await readQuantityFromRow(cart, row)) ?? 1;
     let changed = false;
@@ -269,42 +287,46 @@ test.describe('cart', () => {
       changed = true;
     }
 
-    test.skip(!changed, 'No quantity increase control is available.');
+    expect(changed, 'Quantity increase control should be operable.').toBe(true);
 
     await page.waitForTimeout(1500);
     const after = (await readQuantityFromRow(cart, row)) ?? before;
     expect(after).toBeGreaterThan(before);
   });
 
-  test('CART-015 decreasing quantity updates cart', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-015 decreasing quantity updates cart', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const beforeInitial = (await readQuantityFromRow(cart, row)) ?? 1;
 
     if (beforeInitial < 2) {
       const increased = (await setRowQuantity(cart, row, 2)) || (await clickQtyButton(cart, row, 'plus'));
-      test.skip(!increased, 'Unable to prepare quantity > 1 for decrease validation.');
+      expect(increased, 'Precondition: could not increase qty to 2 before testing decrease.').toBe(true);
       await page.waitForTimeout(1200);
     }
 
     const before = (await readQuantityFromRow(cart, row)) ?? 2;
     const decreased = (await setRowQuantity(cart, row, Math.max(1, before - 1))) || (await clickQtyButton(cart, row, 'minus'));
-    test.skip(!decreased, 'No quantity decrease control is available.');
+    expect(decreased, 'Quantity decrease control should be operable.').toBe(true);
     await page.waitForTimeout(1500);
 
     const after = (await readQuantityFromRow(cart, row)) ?? before;
     expect(after).toBeLessThan(before);
   });
 
-  test('CART-016 quantity cannot be set below minimum', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-016 quantity cannot be set below minimum', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const canSetZero = await setRowQuantity(cart, row, 0);
-    test.skip(!canSetZero, 'Quantity input is not editable for minimum validation.');
+    expect(canSetZero, 'Quantity input should be editable for minimum validation.').toBe(true);
     await page.waitForTimeout(1500);
 
     const afterRows = await getVisibleCartRows(cart);
@@ -315,13 +337,15 @@ test.describe('cart', () => {
     expect(minRuleApplied).toBe(true);
   });
 
-  test('CART-017 quantity cannot exceed available stock', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-017 quantity cannot exceed available stock', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const editable = await setRowQuantity(cart, row, 99);
-    test.skip(!editable, 'Quantity input is not editable for stock validation.');
+    expect(editable, 'Quantity input should be editable for stock validation.').toBe(true);
     await page.waitForTimeout(1800);
 
     const after = await readQuantityFromRow(cart, row);
@@ -329,30 +353,33 @@ test.describe('cart', () => {
     expect((after !== null && after < 99) || STOCK_OR_VALIDATION_PATTERN.test(bodyText)).toBe(true);
   });
 
-  test('CART-018 manual quantity input works if supported', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-018 manual quantity input works if supported', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const editable = await setRowQuantity(cart, row, 2);
-    test.skip(!editable, 'Manual quantity input/select is not supported.');
+    expect(editable, 'Manual quantity input should be editable.').toBe(true);
     await page.waitForTimeout(1500);
 
     const after = await readQuantityFromRow(cart, row);
     expect(after).toBe(2);
   });
 
-  test('CART-019 invalid quantity input is handled', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-019 invalid quantity input is handled', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.quantityControls) test.skip(true, 'Brand does not expose quantity controls in cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const rows = await getVisibleCartRows(cart);
-    test.skip(rows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(rows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
     const row = rows[0];
     const control = cart.quantityControl(row);
-    const visible = await control.isVisible().catch(() => false);
-    test.skip(!visible, 'Quantity control is not visible.');
+    expect(await control.isVisible().catch(() => false), 'Quantity control should be visible.').toBe(true);
 
     const tagName = await control.evaluate((node) => node.tagName.toLowerCase()).catch(() => '');
-    test.skip(tagName !== 'input', 'Invalid text input validation requires editable input control.');
+    expect(tagName, 'Quantity control must be an input element for invalid-input validation.').toBe('input');
 
     const before = (await readQuantityFromRow(cart, row)) ?? 1;
     await control.fill('abc');
@@ -366,13 +393,15 @@ test.describe('cart', () => {
     await assertNoCriticalError(cart);
   });
 
-  test('CART-020 product can be removed from cart', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CART-020 product can be removed from cart', async ({ features, ctx, home, plp, pdp, cart, page }) => {
+    if (!features.removeFromCart) test.skip(true, 'Brand does not support removing items from cart.');
+
     await addProductAndOpenCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const beforeRows = await getVisibleCartRows(cart);
-    test.skip(beforeRows.length === 0, 'Precondition not met: no product was added to cart.');
+    expect(beforeRows.length, 'Precondition: no product was added to cart.').toBeGreaterThan(0);
 
     const remove = cart.removeButton(beforeRows[0]);
-    test.skip(!(await remove.isVisible().catch(() => false)), 'Remove control is not available.');
+    expect(await remove.isVisible().catch(() => false), 'Remove button should be visible.').toBe(true);
     await remove.click();
     await page.waitForTimeout(1500);
 
