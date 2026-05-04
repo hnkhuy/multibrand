@@ -34,6 +34,16 @@ export interface BrandFeatures {
   quantityControls: boolean;
   productLinkInCart: boolean;
 
+  // Mini Cart
+  miniCartEnabled: boolean;
+  miniCartViewCartButton: boolean;
+  miniCartQuantityControls: boolean;
+  miniCartRemoveItem: boolean;
+  miniCartProductLink: boolean;
+  miniCartSubtotal: boolean;
+  miniCartPaymentMessaging: boolean;
+  miniCartPromoMessage: boolean;
+
   // Wishlist
   wishlist: boolean;
   wishlistRequiresLogin: boolean;
@@ -65,6 +75,14 @@ const defaults: BrandFeatures = {
   removeFromCart: true,
   quantityControls: true,
   productLinkInCart: true,
+  miniCartEnabled: true,
+  miniCartViewCartButton: true,
+  miniCartQuantityControls: true,
+  miniCartRemoveItem: true,
+  miniCartProductLink: true,
+  miniCartSubtotal: true,
+  miniCartPaymentMessaging: false,
+  miniCartPromoMessage: false,
   wishlist: true,
   wishlistRequiresLogin: true,
 };

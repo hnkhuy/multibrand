@@ -1,0 +1,91 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+SR-001,Entry Point,Verify search entry point is displayed in header,Site is accessible,1. Open any page 2. Observe header,Search icon/input is visible and usable,High
+SR-002,Entry Point,Verify search panel/input opens correctly,Search entry point is available,1. Click search icon/input,Search panel/input opens correctly,High
+SR-003,Entry Point,Verify search panel/input can be closed,Search panel is opened,1. Click close icon or outside panel,Search panel closes correctly,Medium
+SR-004,Search Input,Verify user can enter search keyword,Search input opened,1. Type valid keyword,Keyword is entered correctly,High
+SR-005,Search Input,Verify search input can be cleared,Search input has text,1. Click clear icon or delete text,Search input is cleared correctly,Medium
+SR-006,Search Input,Verify empty search submission is handled,Search input opened,1. Submit empty search,"User is not redirected, or validation/default behavior follows design",Medium
+SR-007,Search Input,Verify leading/trailing spaces are trimmed,Search input opened,1. Enter keyword with spaces 2. Submit,Search is performed using trimmed keyword,Medium
+SR-008,Search Input,Verify special characters are handled safely,Search input opened,1. Enter special characters 2. Submit,Page remains stable and safe result/no-result state is shown,High
+SR-009,Search Input,Verify very long keyword is handled safely,Search input opened,1. Enter very long keyword 2. Submit,Search handles input without UI break or crash,Medium
+SR-010,Auto-suggestion,Verify auto-suggestion appears after typing keyword,Auto-suggestion enabled,1. Type valid partial keyword,Suggestion panel appears,High
+SR-011,Auto-suggestion,Verify auto-suggestion does not appear before minimum character rule,Auto-suggestion has minimum character rule,1. Type fewer than minimum characters,Suggestion panel does not appear or follows design,Medium
+SR-012,Auto-suggestion,Verify product suggestions are displayed,Auto-suggestion enabled; Matching products exist,1. Type keyword with matching products,Matching product suggestions are displayed,High
+SR-013,Auto-suggestion,Verify category suggestions are displayed if supported,Category suggestion enabled,1. Type keyword matching category,Matching category suggestions are displayed,Medium
+SR-014,Auto-suggestion,Verify popular/recommended search suggestions are displayed if supported,Popular search enabled,1. Open search or type keyword,Popular/recommended suggestions display correctly,Low
+SR-015,Auto-suggestion,Verify suggestion content is relevant to typed keyword,Matching suggestions exist,1. Type keyword 2. Inspect suggestions,Suggestions are relevant to typed keyword,High
+SR-016,Auto-suggestion,Verify suggestion product image is displayed,Product suggestion has image,1. Type keyword,Product suggestion image is visible and not broken,Medium
+SR-017,Auto-suggestion,Verify suggestion product name is displayed,Product suggestion exists,1. Type keyword,Product name is visible and readable,High
+SR-018,Auto-suggestion,Verify suggestion product price is displayed if applicable,Product suggestion supports price,1. Type keyword,Price is visible and formatted correctly for AU/NZ,Medium
+SR-019,Auto-suggestion,Verify clicking product suggestion redirects to PDP,Product suggestion exists,1. Click product suggestion,Correct PDP opens,Critical
+SR-020,Auto-suggestion,Verify clicking category suggestion redirects to PLP,Category suggestion exists,1. Click category suggestion,Correct PLP opens,High
+SR-021,Auto-suggestion,Verify pressing Enter submits keyword search,Search input has keyword,1. Type keyword 2. Press Enter,Search results page opens for entered keyword,Critical
+SR-022,Auto-suggestion,Verify clicking search button submits keyword search,Search input has keyword,1. Type keyword 2. Click search button,Search results page opens for entered keyword,Critical
+SR-023,Auto-suggestion,Verify keyboard navigation through suggestions,Auto-suggestion visible,1. Use Arrow Down/Up 2. Press Enter,Highlight moves correctly and selected suggestion opens,Medium
+SR-024,Auto-suggestion,Verify suggestion panel closes after selecting suggestion,Auto-suggestion visible,1. Click a suggestion,Suggestion panel closes and user navigates correctly,Medium
+SR-025,Auto-suggestion,Verify no-suggestion state is handled,No matching suggestions exist,1. Type non-matching keyword,No-suggestion message or empty suggestion state displays correctly,Medium
+SR-026,Auto-suggestion,Verify auto-suggestion loading state is displayed if applicable,Auto-suggestion API has delay,1. Type keyword,Loading state displays until suggestions load,Low
+SR-027,Auto-suggestion,Verify auto-suggestion handles API failure gracefully,Auto-suggestion API failure simulated,1. Type keyword,User-friendly fallback appears and search input remains usable,High
+SR-028,Search Result,Verify search result page loads successfully,Search feature available,1. Search valid keyword,Search result page loads without error or broken layout,Critical
+SR-029,Search Result,Verify searched keyword is displayed on result page,Search submitted,1. Search valid keyword,Search keyword/result title is displayed correctly,High
+SR-030,Search Result,Verify result products are relevant to searched keyword,Matching products exist,1. Search valid keyword 2. Inspect results,Products are relevant to searched keyword,High
+SR-031,Search Result,Verify product grid is displayed on result page,Matching products exist,1. Search valid keyword,Product grid is visible,High
+SR-032,Search Result,Verify product card displays required elements,Matching products exist,1. Search valid keyword 2. Inspect product cards,"Image, name, price, and basic info are displayed",High
+SR-033,Search Result,Verify clicking product card redirects to PDP,Matching products exist,1. Click product card,Correct PDP opens,Critical
+SR-034,Search Result,Verify no-result page displays correctly,No matching products exist,1. Search invalid/non-matching keyword,No-result message and helpful CTAs/suggestions display correctly,High
+SR-035,Search Result,Verify no-result page does not display unrelated products incorrectly,No matching products exist,1. Search invalid keyword,No incorrect/unrelated product results are shown unless designed as recommendations,Medium
+SR-036,Search Result,Verify search result count is displayed if available,Matching products exist,1. Search valid keyword,Result count is visible and consistent with products displayed,Medium
+SR-037,Search Result,Verify search URL/query parameter is updated correctly,Search submitted,1. Search keyword 2. Observe URL,URL contains encoded search keyword/query parameter correctly,Medium
+SR-038,Search Result,Verify browser refresh keeps search result state,Search result page opened,1. Refresh page,Search keyword and result list remain consistent,High
+SR-039,Search Result,Verify browser back returns to previous page/search state,User searched from homepage/PLP/PDP,1. Search keyword 2. Click browser Back,User returns to expected previous page/state,Medium
+SR-040,Search Result,Verify search from result page updates results,User is on search result page,1. Search a different keyword,Result page updates with new keyword and products,High
+SR-041,Filters,Verify filters are displayed on search result page,Search result has products; Filtering enabled,1. Search valid keyword,Filter panel/button is visible,High
+SR-042,Filters,Verify applying filter updates search result products,Filters available,1. Search keyword 2. Apply filter,Product list updates according to keyword + selected filter,Critical
+SR-043,Filters,Verify multiple filters work on search result page,Multiple filters available,1. Search keyword 2. Apply multiple filters,Product list updates according to combined criteria,High
+SR-044,Filters,Verify removing filter updates search result products,Filter applied,1. Remove active filter,Removed filter is cleared and products update correctly,High
+SR-045,Filters,Verify Clear All filters works on search result page,Filters applied,1. Click Clear All,Filters are removed and original search results return,High
+SR-046,Sorting,Verify sort control is displayed on search result page,Sorting enabled,1. Search valid keyword,Sort control is visible,High
+SR-047,Sorting,Verify sorting works on search result page,Sorting enabled,1. Search keyword 2. Select sort option,Search results reorder according to selected sort,High
+SR-048,Sorting,Verify selected sort persists after refresh if designed,Sort applied,1. Apply sort 2. Refresh page,Sort state persists or resets according to design,Medium
+SR-049,Pagination / Load More,Verify pagination/load-more is displayed when many results exist,Search has many products,1. Search broad keyword,Pagination or Load More is visible,Medium
+SR-050,Pagination / Load More,Verify Load More adds more results,Load More enabled,1. Search broad keyword 2. Click Load More,More products load without duplicates or layout issue,High
+SR-051,Pagination / Load More,Verify pagination works on search results,Pagination enabled,1. Search broad keyword 2. Click next page,Next result set displays correctly,High
+SR-052,Product Card,Verify sale price presentation on search results,Search results include sale products,1. Search keyword 2. Inspect sale product,Sale price and original price display correctly,Medium
+SR-053,Product Card,Verify wishlist action works from search results,Wishlist enabled,1. Search keyword 2. Click wishlist icon,Product is added to wishlist or login flow appears correctly,Medium
+SR-054,Product Card,Verify quick add works from search results if enabled,Quick Add enabled,1. Search keyword 2. Quick add product,Product/variant is added to cart correctly,High
+SR-055,Region,Verify search result price format is correct for AU/NZ,Search result has products,1. Search keyword 2. Inspect product prices,Currency and price format are correct for selected region,High
+SR-056,Region,Verify regional product availability in search results,Site configured for AU/NZ,1. Search keyword,Search results show products available for selected region,High
+SR-057,Security,Verify search input is protected against script injection,Search input opened,1. Enter script-like text 2. Submit,Script is not executed and page remains safe,Critical
+SR-058,Security,Verify search URL handles encoded characters safely,Search input opened,1. Search keyword with symbols/special characters,URL is encoded safely and page remains stable,High
+SR-059,UI,Verify search panel layout is displayed correctly,Search panel opened,1. Observe search panel,"Search input, suggestions, and CTAs are aligned correctly",High
+SR-060,UI,Verify search result page layout is displayed correctly,Search result page opened,1. Observe page,"Category/search title, filters, sort, and product grid are aligned correctly",High
+SR-061,UI,Verify no overlapping UI elements on search panel/results,Search panel/results opened,1. Scroll/interact with page,"No overlap between header, search panel, suggestions, filters, product cards, chat widget, and footer",High
+SR-062,UI,Verify text is readable on search panel/results,Search panel/results opened,"1. Inspect labels, product names, prices, messages","No text is truncated, hidden, or unreadable",Medium
+SR-063,UI,Verify product/suggestion images render correctly,Suggestions/results contain products,1. Inspect images,"Images are not broken, stretched, or distorted",Medium
+SR-064,Responsive,Verify search behavior on desktop viewport,Desktop viewport,1. Open search 2. Search keyword,Desktop search UI and result page work correctly,High
+SR-065,Responsive,Verify search behavior on tablet viewport,Tablet viewport,1. Open search 2. Search keyword,Tablet search UI and result page adapt correctly,Medium
+SR-066,Responsive,Verify search behavior on mobile viewport,Mobile viewport,1. Open search 2. Search keyword,Mobile search UI and result page work without horizontal overflow,High
+SR-067,Mobile,Verify mobile search panel opens correctly,Mobile viewport,1. Tap search icon,Mobile search panel opens correctly,High
+SR-068,Mobile,Verify mobile auto-suggestion works correctly,Mobile viewport; Auto-suggestion enabled,1. Type keyword,Suggestions display correctly on mobile,High
+SR-069,Mobile,Verify mobile search result filters work correctly,Mobile viewport; Filters enabled,1. Search keyword 2. Open filter panel 3. Apply filter,Mobile search results update correctly,High
+SR-070,Mobile,Verify mobile sort works correctly,Mobile viewport; Sorting enabled,1. Search keyword 2. Apply sort,Search results reorder correctly,High
+SR-071,Mobile,Verify mobile search panel can be closed,Mobile search panel opened,1. Tap close/backdrop,Search panel closes correctly,Medium
+SR-072,Performance,Verify auto-suggestion response time is acceptable,Auto-suggestion enabled,1. Type keyword,Suggestions appear within acceptable threshold,Medium
+SR-073,Performance,Verify search result page load performance is acceptable,Search submitted,1. Search keyword,Search result page loads within acceptable threshold,High
+SR-074,Performance,Verify filter/sort performance on search results is acceptable,Search result page opened,1. Apply filter/sort,Product results update within acceptable threshold,Medium
+SR-075,Stability,Verify repeated search submissions do not break search,Search feature available,1. Search multiple keywords repeatedly,Search remains stable and results update correctly,High
+SR-076,Stability,Verify repeated typing/deleting does not break auto-suggestion,Auto-suggestion enabled,1. Type/delete keyword repeatedly,Suggestion panel remains stable and relevant,Medium
+SR-077,Stability,Verify fast typing handles latest keyword correctly,Auto-suggestion enabled,1. Type keyword quickly,"Suggestions correspond to latest keyword, not stale input",High
+SR-078,Error Handling,Verify failed search result API is handled gracefully,Search API failure simulated,1. Submit search,User-friendly error/fallback is displayed without full page crash,High
+SR-079,Error Handling,Verify failed product image loading is handled gracefully,Product image unavailable,1. Search keyword,Placeholder or fallback image is shown,Medium
+SR-080,Accessibility,Verify keyboard access to search input,Search entry point available,1. Use keyboard to focus/open search,Search input is reachable by keyboard,Medium
+SR-081,Accessibility,Verify focus behavior when search panel opens,Search panel opened,1. Open search panel,Focus moves to search input as designed,Medium
+SR-082,Accessibility,Verify auto-suggestion items are keyboard accessible,Suggestions visible,1. Use keyboard to navigate suggestions,Suggestions are reachable and selectable by keyboard,Medium
+SR-083,Accessibility,Verify search controls have accessible labels,Search UI opened,"1. Inspect search input, close, clear, submit controls",Controls have meaningful accessible labels,Medium
+SR-084,Accessibility,Verify no-result and validation messages are accessible,No-result/validation displayed,1. Trigger message,Message is visible and understandable,Medium
+SR-085,Analytics,Verify search submission tracking is fired,Analytics/debug tools available,1. Submit search keyword,Expected search event is triggered with correct keyword metadata,High
+SR-086,Analytics,Verify auto-suggestion impression tracking is fired if required,Analytics/debug tools available; Suggestions displayed,1. Type keyword,Expected suggestion impression event is triggered,Low
+SR-087,Analytics,Verify auto-suggestion click tracking is fired,Analytics/debug tools available,1. Click suggestion,Expected suggestion click event is triggered with correct metadata,Medium
+SR-088,Analytics,Verify search result product click tracking is fired,Analytics/debug tools available,1. Search keyword 2. Click product,Expected product listing click event is triggered,High
+SR-089,Analytics,Verify filter tracking on search results is fired,Analytics/debug tools available,1. Search keyword 2. Apply filter,Expected filter event is triggered with correct metadata,Medium
+SR-090,Analytics,Verify search metadata is correct,Analytics/debug tools available,1. Trigger search interactions 2. Inspect payload,"Metadata such as keyword, result count, product ID, position, filter, sort, region, and currency are correct",High

@@ -1,0 +1,85 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+SL-001,Entry Point,Verify Store Locator link is displayed,Site is accessible,1. Open website 2. Observe header/footer/menu,Store Locator link is visible if feature is enabled,High
+SL-002,Entry Point,Verify Store Locator page opens correctly,Store Locator link is available,1. Click Store Locator link,Store Locator page opens without error or broken layout,High
+SL-003,Entry Point,Verify Find in Store button is displayed on PDP,Product supports store availability,1. Open PDP,Find in Store button/link is visible,High
+SL-004,Entry Point,Verify Find in Store opens from PDP,Find in Store button is visible,1. Click Find in Store,Store availability modal/panel/page opens correctly,High
+SL-005,Page Load,Verify Store Locator loads over HTTPS,Store Locator URL accessible,1. Open Store Locator,Page loads securely without browser warning,Medium
+SL-006,Search,Verify store search field is displayed,Store Locator loaded,1. Observe search section,Search input is visible and usable,High
+SL-007,Search,Verify user can search by suburb/city,Store data available,1. Enter valid suburb/city 2. Submit search,Relevant nearby stores are displayed,Critical
+SL-008,Search,Verify user can search by postcode,Store data available,1. Enter valid postcode 2. Submit search,Relevant nearby stores are displayed,Critical
+SL-009,Search,Verify empty search submission is handled,Store Locator loaded,1. Submit empty search,Validation/default behavior is shown according to design,Medium
+SL-010,Search,Verify invalid location search is handled,Store Locator loaded,1. Enter invalid suburb/postcode 2. Submit,No-result state or validation message is displayed,High
+SL-011,Search,Verify special characters are handled safely,Store Locator loaded,1. Enter special characters 2. Submit,Page remains stable and no unsafe behavior occurs,High
+SL-012,Search,Verify leading/trailing spaces are trimmed,Store Locator loaded,1. Enter location with extra spaces 2. Submit,Search is performed using trimmed value,Medium
+SL-013,Search Result,Verify store list is displayed after valid search,Valid location search performed,1. Search valid location,Store list appears with relevant stores,Critical
+SL-014,Search Result,Verify store result card displays required details,Store results displayed,1. Inspect store card,"Store name, address, distance, contact info/hours are displayed as designed",High
+SL-015,Search Result,Verify store distance is displayed correctly if available,Store results displayed,1. Inspect distance field,Distance is shown and formatted correctly,Medium
+SL-016,Search Result,Verify store results are sorted by nearest distance if designed,Multiple stores returned,1. Search location 2. Compare result order,Nearest stores are listed first according to design,High
+SL-017,Search Result,Verify no-result state for unsupported location,Search has no matching stores,1. Search unsupported location,No-result message and helpful guidance are displayed,Medium
+SL-018,Store Details,Verify store detail view opens correctly,Store result exists,1. Click store result/details,Store detail section/page opens correctly,High
+SL-019,Store Details,Verify store address is displayed correctly,Store detail opened,1. Inspect store details,Full store address is visible and correct,High
+SL-020,Store Details,Verify store phone number is displayed if available,Store has phone number,1. Inspect store details,Phone number is visible and formatted correctly,Medium
+SL-021,Store Details,Verify store opening hours are displayed,Store has trading hours,1. Inspect store details,Opening hours are visible and readable,High
+SL-022,Store Details,Verify special holiday hours are displayed if configured,Store has special hours,1. Open store details,Special hours/message displays correctly,Medium
+SL-023,Store Details,Verify store services are displayed if available,Store has services configured,1. Inspect store details,Services such as pickup/returns/accessibility display correctly,Low
+SL-024,Store Details,Verify Get Directions link opens map/navigation,Store detail has directions link,1. Click Get Directions,Map/navigation opens with correct store destination,High
+SL-025,Store Details,Verify call link works on mobile if available,Mobile viewport; Store phone available,1. Tap phone number/call link,Device call link opens correctly,Low
+SL-026,Map,Verify map is displayed on Store Locator,Map feature enabled,1. Open Store Locator,Map is visible and loads correctly,High
+SL-027,Map,Verify map pins are displayed for store results,Store results displayed,1. Search valid location,Map pins display for returned stores,High
+SL-028,Map,Verify clicking map pin shows store information,Map pins displayed,1. Click a store pin,Store info card/popup opens correctly,Medium
+SL-029,Map,Verify selecting store from list highlights corresponding map pin,Store results displayed,1. Click store result,Corresponding map pin is highlighted or centered as designed,Medium
+SL-030,Map,Verify map zoom/pan works correctly,Map loaded,1. Zoom/pan map,Map interaction works without UI break,Low
+SL-031,Geolocation,Verify Use Current Location option is displayed if enabled,Geolocation enabled,1. Open Store Locator,Use Current Location option is visible,Medium
+SL-032,Geolocation,Verify current location search works when permission is granted,Browser location permission allowed,1. Click Use Current Location 2. Allow permission,Nearby stores are displayed based on current location,High
+SL-033,Geolocation,Verify permission denied state is handled,Browser location permission denied,1. Click Use Current Location 2. Deny permission,User-friendly message is displayed and manual search remains usable,High
+SL-034,Geolocation,Verify geolocation unavailable state is handled,Browser/device location unavailable,1. Click Use Current Location,User-friendly fallback message is displayed,Medium
+SL-035,Find in Store,Verify product availability search field is displayed,Find in Store opened from PDP,1. Observe modal/panel,Location search input is visible,High
+SL-036,Find in Store,Verify store availability search by suburb/postcode,PDP product supports availability,1. Click Find in Store 2. Search valid location,Stores with product availability are displayed,Critical
+SL-037,Find in Store,Verify product availability status is displayed per store,Store availability results displayed,1. Inspect store results,Availability status such as In Stock/Low Stock/Out of Stock is shown correctly,Critical
+SL-038,Find in Store,Verify unavailable product is handled in Find in Store,Product is unavailable in searched stores,1. Search location,User is informed product is unavailable nearby,High
+SL-039,Find in Store,Verify selected PDP variant is used for availability lookup,Configurable product with size/colour variants,1. Select variant 2. Click Find in Store 3. Search location,Availability results are based on selected variant,Critical
+SL-040,Find in Store,Verify validation when opening Find in Store without required variant,Configurable product requires size/colour,1. Do not select required option 2. Click Find in Store,Validation message is shown or user is prompted to select required option,High
+SL-041,Find in Store,Verify changing variant updates store availability,Configurable product; Find in Store available,1. Search availability for variant A 2. Change variant 3. Search again,Availability updates for newly selected variant,High
+SL-042,Find in Store,Verify Find in Store modal can be closed,Find in Store modal opened,1. Click close icon/backdrop,Modal closes correctly and user remains on PDP,Medium
+SL-043,Find in Store,Verify selected store can be chosen if feature supports pickup,Pickup/store selection enabled,1. Search stores 2. Select store,Store is selected and applied according to design,High
+SL-044,Find in Store,Verify selected store persists on PDP if designed,Store selected,1. Select store 2. Close modal,Selected store/availability remains displayed according to design,Medium
+SL-045,Find in Store,Verify Add to Cart/Pickup CTA appears only for eligible stores,Product availability results shown,1. Inspect store actions,CTA appears only when product/store is eligible,High
+SL-046,Find in Store,Verify store stock message updates after quantity change if applicable,Quantity selector affects availability,1. Change quantity 2. Search/observe availability,Availability messaging updates according to requested quantity,Medium
+SL-047,Filtering,Verify store filters are displayed if available,Store Locator has filters,1. Open Store Locator,Store service filters are visible,Low
+SL-048,Filtering,Verify applying store service filter updates results,Store filters available,1. Apply filter,Store list updates according to selected service/filter,Medium
+SL-049,Filtering,Verify clearing store filters resets results,Filter applied,1. Clear filter,Store list returns to unfiltered results,Medium
+SL-050,Regional Rules,Verify AU stores are displayed on AU site,AU site,1. Search AU location,Only relevant AU stores are displayed,Critical
+SL-051,Regional Rules,Verify NZ stores are displayed on NZ site,NZ site,1. Search NZ location,Only relevant NZ stores are displayed,Critical
+SL-052,Regional Rules,Verify cross-region location is handled correctly,AU/NZ site,1. Search location from other country,No incorrect cross-region stores are shown unless designed,High
+SL-053,Regional Rules,Verify distance unit is correct by region,Store results displayed,1. Inspect distance,Distance unit is correct according to site design,Low
+SL-054,UI,Verify Store Locator layout is displayed correctly,Store Locator loaded,1. Observe page,"Search area, store list, map, and details are aligned correctly",High
+SL-055,UI,Verify Find in Store modal layout is displayed correctly,Find in Store opened,1. Observe modal/panel,"Search field, availability list, and CTAs are aligned correctly",High
+SL-056,UI,Verify no overlapping UI elements,Store Locator or Find in Store opened,1. Scroll/interact,"No overlap between header, map, store list, modal, chat widget, and footer",High
+SL-057,UI,Verify store text is readable,Store Locator loaded,"1. Inspect store names, addresses, hours, messages","No text is truncated, hidden, or unreadable",Medium
+SL-058,UI,Verify loading states display correctly,Store search/loading occurs,1. Search location,Loading state is shown while results are loading,Medium
+SL-059,Responsive,Verify Store Locator layout on desktop,Desktop viewport,1. Open Store Locator,Desktop layout is correct,High
+SL-060,Responsive,Verify Store Locator layout on tablet,Tablet viewport,1. Open Store Locator,Tablet layout adapts correctly,Medium
+SL-061,Responsive,Verify Store Locator layout on mobile,Mobile viewport,1. Open Store Locator,Mobile layout adapts correctly without horizontal overflow,High
+SL-062,Mobile,Verify Find in Store modal works on mobile,Mobile viewport; PDP loaded,1. Tap Find in Store,Modal/panel opens and is usable on mobile,High
+SL-063,Mobile,Verify mobile store search works correctly,Mobile viewport,1. Search suburb/postcode,Store results display correctly,High
+SL-064,Mobile,Verify mobile map/list toggle works if available,Mobile viewport; Toggle enabled,1. Switch between map and list,Map/list view changes correctly,Medium
+SL-065,Mobile,Verify store detail view works on mobile,Mobile viewport; Store result exists,1. Open store detail,Store details are readable and usable,Medium
+SL-066,Performance,Verify Store Locator page load performance is acceptable,Stable network,1. Open Store Locator,Page loads within acceptable threshold,Medium
+SL-067,Performance,Verify store search performance is acceptable,Store Locator loaded,1. Search valid location,Store results load within acceptable threshold,Medium
+SL-068,Performance,Verify Find in Store availability lookup performance is acceptable,PDP product supports availability,1. Search product availability by location,Availability results load within acceptable threshold,High
+SL-069,Stability,Verify repeated store searches do not break page,Store Locator loaded,1. Search multiple locations repeatedly,Store Locator remains stable and shows latest results,High
+SL-070,Stability,Verify fast typing/searching handles latest location correctly,Store search supports suggestions/live results,1. Type/search quickly,"Results correspond to latest input, not stale data",Medium
+SL-071,Error Handling,Verify failed store search API is handled gracefully,Store search API failure simulated,1. Search location,User-friendly error appears and page remains stable,High
+SL-072,Error Handling,Verify failed map loading is handled gracefully,Map API failure simulated,1. Open Store Locator,Store list remains usable and fallback message is shown,Medium
+SL-073,Error Handling,Verify failed availability API is handled gracefully,Find in Store availability API failure simulated,1. Search availability,User-friendly error appears and PDP remains stable,High
+SL-074,Accessibility,Verify keyboard navigation on Store Locator,Store Locator loaded,1. Use Tab/Shift+Tab,"Search field, filters, store results, and CTAs are reachable",Medium
+SL-075,Accessibility,Verify keyboard navigation in Find in Store modal,Find in Store modal opened,1. Use Tab/Shift+Tab,Focus order is logical and modal controls are reachable,Medium
+SL-076,Accessibility,Verify focus is trapped inside Find in Store modal if modal behavior applies,Find in Store modal opened,1. Use keyboard navigation,Focus remains inside modal until closed,Medium
+SL-077,Accessibility,Verify controls have accessible labels,Store Locator/Find in Store loaded,"1. Inspect search, close, current location, directions, store result controls",Controls have meaningful accessible labels,Medium
+SL-078,Analytics,Verify Store Locator page view tracking is fired,Analytics/debug tools available,1. Open Store Locator,Expected Store Locator page view event is triggered,Medium
+SL-079,Analytics,Verify store search tracking is fired,Analytics/debug tools available,1. Search location,Expected store search event is triggered with correct metadata,Medium
+SL-080,Analytics,Verify store result click tracking is fired,Analytics/debug tools available,1. Click store result,Expected store result click event is triggered,Low
+SL-081,Analytics,Verify Find in Store open tracking is fired from PDP,Analytics/debug tools available,1. Click Find in Store on PDP,Expected Find in Store open event is triggered,Medium
+SL-082,Analytics,Verify product availability search tracking is fired,Analytics/debug tools available,1. Search availability from PDP,Expected availability search event is triggered with correct metadata,Medium
+SL-083,Analytics,Verify Get Directions tracking is fired,Analytics/debug tools available,1. Click Get Directions,Expected directions click event is triggered,Low
+SL-084,Analytics,Verify Store Locator / Find in Store metadata is correct,Analytics/debug tools available,1. Trigger store locator interactions 2. Inspect payload,"Metadata such as search term, postcode/suburb, store ID, product ID, variant, availability status, region, and source page are correct",High

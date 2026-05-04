@@ -192,6 +192,22 @@ export interface MiniCartSelectors {
   drawer: string;
   checkoutButton: string;
   itemRow?: string;
+  closeButton?: string;
+  viewCartButton?: string;
+  subtotal?: string;
+  itemImage?: string;
+  itemName?: string;
+  itemAttribute?: string;
+  itemPrice?: string;
+  productLink?: string;
+  removeButton?: string;
+  qtyInput?: string;
+  qtyPlus?: string;
+  qtyMinus?: string;
+  emptyMessage?: string;
+  continueShoppingCta?: string;
+  paymentMessaging?: string;
+  promoMessage?: string;
 }
 
 export interface CheckoutSelectors {

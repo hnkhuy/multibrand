@@ -1,0 +1,76 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+MC-001,Entry Point,Verify mini cart icon is displayed,Site is accessible,1. Open any page,Mini cart/cart icon is visible in header,High
+MC-002,Entry Point,Verify mini cart opens when clicking cart icon,Site is accessible,1. Click cart icon,Mini cart panel/dropdown opens correctly,High
+MC-003,Entry Point,Verify mini cart can be closed,Mini cart is opened,1. Click close icon or outside panel,Mini cart closes correctly,Medium
+MC-004,Empty State,Verify empty mini cart state,Cart is empty,1. Open mini cart,Empty cart message and continue shopping CTA are displayed,High
+MC-005,Cart Count,Verify cart count is correct when cart is empty,Cart is empty,1. Observe cart icon,Cart count is hidden or shows 0 according to design,High
+MC-006,Cart Count,Verify cart count updates after adding product,Product is added to cart,1. Add product from PDP/PLP 2. Observe cart icon,Cart count updates correctly,Critical
+MC-007,Product Details,Verify added product is displayed in mini cart,Cart has product,1. Open mini cart,Product is displayed in mini cart,High
+MC-008,Product Details,Verify product image is displayed,Cart has product,1. Open mini cart,Product image is visible and not broken,High
+MC-009,Product Details,Verify product name is displayed,Cart has product,1. Open mini cart,Product name is visible and correct,High
+MC-010,Product Details,Verify product variant details are displayed,Cart has configurable product,1. Open mini cart,"Selected size, colour, or variant details are displayed correctly",High
+MC-011,Product Details,Verify product price is displayed,Cart has product,1. Open mini cart,Product price is visible and formatted correctly for AU/NZ,High
+MC-012,Product Details,Verify sale price is displayed correctly,Cart has sale product,1. Open mini cart,Sale price/original price is displayed correctly where applicable,Medium
+MC-013,Product Navigation,Verify product image/name redirects to PDP,Cart has product,1. Open mini cart 2. Click product image/name,Correct PDP opens,Medium
+MC-014,Quantity,Verify quantity is displayed correctly,Cart has product,1. Open mini cart,Item quantity is displayed correctly,High
+MC-015,Quantity,Verify increasing quantity updates mini cart,Mini cart supports quantity update,1. Open mini cart 2. Increase quantity,"Quantity, item subtotal, cart count, and totals update correctly",Critical
+MC-016,Quantity,Verify decreasing quantity updates mini cart,Product quantity > 1,1. Open mini cart 2. Decrease quantity,"Quantity, item subtotal, cart count, and totals update correctly",Critical
+MC-017,Quantity,Verify quantity cannot be set below minimum,Cart has product,1. Set quantity to 0 or negative value,Quantity is rejected or remove flow is triggered as designed,High
+MC-018,Quantity,Verify quantity cannot exceed available stock,Cart has limited-stock product,1. Increase quantity above available stock,Validation message is displayed and quantity is not updated incorrectly,High
+MC-019,Quantity,Verify invalid manual quantity input is handled,Quantity input is editable,1. Enter invalid value,Validation message is displayed and mini cart remains stable,Medium
+MC-020,Remove Item,Verify product can be removed from mini cart,Cart has product,1. Open mini cart 2. Click Remove,Product is removed and totals/cart count update correctly,Critical
+MC-021,Remove Item,Verify empty state after removing last item,Cart has one product,1. Remove product from mini cart,Empty mini cart state is displayed correctly,High
+MC-022,Remove Item,Verify removing one item does not remove other items,Cart has multiple products,1. Remove one product,Only selected product is removed,High
+MC-023,Totals,Verify subtotal is displayed,Cart has product,1. Open mini cart,Subtotal is visible and calculated correctly,Critical
+MC-024,Totals,Verify discount is displayed if coupon applied,Coupon/discount applied,1. Open mini cart,Discount is displayed correctly if mini cart supports discount display,Medium
+MC-025,Totals,Verify total updates after quantity change,Cart has product,1. Change quantity in mini cart,Mini cart totals update correctly,Critical
+MC-026,Totals,Verify total updates after item removal,Cart has product,1. Remove item from mini cart,Mini cart totals update correctly,Critical
+MC-027,CTA,Verify View Cart button is displayed,Mini cart opened,1. Observe mini cart,View Cart CTA is visible,High
+MC-028,CTA,Verify View Cart button redirects to cart page,Mini cart opened,1. Click View Cart,User is redirected to cart page,High
+MC-029,CTA,Verify Checkout button is displayed when cart has valid item,Cart has valid product,1. Open mini cart,Checkout CTA is visible and enabled,Critical
+MC-030,CTA,Verify Checkout button redirects to checkout page,Cart has valid product,1. Open mini cart 2. Click Checkout,User is redirected to checkout page,Critical
+MC-031,CTA,Verify Checkout is blocked when cart has unavailable item,Cart contains unavailable/OOS item,1. Open mini cart 2. Click Checkout,User cannot proceed and proper message is shown,Critical
+MC-032,Continue Shopping,Verify Continue Shopping CTA is displayed in empty state,Cart is empty,1. Open mini cart,Continue Shopping CTA is displayed,Low
+MC-033,Continue Shopping,Verify Continue Shopping closes mini cart or redirects as designed,Cart is empty,1. Click Continue Shopping,Mini cart closes or user is redirected according to design,Low
+MC-034,Add to Cart Integration,Verify mini cart opens or updates after adding product,Product can be added to cart,1. Add product from PDP/PLP,Mini cart opens or cart count/notification updates according to design,High
+MC-035,Add to Cart Integration,Verify correct product is added to mini cart from PDP,Product added from PDP,1. Select variant 2. Add to cart 3. Open mini cart,Correct product and selected variant are displayed,Critical
+MC-036,Add to Cart Integration,Verify correct product is added to mini cart from PLP quick add,Quick Add enabled,1. Add product via Quick Add 2. Open mini cart,Correct product and selected variant are displayed,Critical
+MC-037,Coupon / Promo,Verify promo/coupon message is displayed if applicable,Promo message configured,1. Open mini cart,Promo/coupon message is displayed correctly,Low
+MC-038,Payment Messaging,Verify payment method messaging is displayed if applicable,Payment messaging enabled,1. Open mini cart,Payment messaging such as PayPal/Afterpay/BNPL appears according to eligibility,Medium
+MC-039,Payment Messaging,Verify payment messaging updates by cart total,Payment promo has eligibility rule,1. Change cart total,Payment message appears/hides according to rule,Medium
+MC-040,Stock,Verify OOS item state in mini cart,Product becomes OOS after added,1. Open mini cart,OOS/unavailable state is displayed correctly,High
+MC-041,Stock,Verify checkout is restricted for OOS item,Cart has OOS item,1. Click Checkout,Checkout is blocked and user is informed,Critical
+MC-042,Price Update,Verify price change is reflected in mini cart,Product price changes after added,1. Open mini cart,Updated price is reflected or user is informed according to design,High
+MC-043,Persistence,Verify mini cart persists after page refresh,Cart has product,1. Refresh page 2. Open mini cart,Cart items remain available,High
+MC-044,Persistence,Verify mini cart persists across page navigation,Cart has product,1. Navigate to another page 2. Open mini cart,Cart items remain consistent,High
+MC-045,Guest Cart,Verify guest mini cart persists during session,Guest cart has product,1. Navigate between pages 2. Open mini cart,Guest mini cart remains consistent,High
+MC-046,Logged-in Cart,Verify logged-in mini cart loads account cart,User is logged in with cart items,1. Open mini cart,Account cart items are displayed correctly,High
+MC-047,Logged-in Cart,Verify guest cart merges after login if applicable,Guest cart has product; User logs in,1. Login 2. Open mini cart,Mini cart reflects merged cart according to design,High
+MC-048,UI,Verify mini cart layout is displayed correctly,Mini cart opened,1. Observe mini cart,"Product list, totals, and CTAs are aligned correctly",High
+MC-049,UI,Verify mini cart does not overlap incorrectly with header/content,Mini cart opened,1. Observe page layout,Mini cart displays above page content without broken overlap,High
+MC-050,UI,Verify mini cart scroll works when many items exist,Cart has many products,1. Open mini cart 2. Scroll inside panel,Mini cart content scrolls correctly and CTAs remain accessible as designed,Medium
+MC-051,UI,Verify text is readable in mini cart,Mini cart opened,"1. Inspect labels, product names, prices, messages","No text is truncated, hidden, or unreadable",Medium
+MC-052,UI,Verify product images render without distortion,Cart has product,1. Open mini cart,Product images maintain expected aspect ratio and clarity,Medium
+MC-053,Responsive,Verify mini cart layout on desktop,Desktop viewport,1. Open mini cart,Desktop mini cart layout is correct,High
+MC-054,Responsive,Verify mini cart layout on tablet,Tablet viewport,1. Open mini cart,Tablet mini cart layout adapts correctly,Medium
+MC-055,Responsive,Verify mini cart layout on mobile,Mobile viewport,1. Open mini cart,Mini cart layout adapts correctly without horizontal overflow,High
+MC-056,Mobile,Verify mini cart opens correctly on mobile,Mobile viewport,1. Tap cart icon,Mini cart/drawer opens correctly,High
+MC-057,Mobile,Verify mini cart closes correctly on mobile,Mobile mini cart opened,1. Tap close/backdrop,Mini cart closes correctly,Medium
+MC-058,Mobile,Verify mini cart CTAs are accessible on mobile,Mobile viewport; Cart has product,1. Open mini cart,View Cart and Checkout CTAs are visible/usable,Critical
+MC-059,Mobile,Verify quantity update works on mobile mini cart,Mobile viewport; Quantity update supported,1. Update quantity,Quantity and totals update correctly,High
+MC-060,Mobile,Verify remove item works on mobile mini cart,Mobile viewport; Cart has product,1. Remove item,Product is removed and totals/cart count update correctly,High
+MC-061,Performance,Verify mini cart opens within acceptable time,Cart has product,1. Click cart icon,Mini cart opens within acceptable threshold,Medium
+MC-062,Performance,Verify mini cart update completes within acceptable time,Quantity/remove supported,1. Update quantity/remove item,Mini cart updates within acceptable threshold,Medium
+MC-063,Stability,Verify repeated open/close does not break mini cart,Site accessible,1. Open and close mini cart repeatedly,Mini cart remains stable,Medium
+MC-064,Stability,Verify repeated quantity updates do not break mini cart,Cart has product,1. Update quantity repeatedly,Mini cart state remains accurate and stable,High
+MC-065,Error Handling,Verify failed mini cart load is handled gracefully,Mini cart API failure simulated if possible,1. Open mini cart,User-friendly error is displayed and page remains stable,High
+MC-066,Error Handling,Verify failed quantity update is handled gracefully,Quantity update API failure simulated,1. Update quantity,User-friendly error is displayed and previous cart state is preserved,High
+MC-067,Error Handling,Verify failed item removal is handled gracefully,Remove API failure simulated,1. Remove item,User-friendly error is displayed and item state remains consistent,Medium
+MC-068,Accessibility,Verify keyboard navigation in mini cart,Mini cart opened,1. Use Tab/Shift+Tab,Focus order is logical and controls are reachable,Medium
+MC-069,Accessibility,Verify focus is trapped inside mini cart if implemented as modal/drawer,Mini cart opened,1. Use keyboard navigation,Focus remains within mini cart until closed,Medium
+MC-070,Accessibility,Verify mini cart controls have accessible labels,Mini cart opened,1. Inspect controls,"Close, quantity, remove, View Cart, and Checkout controls have meaningful labels",Medium
+MC-071,Analytics,Verify mini cart open tracking is fired,Analytics/debug tools available,1. Open mini cart,Expected mini cart open event is triggered if required,Low
+MC-072,Analytics,Verify quantity update tracking is fired from mini cart,Analytics/debug tools available,1. Update quantity,Expected cart update event is triggered,Medium
+MC-073,Analytics,Verify remove-from-cart tracking is fired from mini cart,Analytics/debug tools available,1. Remove product,Expected remove-from-cart event is triggered with correct metadata,High
+MC-074,Analytics,Verify checkout click tracking is fired from mini cart,Analytics/debug tools available,1. Click Checkout from mini cart,Expected checkout-start/click event is triggered,High
+MC-075,Analytics,Verify mini cart event metadata is correct,Analytics/debug tools available,1. Trigger mini cart interactions 2. Inspect payload,"Metadata such as product ID, variant, quantity, price, cart total, region, currency, and source are correct",High
