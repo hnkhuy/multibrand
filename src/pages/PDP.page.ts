@@ -171,8 +171,14 @@ export class PDPPage extends BasePage {
   }
 
   async addToCart(): Promise<void> {
-    await this.selectFirstAvailableSize();
-    await this.addToCartButton.click();
+    await this.selectFirstAvailableSizeIfPossible();
+    try {
+      await this.addToCartButton.click({ timeout: 10_000 });
+    } catch {
+      // Normal click can time out if the button is briefly covered (e.g. React re-render
+      // overlay after size selection). Force-click fires the event immediately.
+      await this.addToCartButton.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+    }
     await this.page.waitForLoadState('domcontentloaded').catch(() => undefined);
   }
 
@@ -223,16 +229,49 @@ export class PDPPage extends BasePage {
     const count = await this.sizeButtons.count();
     for (let index = 0; index < count; index += 1) {
       const option = this.sizeButtons.nth(index);
-      const disabled = await option
+      const skipOrDisabled = await option
         .evaluate((node) => {
           const button = node as HTMLButtonElement;
+          // Skip utility/navigation buttons (size guide, measurement toggle, etc.)
+          const ariaLabel = (button.getAttribute('aria-label') ?? '').toLowerCase();
+          if (/menu|guide|chart|toggle|expand|collapse|what.*size/i.test(ariaLabel)) return true;
+          // Skip visually empty buttons (icons only)
+          const text = (button.textContent ?? '').trim();
+          if (text.length === 0) return true;
           return button.disabled || button.getAttribute('aria-disabled') === 'true';
         })
         .catch(() => true);
-      if (!disabled) {
+      if (!skipOrDisabled) {
         await option.click({ timeout: 5000 }).catch(() => undefined);
         return true;
       }
+    }
+
+    // Last resort: evaluate in-browser to find and native-click a numeric size button.
+    // Handles brands (e.g. DRM) that use styled-component class names without "size" keywords.
+    // Native btn.click() bypasses all Playwright actionability checks and fires the event directly.
+    const clicked = await this.page
+      .evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'));
+        for (const btn of buttons) {
+          const text = (btn.textContent ?? '').trim();
+          if (!/^\d{1,3}(\.\d+)?$/.test(text)) continue;
+          const ariaLabel = (btn.getAttribute('aria-label') ?? '').toLowerCase();
+          if (/menu|guide|chart|toggle|wishlist|cart|checkout|bag|store|search/i.test(ariaLabel)) continue;
+          if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') continue;
+          const rect = btn.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) continue;
+          if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+          btn.click();
+          return true;
+        }
+        return false;
+      })
+      .catch(() => false);
+
+    if (clicked) {
+      await this.page.waitForTimeout(300);
+      return true;
     }
 
     return false;

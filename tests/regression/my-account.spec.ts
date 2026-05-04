@@ -7,9 +7,9 @@ import type { Locator, Page } from '@playwright/test';
 
 const LOGIN_URL_PATTERN = /login|sign-in|signin|customer\/account/i;
 const REGISTER_URL_PATTERN = /register|create|sign-up|signup/i;
-const LOGIN_COPY_PATTERN = /sign in|log in|login|email|password/i;
+const LOGIN_COPY_PATTERN = /sign in|log in|login/i;
 const REGISTER_COPY_PATTERN = /create account|register|sign up|first name|last name|confirm password/i;
-const ERROR_COPY_PATTERN = /invalid|incorrect|required|already|exists|not valid|please enter/i;
+const ERROR_COPY_PATTERN = /invalid|incorrect|already|exists|not valid/i;
 const SUCCESS_COPY_PATTERN = /my account|account dashboard|welcome|hello/i;
 const EMAIL_VALIDATION_PATTERN = /valid email|invalid email|email.+invalid|please enter a valid/i;
 const PASSWORD_RULE_PATTERN = /minimum|at least|password.+must|please enter 6 or more/i;
@@ -111,7 +111,8 @@ async function isLoggedInState(account: AccountPage, page: Page): Promise<boolea
 }
 
 async function openLoginPage(home: HomePage, page: Page): Promise<void> {
-  await home.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 }).catch(() => undefined);
+  await home.dismissInterruptions();
   await expect(home.header.accountIcon).toBeVisible();
   await clickRobust(home.header.accountIcon);
   await page.waitForLoadState('domcontentloaded').catch(() => undefined);
@@ -143,7 +144,8 @@ async function login(account: AccountPage, page: Page, email: string, password: 
 }
 
 async function logoutIfPossible(home: HomePage, account: AccountPage, page: Page): Promise<boolean> {
-  await home.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 }).catch(() => undefined);
+  await home.dismissInterruptions();
   await clickRobust(home.header.accountIcon);
   const logout = account.logoutTrigger;
   const visible = await logout.isVisible().catch(() => false);
@@ -236,16 +238,18 @@ async function navigateToSection(
   ctx: { baseURL: string },
   paths: string[]
 ): Promise<void> {
+  const targetPatterns = paths.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const targetRe = new RegExp(targetPatterns.join('|'), 'i');
   for (const path of paths) {
-    await page.goto(new URL(path, ctx.baseURL).href, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await page.goto(new URL(path, ctx.baseURL).href, { waitUntil: 'domcontentloaded', timeout: 30_000 }).catch(() => undefined);
     await home.dismissInterruptions();
-    const ready = await page.evaluate(() => document.readyState).catch(() => '');
-    if (ready === 'complete' || ready === 'interactive') break;
+    if (targetRe.test(page.url()) && !LOGIN_URL_PATTERN.test(page.url())) break;
   }
 }
 
 async function ensureLoggedIn(home: HomePage, account: AccountPage, page: Page): Promise<void> {
-  await home.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 }).catch(() => undefined);
+  await home.dismissInterruptions();
   await clickRobust(home.header.accountIcon);
   await page.waitForLoadState('domcontentloaded').catch(() => undefined);
   await home.dismissInterruptions();
@@ -932,7 +936,7 @@ test.describe('my account dashboard and extended flows', () => {
   test('ACC-053 Verify order details page opens correctly', { tag: ['@data-dependent'] }, async ({ ctx, home, account, page }) => {
     await ensureLoggedIn(home, account, page);
     await navigateToSection(page, home, ctx, ACCOUNT_SECTION_PATHS.orderHistory);
-    const viewLink = page.locator('a').filter({ hasText: /view|detail|order/i }).first();
+    const viewLink = page.locator('main a, [class*="order"] a, [class*="table"] a, td a').filter({ hasText: /view|detail/i }).first();
     test.skip(!(await viewLink.isVisible().catch(() => false)), 'No orders to view.');
     await clickRobust(viewLink);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
@@ -943,7 +947,7 @@ test.describe('my account dashboard and extended flows', () => {
   test('ACC-054 Verify order details display correct products', { tag: ['@data-dependent'] }, async ({ ctx, home, account, page }) => {
     await ensureLoggedIn(home, account, page);
     await navigateToSection(page, home, ctx, ACCOUNT_SECTION_PATHS.orderHistory);
-    const viewLink = page.locator('a').filter({ hasText: /view|detail|order/i }).first();
+    const viewLink = page.locator('main a, [class*="order"] a, [class*="table"] a, td a').filter({ hasText: /view|detail/i }).first();
     test.skip(!(await viewLink.isVisible().catch(() => false)), 'No orders to view.');
     await clickRobust(viewLink);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
@@ -954,7 +958,7 @@ test.describe('my account dashboard and extended flows', () => {
   test('ACC-055 Verify order summary totals are correct', { tag: ['@data-dependent'] }, async ({ ctx, home, account, page }) => {
     await ensureLoggedIn(home, account, page);
     await navigateToSection(page, home, ctx, ACCOUNT_SECTION_PATHS.orderHistory);
-    const viewLink = page.locator('a').filter({ hasText: /view|detail|order/i }).first();
+    const viewLink = page.locator('main a, [class*="order"] a, [class*="table"] a, td a').filter({ hasText: /view|detail/i }).first();
     test.skip(!(await viewLink.isVisible().catch(() => false)), 'No orders to view.');
     await clickRobust(viewLink);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
@@ -965,7 +969,7 @@ test.describe('my account dashboard and extended flows', () => {
   test('ACC-056 Verify tracking link is displayed if available', { tag: ['@data-dependent'] }, async ({ ctx, home, account, page }) => {
     await ensureLoggedIn(home, account, page);
     await navigateToSection(page, home, ctx, ACCOUNT_SECTION_PATHS.orderHistory);
-    const viewLink = page.locator('a').filter({ hasText: /view|detail|order/i }).first();
+    const viewLink = page.locator('main a, [class*="order"] a, [class*="table"] a, td a').filter({ hasText: /view|detail/i }).first();
     test.skip(!(await viewLink.isVisible().catch(() => false)), 'No orders to view.');
     await clickRobust(viewLink);
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);

@@ -12,29 +12,46 @@ export class SearchComponent {
     const input = this.page.locator(this.selectors.header.searchInput).first();
     await input.fill(keyword);
 
+    // 1. Try the submit button scoped to the ancestor <form> — avoids accidentally clicking
+    //    unrelated buttons in mega-nav forms (e.g. DRM/Vans where page-wide submit matched the wrong element).
     if (this.selectors.header.searchSubmit) {
-      const submit = this.page.locator(this.selectors.header.searchSubmit).first();
-      if (await submit.isVisible().catch(() => false)) {
+      const formSubmit = input
+        .locator('xpath=ancestor::form')
+        .locator(this.selectors.header.searchSubmit)
+        .first();
+      if (await formSubmit.isVisible().catch(() => false)) {
         await Promise.all([
-          this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 30_000 }).catch(() => undefined),
-          submit.click()
+          this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 15_000 }).catch(() => undefined),
+          formSubmit.click()
         ]);
-        await this.page.waitForLoadState('domcontentloaded', { timeout: 30_000 }).catch(() => undefined);
-        return;
+        if (this.page.url() !== previousUrl) {
+          await this.page.waitForLoadState('domcontentloaded', { timeout: 30_000 }).catch(() => undefined);
+          return;
+        }
       }
     }
 
-    const siblingSubmit = input.locator('xpath=following-sibling::*[1]');
-    if (await siblingSubmit.isVisible().catch(() => false)) {
-      await Promise.all([
-        this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 30_000 }).catch(() => undefined),
-        siblingSubmit.click()
-      ]);
+    // 2. Press Enter — universal form submission. Short timeout so we quickly fall
+    //    through to the page-wide button if Enter doesn't navigate (e.g. Skechers).
+    await Promise.all([
+      this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 5_000 }).catch(() => undefined),
+      input.press('Enter')
+    ]);
+    if (this.page.url() !== previousUrl) {
       await this.page.waitForLoadState('domcontentloaded', { timeout: 30_000 }).catch(() => undefined);
       return;
     }
 
-    await input.press('Enter');
-    await this.page.waitForLoadState('domcontentloaded', { timeout: 30_000 }).catch(() => undefined);
+    // 3. Page-wide submit button (last resort — may include unrelated buttons, but no better option).
+    if (this.selectors.header.searchSubmit) {
+      const pageSubmit = this.page.locator(this.selectors.header.searchSubmit).first();
+      if (await pageSubmit.isVisible().catch(() => false)) {
+        await Promise.all([
+          this.page.waitForURL((url) => url.href !== previousUrl, { timeout: 20_000 }).catch(() => undefined),
+          pageSubmit.click()
+        ]);
+        await this.page.waitForLoadState('domcontentloaded', { timeout: 30_000 }).catch(() => undefined);
+      }
+    }
   }
 }
