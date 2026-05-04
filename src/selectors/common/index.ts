@@ -10,6 +10,7 @@ import { minicartSelectors } from './minicart.sel';
 import { modalSelectors } from './modal.sel';
 import { pdpSelectors } from './pdp.sel';
 import { plpSelectors } from './plp.sel';
+import { searchSelectors } from './search.sel';
 import { wishlistSelectors } from './wishlist.sel';
 
 export const COMMON_SELECTORS: Selectors = {
@@ -22,6 +23,7 @@ export const COMMON_SELECTORS: Selectors = {
   wishlist: wishlistSelectors,
   account: accountSelectors,
   minicart: minicartSelectors,
+  search: searchSelectors,
   checkout: checkoutSelectors,
   cookie: cookieSelectors,
   modal: modalSelectors

@@ -11,6 +11,7 @@ import { CartPage } from '../pages/Cart.page';
 import { CheckoutPage } from '../pages/Checkout.page';
 import { AccountPage } from '../pages/Account.page';
 import { WishlistPage } from '../pages/Wishlist.page';
+import { SearchPage } from '../pages/Search.page';
 
 export interface AppFixtures {
   ctx: BrandContext;
@@ -24,6 +25,7 @@ export interface AppFixtures {
   checkout: CheckoutPage;
   account: AccountPage;
   wishlist: WishlistPage;
+  search: SearchPage;
 }
 
 export const test = base.extend<AppFixtures>({
@@ -74,6 +76,10 @@ export const test = base.extend<AppFixtures>({
 
   wishlist: async ({ pageFactory }, use) => {
     await use(pageFactory.createWishlistPage());
+  },
+
+  search: async ({ pageFactory }, use) => {
+    await use(pageFactory.createSearchPage());
   }
 });
 

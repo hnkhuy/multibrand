@@ -47,6 +47,17 @@ export interface BrandFeatures {
   // Wishlist
   wishlist: boolean;
   wishlistRequiresLogin: boolean;
+
+  // Search
+  searchAutoSuggestion: boolean;
+  searchCategorysuggestion: boolean;
+  searchFilters: boolean;
+  searchSort: boolean;
+  searchLoadMore: boolean;
+  searchPagination: boolean;
+  searchResultCount: boolean;
+  searchWishlistOnCard: boolean;
+  searchQuickAdd: boolean;
 }
 
 const defaults: BrandFeatures = {
@@ -85,6 +96,15 @@ const defaults: BrandFeatures = {
   miniCartPromoMessage: false,
   wishlist: true,
   wishlistRequiresLogin: true,
+  searchAutoSuggestion: true,
+  searchCategorysuggestion: true,
+  searchFilters: true,
+  searchSort: true,
+  searchLoadMore: true,
+  searchPagination: true,
+  searchResultCount: true,
+  searchWishlistOnCard: true,
+  searchQuickAdd: true,
 };
 
 // Override per brand when a feature is confirmed absent.

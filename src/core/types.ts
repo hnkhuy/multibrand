@@ -26,6 +26,7 @@ export interface Selectors {
   wishlist: WishlistSelectors;
   account: AccountSelectors;
   minicart: MiniCartSelectors;
+  search?: SearchSelectors;
   checkout?: CheckoutSelectors;
   cookie?: CookieSelectors;
   modal?: ModalSelectors;
@@ -186,6 +187,22 @@ export interface AccountSelectors {
   requiredInvalidField?: string;
   newsletterLink?: string;
   passwordToggle?: string;
+}
+
+export interface SearchSelectors {
+  searchResultPage: string;
+  searchKeywordDisplay: string;
+  noResultMessage: string;
+  autoSuggestionPanel: string;
+  autoSuggestionItem: string;
+  autoSuggestionProductItem: string;
+  autoSuggestionCategoryItem: string;
+  autoSuggestionProductImage: string;
+  autoSuggestionProductName: string;
+  autoSuggestionProductPrice: string;
+  searchClearButton: string;
+  searchCloseButton: string;
+  searchResultCount: string;
 }
 
 export interface MiniCartSelectors {

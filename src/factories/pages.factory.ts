@@ -6,6 +6,7 @@ import { CheckoutPage } from '../pages/Checkout.page';
 import { HomePage } from '../pages/Home.page';
 import { PDPPage } from '../pages/PDP.page';
 import { PLPPage } from '../pages/PLP.page';
+import { SearchPage } from '../pages/Search.page';
 import { WishlistPage } from '../pages/Wishlist.page';
 
 export class PageFactory implements PageFactoryContract {
@@ -41,5 +42,9 @@ export class PageFactory implements PageFactoryContract {
 
   createWishlistPage(): WishlistPage {
     return new WishlistPage(this.page, this.selectors, this.ctx);
+  }
+
+  createSearchPage(): SearchPage {
+    return new SearchPage(this.page, this.selectors, this.ctx);
   }
 }
