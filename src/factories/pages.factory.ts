@@ -7,6 +7,7 @@ import { HomePage } from '../pages/Home.page';
 import { PDPPage } from '../pages/PDP.page';
 import { PLPPage } from '../pages/PLP.page';
 import { SearchPage } from '../pages/Search.page';
+import { StorePage } from '../pages/Store.page';
 import { WishlistPage } from '../pages/Wishlist.page';
 
 export class PageFactory implements PageFactoryContract {
@@ -46,5 +47,9 @@ export class PageFactory implements PageFactoryContract {
 
   createSearchPage(): SearchPage {
     return new SearchPage(this.page, this.selectors, this.ctx);
+  }
+
+  createStorePage(): StorePage {
+    return new StorePage(this.page, this.selectors, this.ctx);
   }
 }

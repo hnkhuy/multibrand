@@ -12,6 +12,7 @@ import { CheckoutPage } from '../pages/Checkout.page';
 import { AccountPage } from '../pages/Account.page';
 import { WishlistPage } from '../pages/Wishlist.page';
 import { SearchPage } from '../pages/Search.page';
+import { StorePage } from '../pages/Store.page';
 
 export interface AppFixtures {
   ctx: BrandContext;
@@ -26,6 +27,7 @@ export interface AppFixtures {
   account: AccountPage;
   wishlist: WishlistPage;
   search: SearchPage;
+  store: StorePage;
 }
 
 export const test = base.extend<AppFixtures>({
@@ -80,6 +82,10 @@ export const test = base.extend<AppFixtures>({
 
   search: async ({ pageFactory }, use) => {
     await use(pageFactory.createSearchPage());
+  },
+
+  store: async ({ pageFactory }, use) => {
+    await use(pageFactory.createStorePage());
   }
 });
 

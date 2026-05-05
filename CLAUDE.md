@@ -43,7 +43,7 @@ import { test, expect } from '../../src/fixtures/test.fixture';
 - `ctx` — BrandContext (brand, region, baseURL) derived from `testInfo.project.metadata`
 - `selectors` — merged selector set for the current brand
 - `pageFactory` — creates page objects with injected dependencies
-- `home`, `plp`, `pdp`, `cart`, `checkout`, `account`, `wishlist` — pre-built page objects
+- `home`, `plp`, `pdp`, `cart`, `checkout`, `account`, `wishlist`, `search`, `store` — pre-built page objects
 
 ### Selector Strategy
 
@@ -58,7 +58,7 @@ Selectors follow a **component-based structure** (header, pdp, plp, etc.) split 
 FINAL_SELECTORS = merge(COMMON_SELECTORS, BRAND_OVERRIDES[brand])
 ```
 
-Current overrides: drmartens → header + pdp, platypus → header, skechers → plp, vans → none.
+Current overrides: drmartens → header + pdp, platypus → header, skechers → plp (productCard + productName + productLink + quickAdd), vans → none.
 
 To add a brand override: create a component selector file under `src/selectors/brands/{brand}/`, then register it in `BRAND_OVERRIDES` in `src/selectors/index.ts`.
 
@@ -72,9 +72,33 @@ To add a brand override: create a component selector file under `src/selectors/b
 - Test IDs follow the pattern `HP-001`, `CO-042`, etc. — preserve these in test names
 - Smoke tests live in `tests/smoke/`, regression tests in `tests/regression/`
 - Tests use regex patterns for flexible assertions on dynamic content (e.g., `ERROR_UI_PATTERN`, `EMPTY_CART_PATTERN`)
+- Skechers is a SPA with styled-components (hash CSS classes) — products render after JS hydration, not at `domcontentloaded`. Use `waitForFunction` polling on the card selector in `expectLoaded()` instead of `innerText` checks.
 
 ## Maintenance
 
 After each architectural change (new brand, new selector layer, new fixture, new page object, changed project structure), suggest updating this file to keep it accurate.
 
 At the end of each working session, update this file with: what we just did, important technical decisions made, and what needs to be done next.
+
+## Dev Journal Protocol
+
+After each working session, append a summary to `docs/dev-journal.md` using this format:
+
+---
+## YYYY-MM-DD — <Topic>
+**Goal:** What we were trying to achieve
+**Approach:** Strategy / implementation direction chosen
+**Files changed:** List of key files modified
+**Issues hit:** Problems encountered during the session
+**Resolution:** How issues were resolved (or current status)
+**Next:** What to pick up next session
+---
+
+Rules:
+- Always append, never overwrite previous entries
+- Keep each entry concise (under 20 lines)
+- If strategy or architecture decisions changed this session, update the relevant section in CLAUDE.md as well
+- At the start of each new session, read the last 2–3 entries in dev-journal.md to restore context
+
+<!-- ## Session Startup
+On every new session: read the last 3 entries in `docs/dev-journal.md` before doing anything else. -->

@@ -10,11 +10,11 @@ export const searchSelectors: SearchSelectors = {
   autoSuggestionPanel:
     '[data-testid*="suggestion" i], [data-testid*="autocomplete" i], [data-testid*="typeahead" i], [role="listbox"], [class*="suggestion" i], [class*="autocomplete" i], [class*="typeahead" i], [class*="search-dropdown" i]',
   autoSuggestionItem:
-    '[data-testid*="suggestion-item" i], [role="option"], [class*="suggestion-item" i], [class*="autocomplete-item" i]',
+    '[data-testid*="suggestion-item" i], [role="option"], [class*="suggestion-item" i], [class*="autocomplete-item" i], .text-suggestion, button[class*="text-suggestion"], a.product-suggestion',
   autoSuggestionProductItem:
-    '[data-testid*="suggestion-product" i], [class*="suggestion-product" i], [class*="product-suggestion" i], [role="option"][class*="product" i]',
+    '[data-testid*="suggestion-product" i], [class*="suggestion-product" i], [class*="product-suggestion" i], [role="option"][class*="product" i], a.product-suggestion',
   autoSuggestionCategoryItem:
-    '[data-testid*="suggestion-category" i], [class*="suggestion-category" i], [class*="category-suggestion" i], [role="option"][class*="category" i]',
+    '[data-testid*="suggestion-category" i], [class*="suggestion-category" i], [class*="category-suggestion" i], [role="option"][class*="category" i], button.category',
   autoSuggestionProductImage:
     '[data-testid*="suggestion" i] img, [class*="suggestion" i] img, [role="option"] img',
   autoSuggestionProductName:

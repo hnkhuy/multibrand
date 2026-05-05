@@ -41,3 +41,22 @@ export const accountData = {
   invalidPassword: `${defaultSharedAccount.password}invalid`,
   unregisteredEmail: `automation-unregistered-${Date.now()}@example.com`
 };
+
+export interface StoreTestData {
+  searchTermSuburb: string;
+  searchTermPostcode: string;
+  invalidSearchTerm: string;
+}
+
+export const storeData: Record<'au' | 'nz', StoreTestData> = {
+  au: {
+    searchTermSuburb: 'Melbourne',
+    searchTermPostcode: '3000',
+    invalidSearchTerm: 'zzzzinvalidlocation9999'
+  },
+  nz: {
+    searchTermSuburb: 'Auckland',
+    searchTermPostcode: '1010',
+    invalidSearchTerm: 'zzzzinvalidlocation9999'
+  }
+};

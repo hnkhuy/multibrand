@@ -11,6 +11,7 @@ import { modalSelectors } from './modal.sel';
 import { pdpSelectors } from './pdp.sel';
 import { plpSelectors } from './plp.sel';
 import { searchSelectors } from './search.sel';
+import { storeSelectors } from './store.sel';
 import { wishlistSelectors } from './wishlist.sel';
 
 export const COMMON_SELECTORS: Selectors = {
@@ -24,6 +25,7 @@ export const COMMON_SELECTORS: Selectors = {
   account: accountSelectors,
   minicart: minicartSelectors,
   search: searchSelectors,
+  store: storeSelectors,
   checkout: checkoutSelectors,
   cookie: cookieSelectors,
   modal: modalSelectors

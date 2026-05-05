@@ -58,6 +58,17 @@ export interface BrandFeatures {
   searchResultCount: boolean;
   searchWishlistOnCard: boolean;
   searchQuickAdd: boolean;
+
+  // Store Locator
+  storeLocatorEnabled: boolean;
+  storeLocatorMap: boolean;
+  storeLocatorGeolocation: boolean;
+  storeLocatorFilters: boolean;
+  findInStore: boolean;
+  findInStoreVariantCheck: boolean;
+  storeDistanceDisplay: boolean;
+  storePhoneDisplay: boolean;
+  storeHoursDisplay: boolean;
 }
 
 const defaults: BrandFeatures = {
@@ -105,6 +116,15 @@ const defaults: BrandFeatures = {
   searchResultCount: true,
   searchWishlistOnCard: true,
   searchQuickAdd: true,
+  storeLocatorEnabled: true,
+  storeLocatorMap: true,
+  storeLocatorGeolocation: true,
+  storeLocatorFilters: false,
+  findInStore: true,
+  findInStoreVariantCheck: true,
+  storeDistanceDisplay: true,
+  storePhoneDisplay: true,
+  storeHoursDisplay: true,
 };
 
 // Override per brand when a feature is confirmed absent.

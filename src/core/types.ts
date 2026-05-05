@@ -27,6 +27,7 @@ export interface Selectors {
   account: AccountSelectors;
   minicart: MiniCartSelectors;
   search?: SearchSelectors;
+  store?: StoreSelectors;
   checkout?: CheckoutSelectors;
   cookie?: CookieSelectors;
   modal?: ModalSelectors;
@@ -225,6 +226,34 @@ export interface MiniCartSelectors {
   continueShoppingCta?: string;
   paymentMessaging?: string;
   promoMessage?: string;
+}
+
+export interface StoreSelectors {
+  storeLocatorLink?: string;
+  pageContainer?: string;
+  searchInput?: string;
+  searchSubmit?: string;
+  storeList?: string;
+  storeCard?: string;
+  storeName?: string;
+  storeAddress?: string;
+  storePhone?: string;
+  storeHours?: string;
+  storeDistance?: string;
+  getDirectionsLink?: string;
+  mapContainer?: string;
+  mapPin?: string;
+  geolocateButton?: string;
+  noResultMessage?: string;
+  findInStoreButton?: string;
+  findInStoreModal?: string;
+  findInStoreSearch?: string;
+  findInStoreSubmit?: string;
+  availabilityResult?: string;
+  availabilityStatus?: string;
+  closeModal?: string;
+  storeFilterPanel?: string;
+  storeFilter?: string;
 }
 
 export interface CheckoutSelectors {
