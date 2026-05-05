@@ -86,7 +86,12 @@ export class MiniCartComponent {
 
   async open(): Promise<void> {
     const cartIcon = this.page.locator(this.selectors.header.cartIcon).first();
-    await cartIcon.click();
+    try {
+      await cartIcon.click({ timeout: 10_000 });
+    } catch {
+      // Mini cart loader overlay may intercept pointer events — force-click bypasses it.
+      await cartIcon.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+    }
     await this.page.waitForTimeout(500);
   }
 

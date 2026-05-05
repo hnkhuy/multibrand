@@ -5,7 +5,7 @@ export const minicartSelectors: MiniCartSelectors = {
   checkoutButton:
     '[data-testid="checkout"], a[href*="checkout"], button:has-text("Checkout"), button:has-text("Go to checkout"), a:has-text("Checkout"), a:has-text("Go to Checkout")',
   itemRow:
-    '[data-testid="cart-item"], .cart-item, .mini-cart-item, [class*="cart-item" i], [class*="mini-cart-item" i], [class*="minicart-item" i]',
+    '[data-testid="cart-item"], .cart-item, .mini-cart-item, [class*="cart-item" i], [class*="mini-cart-item" i], [class*="minicart-item" i], aside :has(> a[href]):has(> * > button:has-text("Remove"))',
   closeButton:
     'button[aria-label*="close" i], button[data-testid*="close" i], [class*="close" i] button, button[class*="close" i], button:has-text("×"), button:has-text("✕")',
   viewCartButton:

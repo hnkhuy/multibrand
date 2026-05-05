@@ -40,7 +40,7 @@ export abstract class BasePage {
   }
 
   async goto(path = '/'): Promise<void> {
-    await this.page.goto(path);
+    await this.page.goto(path, { waitUntil: 'domcontentloaded' });
     await waitForPageReady(this.page);
     await this.dismissInterruptions();
   }

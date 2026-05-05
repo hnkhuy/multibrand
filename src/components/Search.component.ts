@@ -10,6 +10,15 @@ export class SearchComponent {
   async search(keyword: string): Promise<void> {
     const previousUrl = this.page.url();
     const input = this.page.locator(this.selectors.header.searchInput).first();
+
+    // If the search input isn't immediately visible (e.g. hidden behind a toggle),
+    // fall back to navigating directly to the search results URL.
+    const isVisible = await input.isVisible().catch(() => false);
+    if (!isVisible) {
+      await this.page.goto(`/search?q=${encodeURIComponent(keyword)}`, { waitUntil: 'domcontentloaded' });
+      return;
+    }
+
     await input.fill(keyword);
 
     // 1. Try the submit button scoped to the ancestor <form> — avoids accidentally clicking

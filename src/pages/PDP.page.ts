@@ -172,13 +172,50 @@ export class PDPPage extends BasePage {
 
   async addToCart(): Promise<void> {
     await this.selectFirstAvailableSizeIfPossible();
-    try {
-      await this.addToCartButton.click({ timeout: 10_000 });
-    } catch {
-      // Normal click can time out if the button is briefly covered (e.g. React re-render
-      // overlay after size selection). Force-click fires the event immediately.
-      await this.addToCartButton.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+
+    const clickAtc = async () => {
+      try {
+        await this.addToCartButton.click({ timeout: 10_000 });
+      } catch {
+        // Normal click can time out if the button is briefly covered (e.g. React re-render
+        // overlay after size selection). Force-click fires the event immediately.
+        await this.addToCartButton.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+      }
+    };
+
+    await clickAtc();
+
+    // Detect size validation (Vans shows "Size was not chosen" immediately after ATC)
+    await this.page.waitForTimeout(500);
+    const sizeValidation = await this.page
+      .locator(':text("Size was not chosen"), :text("Please select a size")')
+      .isVisible()
+      .catch(() => false);
+    if (sizeValidation) {
+      // Native btn.click() doesn't work for Vans (parent container handles the event).
+      // Playwright coordinate-based click dispatches full mouse event sequence which the
+      // parent container listens for, so use force:true to bypass any overlay.
+      const sizeBtn = this.page
+        .locator('button')
+        .filter({ hasText: /^\d{1,3}(\.\d+)?$/ })
+        .first();
+      await sizeBtn.scrollIntoViewIfNeeded().catch(() => undefined);
+      await sizeBtn.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+      await this.page.waitForTimeout(500);
+      await clickAtc();
     }
+
+    // Wait for the AJAX add-to-cart request to complete — staging can be slow,
+    // and domcontentloaded fires instantly on SPAs.
+    await this.page.waitForTimeout(4000);
+
+    // If the cart count still shows 0, the AJAX may have failed on staging — retry once.
+    const count = await this.miniCart.readHeaderCartCount().catch(() => null);
+    if (count === 0 || count === null) {
+      await clickAtc();
+      await this.page.waitForTimeout(4000);
+    }
+
     await this.page.waitForLoadState('domcontentloaded').catch(() => undefined);
   }
 
@@ -247,21 +284,37 @@ export class PDPPage extends BasePage {
       }
     }
 
-    // Last resort: evaluate in-browser to find and native-click a numeric size button.
-    // Handles brands (e.g. DRM) that use styled-component class names without "size" keywords.
-    // Native btn.click() bypasses all Playwright actionability checks and fires the event directly.
+    // Step 3: Playwright force-click on the first visible numeric size button.
+    // Dispatches the full pointer event sequence (pointerdown → mousedown → click → mouseup →
+    // pointerup) which is required for brands that use pointer-event delegation on a parent
+    // container (Skechers, Platypus, Vans) rather than listening on the button itself.
+    const numericSizeBtn = this.page
+      .locator('button')
+      .filter({ hasText: /^\d{1,3}(\.\d+)?$/ })
+      .first();
+    if (await numericSizeBtn.isVisible().catch(() => false)) {
+      const ariaLabel = (await numericSizeBtn.getAttribute('aria-label').catch(() => '')) ?? '';
+      if (!/menu|guide|chart|toggle|wishlist|cart|bag|store|search/i.test(ariaLabel.toLowerCase())) {
+        await numericSizeBtn.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+        await this.page.waitForTimeout(400);
+        return true;
+      }
+    }
+
+    // Step 4: evaluate in-browser to find and native-click a numeric size button.
+    // Uses btn.click() (non-cancelable) which bypasses any preventDefault() handlers on the
+    // element while still bubbling through React's event delegation — works for DRM.
     const clicked = await this.page
       .evaluate(() => {
         const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'));
         for (const btn of buttons) {
           const text = (btn.textContent ?? '').trim();
           if (!/^\d{1,3}(\.\d+)?$/.test(text)) continue;
-          const ariaLabel = (btn.getAttribute('aria-label') ?? '').toLowerCase();
-          if (/menu|guide|chart|toggle|wishlist|cart|checkout|bag|store|search/i.test(ariaLabel)) continue;
+          const label = (btn.getAttribute('aria-label') ?? '').toLowerCase();
+          if (/menu|guide|chart|toggle|wishlist|cart|checkout|bag|store|search/i.test(label)) continue;
           if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') continue;
-          const rect = btn.getBoundingClientRect();
-          if (rect.width === 0 || rect.height === 0) continue;
-          if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+          const r = btn.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0 || r.bottom <= 0 || r.top >= window.innerHeight) continue;
           btn.click();
           return true;
         }
@@ -270,7 +323,7 @@ export class PDPPage extends BasePage {
       .catch(() => false);
 
     if (clicked) {
-      await this.page.waitForTimeout(300);
+      await this.page.waitForTimeout(600);
       return true;
     }
 

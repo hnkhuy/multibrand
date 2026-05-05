@@ -240,6 +240,16 @@ export class SearchPage extends BasePage {
   // ─── Assertions ───────────────────────────────────────────────────────────────
 
   async expectLoaded(): Promise<void> {
+    // Skechers (and similar SPA brands) render products via JS after domcontentloaded.
+    // Wait until at least one product card is in the DOM before asserting visibility.
+    const cardSelector = this.selectors.plp.productCard;
+    await this.page
+      .waitForFunction(
+        (sel: string) => document.querySelectorAll(sel).length > 0,
+        cardSelector,
+        { timeout: 30_000 }
+      )
+      .catch(() => undefined);
     await expect(this.productCards.first()).toBeVisible({ timeout: 15_000 });
   }
 
