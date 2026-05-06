@@ -4,6 +4,7 @@ import { env } from './src/core/env';
 
 export default defineConfig({
   testDir: './tests',
+  globalTeardown: './src/core/teardown.ts',
   timeout: 150_000,
   expect: {
     timeout: 40_000

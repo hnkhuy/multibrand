@@ -1,7 +1,9 @@
 import type { MiniCartSelectors } from '../../core/types';
 
 export const minicartSelectors: MiniCartSelectors = {
-  drawer: '[data-testid="mini-cart"], [data-testid="minicart"], .mini-cart, .cart-drawer, [class*="mini-cart" i], [class*="minicart" i], [class*="cart-drawer" i], [class*="cart-sidebar" i]',
+  // GRA platform renders the drawer as <aside coords="0"> with hashed styled-component classes;
+  // none of the class-name selectors below match it — so aside[coords] must come first.
+  drawer: 'aside[coords], [data-testid="mini-cart"], [data-testid="minicart"], .mini-cart, .cart-drawer, [class*="mini-cart" i], [class*="minicart" i], [class*="cart-drawer" i], [class*="cart-sidebar" i]',
   checkoutButton:
     '[data-testid="checkout"], a[href*="checkout"], button:has-text("Checkout"), button:has-text("Go to checkout"), a:has-text("Checkout"), a:has-text("Go to Checkout")',
   itemRow:

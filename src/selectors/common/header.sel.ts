@@ -12,6 +12,8 @@ export const headerSelectors: HeaderSelectors = {
   menuButton: '[data-testid="menu-button"], button[aria-label*="menu" i], header button[aria-label*="nav" i]',
   mobileMenuSurface: 'nav, [role="dialog"], [aria-modal="true"], [class*="drawer" i], [class*="menu" i]',
   mobileMenuLink: 'nav a[href], [role="dialog"] a[href], [class*="drawer" i] a[href], [class*="menu" i] a[href]',
-  cartCount: '[data-testid*="cart-count" i], [class*="cart-count" i], [class*="badge" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]',
+  // GRA cart button carries the count in its own aria-label text ("You have N items in your cart").
+  // Scoped to header to avoid matching "Add to Cart" buttons on PDP/PLP pages.
+  cartCount: 'header button[aria-label*="cart" i], header button[aria-label*="bag" i], [data-testid*="cart-count" i], [class*="cart-count" i], [aria-label*="cart" i] [class*="count" i], [aria-label*="bag" i] [class*="count" i]',
   actionTarget: 'header button, header [role="button"], header a'
 };
