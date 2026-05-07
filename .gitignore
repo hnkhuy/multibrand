@@ -4,6 +4,8 @@
 /node_modules
 /dist
 /reports
+!reports/monocart/index.json
+!reports/monocart/brand-trend.json
 /test-results
 /playwright-report
 npm-debug.log*
