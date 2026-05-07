@@ -12,7 +12,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: env.CI,
   retries: env.CI ? 2 : 0,
-  workers: 2,
+  workers: process.env.CI ? 2 : 2,
   reporter: [
     ['list'],
     ['html', { outputFolder: 'reports/playwright-html', open: 'never' }]

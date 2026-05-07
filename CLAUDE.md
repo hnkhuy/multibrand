@@ -74,6 +74,16 @@ To add a brand override: create a component selector file under `src/selectors/b
 - Tests use regex patterns for flexible assertions on dynamic content (e.g., `ERROR_UI_PATTERN`, `EMPTY_CART_PATTERN`)
 - Skechers is a SPA with styled-components (hash CSS classes) — products render after JS hydration, not at `domcontentloaded`. Use `waitForFunction` polling on the card selector in `expectLoaded()` instead of `innerText` checks.
 
+## Test Execution Rules
+
+**CRITICAL — machine is a MacBook M1 Air (passive cooling, no fan). Overheating causes CPU throttling.**
+
+- NEVER run multiple `playwright test` commands in parallel
+- Always run one test command at a time; wait for it to finish before starting the next
+- Do NOT override `--workers` flag — max workers is already set to 2 in config
+- Prefer `npm run test:safe` over `npx playwright test` directly — it uses `flock` to enforce a system-level lock preventing concurrent runs
+- If you need to run tests for multiple projects/files, chain them sequentially with `&&`, never with `&` or in separate parallel tool calls
+
 ## Maintenance
 
 After each architectural change (new brand, new selector layer, new fixture, new page object, changed project structure), suggest updating this file to keep it accurate.

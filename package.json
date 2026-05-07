@@ -10,7 +10,9 @@
     "test:ui": "playwright test --ui",
     "report": "playwright show-report",
     "build": "tsc --noEmit",
-    "kill": "pkill -f 'node.*playwright.*test' ; pkill -f 'playwright/lib/common/process' ; pkill -f 'playwright.*test-server' ; pkill -f 'chrome-headless-shell' ; pkill -f 'ffmpeg.*playwright' ; echo 'Playwright processes killed'"
+    "kill": "pkill -f 'node.*playwright.*test' ; pkill -f 'playwright/lib/common/process' ; pkill -f 'playwright.*test-server' ; pkill -f 'chrome-headless-shell' ; pkill -f 'ffmpeg.*playwright' ; echo 'Playwright processes killed'",
+    "test:safe": "flock /tmp/playwright.lock playwright test",
+    "test:safe:headed": "flock /tmp/playwright.lock playwright test --headed"
   },
   "keywords": [
     "playwright",

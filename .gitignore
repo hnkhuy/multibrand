@@ -21,3 +21,4 @@ yarn-error.log*
 results
 src/documents/instruction
 tests/diagnostic
+test_results.json
