@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { projects } from './config/projects';
 import { env } from './src/core/env';
-import { updateBrandTrend, generateDashboard, generateBrandChart, injectNavIntoMonocartReport, archiveRun } from './scripts/brand-chart-generator';
+import { updateBrandTrend, generateDashboard, generateBrandChart, injectNavIntoMonocartReport, archiveRun, generateSpecBreakdown, updateFlakyTracker, generateFlakyPage, generateDurationPage } from './scripts/brand-chart-generator';
 
 export default defineConfig({
   testDir: './tests',
@@ -28,10 +28,14 @@ export default defineConfig({
         return defaultColumns;
       },
       onEnd: async (reportData: any) => {
-        const runs = updateBrandTrend(reportData, 'reports/monocart/brand-trend.json');
+        const runs      = updateBrandTrend(reportData, 'reports/monocart/brand-trend.json');
+        const flakyRuns = updateFlakyTracker(reportData, 'reports/monocart/flaky-trend.json');
         archiveRun(reportData, runs, 'reports/archive', 'reports/monocart');
         generateDashboard(reportData, runs, 'reports/monocart/dashboard.html');
         generateBrandChart(runs, 'reports/monocart/brand-chart.html');
+        generateSpecBreakdown(reportData, 'reports/monocart/spec-breakdown.html');
+        generateFlakyPage(flakyRuns, 'reports/monocart/flaky-tests.html');
+        generateDurationPage(reportData, 'reports/monocart/test-duration.html');
         injectNavIntoMonocartReport('reports/monocart/index.html');
       }
     }]

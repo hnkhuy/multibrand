@@ -380,3 +380,27 @@
 **Resolution:** All 4 report pages generate cleanly after each run. Nav cross-links work from all locations including archived runs. 2 runs archived successfully (run-001, run-002).
 
 **Next:** Investigate 24 PLP failures (PLP-006/007/008/010 across most brands — likely breadcrumb/category selector issues). Consider adding per-spec breakdown chart as next report page.
+
+---
+## 2026-05-11 — Monocart Report: Spec Breakdown + Flaky Tracker + Test Duration
+
+**Goal:** Add 3 new report pages to the existing monocart reporting system.
+
+**Approach:** Extended `scripts/brand-chart-generator.ts` with 4 new exports and 3 helper functions. Added `BRANDS_GRID` and `BRAND_SHORT` as module-level constants (removing duplicates that were inlined in `generateDashboard`). Added 3 entries to `NAV_PAGES` — nav bar updates everywhere automatically.
+
+**Files changed:**
+- `scripts/brand-chart-generator.ts` — extracted `BRANDS_GRID`/`BRAND_SHORT` to module scope; added `generateSpecBreakdown`, `updateFlakyTracker`, `generateFlakyPage`, `generateDurationPage`
+- `playwright.config.ts` — imported and called all 4 new functions in `onEnd`; `flaky-trend.json` written alongside `brand-trend.json`
+- `package.json` — added `report:spec`, `report:flaky`, `report:duration`; updated `report:all` to open 7 pages
+- `.gitignore` — added exception for `reports/monocart/flaky-trend.json`
+- `CLAUDE.md` — updated report page table, npm scripts list, persistent-files note, data flow diagram
+
+**Spec Breakdown** (`spec-breakdown.html`): table of spec files × 8 brands with pass %, passed/total, fail count; overall column on right; color-coded green/amber/red by pass rate.
+
+**Flaky Test Tracker** (`flaky-tests.html`): persists per-test per-brand status in `flaky-trend.json` (last 15 runs); computes flakiness score = (pass↔fail flips) / (consecutive pairs); renders dot history per brand per run; shows 4 summary cards.
+
+**Test Duration** (`test-duration.html`): extracts `node.duration` from monocart data; top-20 slowest tests table with inline bar chart; ECharts grouped bar showing average seconds per spec per brand; 4 summary stat cards.
+
+**Issues hit:** None — `tsc --noEmit` passed clean first attempt.
+
+**Next:** Run full suite to populate all 3 new pages with real data; verify `flaky-trend.json` accumulates correctly across runs; investigate PLP-006/007/008/010 failures.

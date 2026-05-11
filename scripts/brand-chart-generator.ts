@@ -19,6 +19,18 @@ const BRAND_COLORS: Record<string, string> = {
   'vans-nz':      '#E06060',  // VAN red NZ (light)
 };
 
+const BRANDS_GRID = [
+  'drmartens-au', 'platypus-au', 'skechers-au', 'vans-au',
+  'drmartens-nz', 'platypus-nz', 'skechers-nz', 'vans-nz',
+];
+
+const BRAND_SHORT: Record<string, string> = {
+  'drmartens-au': 'DRM<br>AU', 'platypus-au': 'PLT<br>AU',
+  'skechers-au':  'SKX<br>AU', 'vans-au':     'VAN<br>AU',
+  'drmartens-nz': 'DRM<br>NZ', 'platypus-nz': 'PLT<br>NZ',
+  'skechers-nz':  'SKX<br>NZ', 'vans-nz':     'VAN<br>NZ',
+};
+
 // Source of truth for all report pages.
 // Add new pages here — nav updates everywhere automatically.
 export const NAV_PAGES = [
@@ -26,6 +38,9 @@ export const NAV_PAGES = [
   { label: 'Run History',     href: 'archive.html' },
   { label: 'Monocart Report', href: 'index.html' },
   { label: 'Brand Chart',     href: 'brand-chart.html' },
+  { label: 'Spec Breakdown',  href: 'spec-breakdown.html' },
+  { label: 'Flaky Tests',     href: 'flaky-tests.html' },
+  { label: 'Test Duration',   href: 'test-duration.html' },
 ];
 
 // ─── Nav bar ─────────────────────────────────────────────────────────────────
@@ -192,8 +207,6 @@ export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPa
     </div>`).join('');
 
   // Per-brand cards — 4×2: row1=AU, row2=NZ
-  const BRANDS_GRID = ['drmartens-au', 'platypus-au', 'skechers-au', 'vans-au',
-                       'drmartens-nz', 'platypus-nz', 'skechers-nz', 'vans-nz'];
   const brandCards = BRANDS_GRID.map((brand) => {
     const cur  = latest?.brands[brand];
     const prv  = prev?.brands[brand];
@@ -238,14 +251,7 @@ export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPa
     .filter(([, map]) => { const ss = Object.values(map); return ss.length > 0 && !ss.every(s => s === ss[0]); })
     .sort(([a], [b]) => a.localeCompare(b));
 
-  const INCON_BRANDS = ['drmartens-au', 'platypus-au', 'skechers-au', 'vans-au',
-                        'drmartens-nz', 'platypus-nz', 'skechers-nz', 'vans-nz'];
-  const BRAND_SHORT: Record<string, string> = {
-    'drmartens-au': 'DRM<br>AU', 'platypus-au': 'PLT<br>AU',
-    'skechers-au':  'SKX<br>AU', 'vans-au':     'VAN<br>AU',
-    'drmartens-nz': 'DRM<br>NZ', 'platypus-nz': 'PLT<br>NZ',
-    'skechers-nz':  'SKX<br>NZ', 'vans-nz':     'VAN<br>NZ',
-  };
+  const INCON_BRANDS = BRANDS_GRID;
 
   const incon_esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const incon_cell = (status: CaseStatus | undefined) => {
@@ -624,4 +630,541 @@ export function archiveRun(
 
   // Regenerate archive browser in monocart dir
   generateArchiveBrowser(runsIndex, path.join(monocartDir, 'archive.html'));
+}
+
+// ─── Spec Breakdown ───────────────────────────────────────────────────────────
+
+function collectSpecStatsPerProject(projectSubs: any[]): Record<string, BrandStats> {
+  const specMap: Record<string, BrandStats> = {};
+
+  function walk(nodes: any[], specName: string | null): void {
+    for (const node of nodes ?? []) {
+      let name = specName;
+      if (name === null && node.suiteType === 'file') {
+        const t: string = node.title ?? '';
+        name = (t.split('/').pop() ?? t).replace(/\.spec\.[jt]sx?$/, '');
+      }
+      if (node.caseType) {
+        const key = name ?? 'unknown';
+        if (!specMap[key]) specMap[key] = { total: 0, passed: 0, failed: 0, skipped: 0 };
+        specMap[key].total++;
+        if      (node.caseType === 'passed') specMap[key].passed++;
+        else if (node.caseType === 'failed') specMap[key].failed++;
+        else                                  specMap[key].skipped++;
+      }
+      walk(node.subs, name);
+    }
+  }
+
+  walk(projectSubs, null);
+  return specMap;
+}
+
+export function generateSpecBreakdown(reportData: any, outputPath: string): void {
+  const matrix: Record<string, Record<string, BrandStats>> = {};
+  const allSpecs = new Set<string>();
+
+  for (const row of reportData.rows ?? []) {
+    if (row.suiteType !== 'project') continue;
+    const brand = row.title as string;
+    const specStats = collectSpecStatsPerProject(row.subs ?? []);
+    for (const [spec, stats] of Object.entries(specStats)) {
+      allSpecs.add(spec);
+      if (!matrix[spec]) matrix[spec] = {};
+      matrix[spec][brand] = stats;
+    }
+  }
+
+  const specs = [...allSpecs].sort();
+
+  const headerCells = BRANDS_GRID.map(b =>
+    `<th style="background:${BRAND_COLORS[b] ?? '#888'};color:#fff;text-align:center">${BRAND_SHORT[b]}</th>`
+  ).join('');
+
+  const specRows = specs.map(spec => {
+    const cells = BRANDS_GRID.map(brand => {
+      const s = matrix[spec]?.[brand];
+      if (!s || s.total === 0) return `<td class="cell-na">·</td>`;
+      const rate = passRate(s);
+      const rateColor = rate >= 80 ? '#2e7d32' : rate >= 60 ? '#e65100' : '#c62828';
+      const bg       = rate >= 80 ? '#e8f5e9' : rate >= 60 ? '#fff8e1' : '#ffebee';
+      return `<td class="cell-data" style="background:${bg}">
+        <div style="font-weight:bold;font-size:13px;color:${rateColor}">${rate}%</div>
+        <div style="font-size:10px;color:#666">${s.passed}/${s.total}</div>
+        ${s.failed > 0 ? `<div style="font-size:10px;color:#c62828">✗ ${s.failed}</div>` : ''}
+      </td>`;
+    }).join('');
+
+    const all = BRANDS_GRID.map(b => matrix[spec]?.[b]).filter((s): s is BrandStats => !!s);
+    const tot = all.reduce(
+      (a, s) => ({ total: a.total+s.total, passed: a.passed+s.passed, failed: a.failed+s.failed, skipped: a.skipped+s.skipped }),
+      { total: 0, passed: 0, failed: 0, skipped: 0 }
+    );
+    const overallRate  = passRate(tot);
+    const overallColor = overallRate >= 80 ? '#2e7d32' : overallRate >= 60 ? '#e65100' : '#c62828';
+
+    return `<tr>
+      <td class="spec-cell">${spec}</td>
+      ${cells}
+      <td class="overall-cell" style="color:${overallColor}">${overallRate}%<br><span style="font-size:10px;color:#888;font-weight:normal">${tot.passed}/${tot.total}</span></td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spec Breakdown — Multi-Brand Automation</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}
+    .page{max-width:1300px;margin:0 auto;padding:20px 16px;}
+    .page-header{margin-bottom:20px;}
+    .page-title{font-size:22px;font-weight:bold;color:#1a1a2e;}
+    .page-sub{font-size:12px;color:#888;margin-top:4px;}
+    .card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);overflow:auto;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead th{padding:9px 6px;font-weight:600;white-space:nowrap;}
+    .spec-h{background:#1a1a2e;color:#fff;text-align:left;padding-left:12px;min-width:160px;}
+    .overall-h{background:#37474f;color:#fff;text-align:center;}
+    tbody tr:hover{background:rgba(0,0,0,.02);}
+    td{padding:5px 4px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+    .spec-cell{padding-left:12px;font-size:13px;font-weight:500;color:#1a1a2e;white-space:nowrap;}
+    .cell-data{text-align:center;}
+    .cell-na{text-align:center;color:#d0d0d0;font-size:16px;}
+    .overall-cell{text-align:center;font-weight:bold;font-size:14px;}
+    .footer{margin-top:12px;font-size:11px;color:#999;text-align:right;}
+  </style>
+</head>
+<body>
+  ${buildStaticNavHtml('spec-breakdown.html')}
+  <div class="page">
+    <div class="page-header">
+      <div class="page-title">Spec Breakdown</div>
+      <div class="page-sub">Pass rate per spec file × brand &nbsp;|&nbsp; Last run: ${fmtDate(reportData.date)} &nbsp;|&nbsp; ${specs.length} spec(s)</div>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th class="spec-h">Spec File</th>
+            ${headerCells}
+            <th class="overall-h">Overall</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${specRows || '<tr><td colspan="10" style="text-align:center;padding:24px;color:#999">No data available</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <p class="footer">Generated: ${fmtDate(Date.now())}</p>
+  </div>
+</body>
+</html>`;
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, html);
+}
+
+// ─── Flaky Test Tracker ───────────────────────────────────────────────────────
+
+interface FlakyRunEntry {
+  date: number;
+  tests: Record<string, Record<string, CaseStatus>>;
+}
+
+export function updateFlakyTracker(reportData: any, flakyPath: string, maxRuns = 15): FlakyRunEntry[] {
+  const tests: Record<string, Record<string, CaseStatus>> = {};
+
+  for (const row of reportData.rows ?? []) {
+    if (row.suiteType !== 'project') continue;
+    const brand = row.title as string;
+    for (const { name, status } of collectCases(row.subs ?? [])) {
+      if (!tests[name]) tests[name] = {};
+      tests[name][brand] = status;
+    }
+  }
+
+  let runs: FlakyRunEntry[] = [];
+  try { runs = JSON.parse(fs.readFileSync(flakyPath, 'utf-8')); } catch {}
+
+  runs.push({ date: reportData.date, tests });
+  if (runs.length > maxRuns) runs = runs.slice(-maxRuns);
+
+  fs.mkdirSync(path.dirname(flakyPath), { recursive: true });
+  fs.writeFileSync(flakyPath, JSON.stringify(runs));
+  return runs;
+}
+
+export function generateFlakyPage(runs: FlakyRunEntry[], outputPath: string): void {
+  const navHtml = buildStaticNavHtml('flaky-tests.html');
+
+  if (runs.length < 2) {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Flaky Tests — Multi-Brand Automation</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}</style>
+</head>
+<body>
+  ${navHtml}
+  <div style="max-width:800px;margin:40px auto;padding:0 16px">
+    <h2 style="color:#1a1a2e;margin-bottom:12px">Flaky Tests</h2>
+    <p style="color:#888;font-size:14px">Need at least 2 completed runs to detect flaky tests. Run the test suite again to start tracking.</p>
+  </div>
+</body>
+</html>`;
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, html);
+    return;
+  }
+
+  const allTests = new Set<string>();
+  for (const run of runs) {
+    for (const name of Object.keys(run.tests)) allTests.add(name);
+  }
+
+  interface FlakyResult { name: string; score: number; history: Array<Record<string, CaseStatus>>; }
+  const results: FlakyResult[] = [];
+
+  for (const testName of allTests) {
+    let changes = 0, possible = 0;
+    for (const brand of BRANDS_GRID) {
+      const history = runs.map(r => r.tests[testName]?.[brand]).filter((s): s is CaseStatus => !!s);
+      if (history.length < 2) continue;
+      possible += history.length - 1;
+      for (let i = 1; i < history.length; i++) {
+        if ((history[i-1] === 'pass' && history[i] === 'fail') ||
+            (history[i-1] === 'fail' && history[i] === 'pass')) {
+          changes++;
+        }
+      }
+    }
+    if (possible > 0 && changes > 0) {
+      results.push({ name: testName, score: changes / possible, history: runs.map(r => r.tests[testName] ?? {}) });
+    }
+  }
+
+  results.sort((a, b) => b.score - a.score);
+  const topN = results.slice(0, 100);
+
+  const runLabels = runs.map(r => {
+    const d = new Date(r.date);
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  });
+
+  const dot = (s: CaseStatus | undefined): string => {
+    if (!s)           return '<span class="dot dot-na" title="N/A">·</span>';
+    if (s === 'pass') return '<span class="dot dot-pass" title="pass">●</span>';
+    if (s === 'fail') return '<span class="dot dot-fail" title="fail">●</span>';
+    return                   '<span class="dot dot-skip" title="skip">–</span>';
+  };
+
+  const brandHeaderCells = BRANDS_GRID.map(b =>
+    `<th class="brand-h" style="background:${BRAND_COLORS[b] ?? '#888'};color:#fff">${BRAND_SHORT[b]}</th>`
+  ).join('');
+
+  const tableRows = topN.map(({ name, score, history }) => {
+    const pct        = (score * 100).toFixed(0);
+    const scoreColor = score >= 0.5 ? '#c62828' : score >= 0.25 ? '#e65100' : '#f57c00';
+    const brandCells = BRANDS_GRID.map(brand => {
+      const dots = history.map(h => dot(h[brand])).join('');
+      return `<td class="history-cell">${dots}</td>`;
+    }).join('');
+    const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<tr>
+      <td class="test-name-cell" title="${esc(name)}">${esc(name)}</td>
+      <td class="score-cell" style="color:${scoreColor}">${pct}%</td>
+      ${brandCells}
+    </tr>`;
+  }).join('');
+
+  // Run date labels shown as a sub-row under the brand headers
+  const runLabelSubRows = BRANDS_GRID.map(() =>
+    `<td class="run-labels-cell">${runLabels.map(l => `<span>${l}</span>`).join('')}</td>`
+  ).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flaky Tests — Multi-Brand Automation</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}
+    .page{max-width:1400px;margin:0 auto;padding:20px 16px;}
+    .page-header{margin-bottom:16px;}
+    .page-title{font-size:22px;font-weight:bold;color:#1a1a2e;}
+    .page-sub{font-size:12px;color:#888;margin-top:4px;}
+    .summary{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+    .sum-card{background:#fff;border-radius:8px;padding:12px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);text-align:center;}
+    .sum-val{font-size:24px;font-weight:bold;color:#c62828;}
+    .sum-val.stable{color:#2e7d32;}
+    .sum-lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+    .card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);overflow:auto;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{padding:8px 6px;font-weight:600;background:#1a1a2e;color:#fff;white-space:nowrap;text-align:center;}
+    .brand-h{font-size:11px;}
+    .run-labels-row td{background:#2a2a40;padding:2px 4px;text-align:center;}
+    .run-labels-cell{display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;}
+    .run-labels-cell span{font-size:9px;color:#aaa;writing-mode:vertical-lr;transform:rotate(180deg);line-height:1;}
+    tbody tr:hover{background:#f9f9f9;}
+    td{padding:5px 4px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+    .test-name-cell{padding-left:10px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
+    .score-cell{text-align:center;font-weight:bold;font-size:13px;}
+    .history-cell{text-align:center;white-space:nowrap;}
+    .dot{font-size:10px;margin:0 1px;}
+    .dot-pass{color:#2e7d32;}
+    .dot-fail{color:#c62828;}
+    .dot-skip{color:#9e9e9e;}
+    .dot-na{color:#e0e0e0;}
+    .legend{display:flex;gap:16px;padding:10px 12px;font-size:11px;color:#666;border-top:1px solid #f0f0f0;flex-wrap:wrap;}
+    .no-flaky{padding:24px;text-align:center;color:#2e7d32;font-size:13px;}
+    .footer{margin-top:12px;font-size:11px;color:#999;text-align:right;}
+  </style>
+</head>
+<body>
+  ${navHtml}
+  <div class="page">
+    <div class="page-header">
+      <div class="page-title">Flaky Tests</div>
+      <div class="page-sub">Pass↔fail flips across last ${runs.length} run(s) &nbsp;|&nbsp; Score = % of consecutive pairs that flipped between pass and fail</div>
+    </div>
+    <div class="summary">
+      <div class="sum-card"><div class="sum-val">${results.length}</div><div class="sum-lbl">Flaky Tests</div></div>
+      <div class="sum-card"><div class="sum-val stable">${allTests.size - results.length}</div><div class="sum-lbl">Stable Tests</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#37474f">${allTests.size}</div><div class="sum-lbl">Total Tracked</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#1565c0">${runs.length}</div><div class="sum-lbl">Runs Analysed</div></div>
+    </div>
+    <div class="card">
+      ${results.length === 0
+        ? `<div class="no-flaky">&#10003; No flaky tests detected across the last ${runs.length} run(s). All tests are stable.</div>`
+        : `<table>
+            <thead>
+              <tr>
+                <th style="text-align:left;padding-left:10px;min-width:240px">Test Case</th>
+                <th style="min-width:60px">Flakiness</th>
+                ${brandHeaderCells}
+              </tr>
+              <tr class="run-labels-row">
+                <td colspan="2" style="font-size:9px;color:#aaa;text-align:right;padding-right:6px">runs (oldest→newest) ➜</td>
+                ${runLabelSubRows}
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+          <div class="legend">
+            <span><span class="dot dot-pass">●</span> Pass &nbsp;</span>
+            <span><span class="dot dot-fail">●</span> Fail &nbsp;</span>
+            <span><span class="dot dot-skip">–</span> Skip &nbsp;</span>
+            <span><span class="dot dot-na">·</span> Not run</span>
+          </div>`
+      }
+    </div>
+    <p class="footer">Generated: ${fmtDate(Date.now())}</p>
+  </div>
+</body>
+</html>`;
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, html);
+}
+
+// ─── Test Duration ────────────────────────────────────────────────────────────
+
+interface TestDurationEntry {
+  name: string;
+  brand: string;
+  spec: string;
+  ms: number;
+}
+
+function collectTestDurations(reportData: any): TestDurationEntry[] {
+  const results: TestDurationEntry[] = [];
+
+  for (const row of reportData.rows ?? []) {
+    if (row.suiteType !== 'project') continue;
+    const brand = row.title as string;
+
+    function walk(nodes: any[], specName: string | null): void {
+      for (const node of nodes ?? []) {
+        let name = specName;
+        if (name === null && node.suiteType === 'file') {
+          const t: string = node.title ?? '';
+          name = (t.split('/').pop() ?? t).replace(/\.spec\.[jt]sx?$/, '');
+        }
+        if (node.caseType && node.duration != null) {
+          results.push({ name: node.title ?? '?', brand, spec: name ?? 'unknown', ms: node.duration });
+        }
+        walk(node.subs, name);
+      }
+    }
+    walk(row.subs, null);
+  }
+
+  return results;
+}
+
+export function generateDurationPage(reportData: any, outputPath: string): void {
+  const durations = collectTestDurations(reportData);
+  const navHtml   = buildStaticNavHtml('test-duration.html');
+
+  if (durations.length === 0) {
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Test Duration — Multi-Brand Automation</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}</style>
+</head><body>
+  ${navHtml}
+  <div style="max-width:800px;margin:40px auto;padding:0 16px">
+    <h2 style="color:#1a1a2e;margin-bottom:12px">Test Duration</h2>
+    <p style="color:#888;font-size:14px">No duration data available. Ensure tests have been run recently.</p>
+  </div>
+</body></html>`;
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, html);
+    return;
+  }
+
+  const top20 = [...durations].sort((a, b) => b.ms - a.ms).slice(0, 20);
+
+  const specBrandTimes: Record<string, Record<string, number[]>> = {};
+  for (const { spec, brand, ms } of durations) {
+    if (!specBrandTimes[spec]) specBrandTimes[spec] = {};
+    if (!specBrandTimes[spec][brand]) specBrandTimes[spec][brand] = [];
+    specBrandTimes[spec][brand].push(ms);
+  }
+  const specs = Object.keys(specBrandTimes).sort();
+
+  const chartSeries = BRANDS_GRID.map(brand => ({
+    name: brand,
+    type: 'bar',
+    barMaxWidth: 16,
+    itemStyle: { color: BRAND_COLORS[brand] ?? '#888' },
+    data: specs.map(spec => {
+      const arr = specBrandTimes[spec]?.[brand];
+      if (!arr?.length) return null;
+      return +(arr.reduce((a, b) => a + b, 0) / arr.length / 1000).toFixed(2);
+    }),
+  }));
+
+  const chartOption = {
+    title: { text: 'Average Test Duration per Spec (seconds)', left: 'center', top: 12, textStyle: { fontSize: 14 } },
+    tooltip: {
+      trigger: 'axis', axisPointer: { type: 'shadow' },
+      formatter: (params: any[]) =>
+        (params[0]?.name ?? '') + '<br>' +
+        params.filter((p: any) => p.value != null).map((p: any) =>
+          `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color};margin-right:4px"></span>${p.seriesName}: ${p.value}s`
+        ).join('<br>'),
+    },
+    legend: { bottom: 8, type: 'scroll' },
+    grid: { top: 56, bottom: 100, left: 72, right: 24 },
+    xAxis: { type: 'category', data: specs, axisLabel: { rotate: 30, fontSize: 11 } },
+    yAxis: { type: 'value', name: 'avg (s)', axisLabel: { formatter: '{value}s' }, splitLine: { lineStyle: { type: 'dashed' } } },
+    series: chartSeries,
+  };
+
+  const slowRows = top20.map(({ name, brand, spec, ms }) => {
+    const secs     = (ms / 1000).toFixed(1);
+    const barWidth = Math.min(100, Math.round((ms / top20[0].ms) * 100));
+    const color    = BRAND_COLORS[brand] ?? '#888';
+    const esc      = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const shortBrand = BRAND_SHORT[brand]?.replace('<br>', ' ') ?? brand;
+    return `<tr>
+      <td class="dur-name" title="${esc(name)}">${esc(name)}</td>
+      <td><span class="brand-badge" style="background:${color}">${shortBrand}</span></td>
+      <td style="color:#555;font-size:12px">${spec}</td>
+      <td class="dur-val">
+        <div class="dur-bar-wrap"><div class="dur-bar" style="width:${barWidth}%;background:${color}"></div></div>
+        <span>${secs}s</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const totalMs  = durations.reduce((a, b) => a + b.ms, 0);
+  const avgSecs  = (totalMs / durations.length / 1000).toFixed(1);
+  const maxSecs  = (Math.max(...durations.map(d => d.ms)) / 1000).toFixed(1);
+  const totalMin = (totalMs / 1000 / 60).toFixed(1);
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Duration — Multi-Brand Automation</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}
+    .page{max-width:1200px;margin:0 auto;padding:20px 16px;}
+    .page-header{margin-bottom:16px;}
+    .page-title{font-size:22px;font-weight:bold;color:#1a1a2e;}
+    .page-sub{font-size:12px;color:#888;margin-top:4px;}
+    .summary{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+    .sum-card{background:#fff;border-radius:8px;padding:12px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);text-align:center;}
+    .sum-val{font-size:22px;font-weight:bold;color:#1565c0;}
+    .sum-lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+    .section-title{font-size:14px;font-weight:bold;color:#444;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+    .card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:16px;margin-bottom:16px;}
+    .card-table{padding:0;overflow:hidden;}
+    #dur-chart{width:100%;height:400px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead th{background:#1a1a2e;color:#fff;padding:9px 10px;text-align:left;font-weight:600;}
+    tbody tr:hover{background:#f5f9ff;}
+    td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+    .dur-name{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;}
+    .brand-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold;color:#fff;}
+    .dur-val{display:flex;align-items:center;gap:10px;white-space:nowrap;font-weight:bold;color:#c62828;}
+    .dur-bar-wrap{flex:1;height:8px;background:#f0f0f0;border-radius:4px;min-width:60px;max-width:160px;}
+    .dur-bar{height:100%;border-radius:4px;opacity:.7;}
+    .footer{margin-top:12px;font-size:11px;color:#999;text-align:right;}
+  </style>
+</head>
+<body>
+  ${navHtml}
+  <div class="page">
+    <div class="page-header">
+      <div class="page-title">Test Duration</div>
+      <div class="page-sub">Slowest tests + average duration per spec &nbsp;|&nbsp; Last run: ${fmtDate(reportData.date)}</div>
+    </div>
+    <div class="summary">
+      <div class="sum-card"><div class="sum-val">${durations.length}</div><div class="sum-lbl">Tests with Duration</div></div>
+      <div class="sum-card"><div class="sum-val">${avgSecs}s</div><div class="sum-lbl">Avg Duration</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#c62828">${maxSecs}s</div><div class="sum-lbl">Slowest Test</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#555">${totalMin}m</div><div class="sum-lbl">Total Run Time</div></div>
+    </div>
+
+    <div class="section-title">Avg Duration per Spec</div>
+    <div class="card"><div id="dur-chart"></div></div>
+
+    <div class="section-title">Top 20 Slowest Tests</div>
+    <div class="card card-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Test Case</th>
+            <th>Brand</th>
+            <th>Spec</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>${slowRows}</tbody>
+      </table>
+    </div>
+
+    <p class="footer">Generated: ${fmtDate(Date.now())}</p>
+  </div>
+  <script>
+    const chart = echarts.init(document.getElementById('dur-chart'));
+    chart.setOption(${JSON.stringify(chartOption)});
+    window.addEventListener('resize', () => chart.resize());
+  </script>
+</body>
+</html>`;
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, html);
 }

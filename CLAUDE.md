@@ -96,6 +96,9 @@ All reporting logic lives in `scripts/brand-chart-generator.ts`. Reports are gen
 | `archive.html` | `reports/monocart/` | Run History — table of all archived runs |
 | `index.html` | `reports/monocart/` | Latest Monocart report (Vue SPA) |
 | `brand-chart.html` | `reports/monocart/` | Bar chart — pass rate per brand across runs |
+| `spec-breakdown.html` | `reports/monocart/` | Pass rate per spec file × brand (table) |
+| `flaky-tests.html` | `reports/monocart/` | Flaky test tracker — pass↔fail flips across runs |
+| `test-duration.html` | `reports/monocart/` | Slowest tests + avg duration per spec (chart) |
 | `run-NNN-*/index.html` | `reports/archive/` | Archived copy of each run's Monocart report |
 
 ### npm scripts
@@ -105,7 +108,10 @@ npm run report:dashboard   # open hub dashboard
 npm run report:archive     # open Run History
 npm run report:monocart    # open latest Monocart report
 npm run report:chart       # open brand chart
-npm run report:all         # open all 4 at once
+npm run report:spec        # open spec breakdown
+npm run report:flaky       # open flaky test tracker
+npm run report:duration    # open test duration page
+npm run report:all         # open all 7 at once
 ```
 
 ### Adding a new report page
@@ -127,9 +133,10 @@ Archived reports live at `reports/archive/run-NNN/index.html`, two levels below 
 `archiveRun` copies `index.html` before our nav is injected. If order is reversed, the archived copy inherits the live nav (with wrong relative paths) plus gets double-injected.
 
 **Persistent files — gitignore exceptions required.**
-`/reports` is gitignored. These two files must be committed to preserve history:
+`/reports` is gitignored. These files must be committed to preserve history:
 - `reports/monocart/index.json` — monocart trend data
 - `reports/monocart/brand-trend.json` — per-brand run history
+- `reports/monocart/flaky-trend.json` — per-test flaky history (last 15 runs)
 
 `reports/archive/` is local-only (not committed).
 
@@ -138,11 +145,15 @@ Archived reports live at `reports/archive/run-NNN/index.html`, two levels below 
 ```
 playwright test
   └── monocart onEnd
-        ├── updateBrandTrend()      → brand-trend.json
-        ├── archiveRun()            → reports/archive/run-NNN/ + archive.html
-        ├── generateDashboard()     → dashboard.html
-        ├── generateBrandChart()    → brand-chart.html
-        └── injectNavIntoMonocartReport() → patches index.html
+        ├── updateBrandTrend()              → brand-trend.json
+        ├── updateFlakyTracker()            → flaky-trend.json
+        ├── archiveRun()                    → reports/archive/run-NNN/ + archive.html
+        ├── generateDashboard()             → dashboard.html
+        ├── generateBrandChart()            → brand-chart.html
+        ├── generateSpecBreakdown()         → spec-breakdown.html
+        ├── generateFlakyPage()             → flaky-tests.html
+        ├── generateDurationPage()          → test-duration.html
+        └── injectNavIntoMonocartReport()   → patches index.html
 ```
 
 ## Maintenance
