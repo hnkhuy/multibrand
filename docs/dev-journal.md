@@ -428,3 +428,31 @@
 **Bug fixed:** Trend files (`brand-trend.json`, `flaky-trend.json`) were resetting to 1 run on each test run. Root cause: monocart `clean: true` (default) deletes everything in `reports/monocart/` before generating report. Fix: moved both files to `reports/` parent directory (outside monocart's output folder). Updated `.gitignore` exceptions accordingly. Verified: both files now accumulate correctly (2 runs confirmed after fix).
 
 **Next:** Run full suite to get broader data; investigate PLP-006/007/008/010 failures.
+
+---
+## 2026-05-11 — Monocart Report: Error Breakdown + Composite Stability Score
+
+**Goal:** Add Error Category Breakdown page and Composite Stability Score leaderboard to the reporting system.
+
+**Approach:** Added `classifyError()` (5-category classifier: timeout/network/locator/assertion/other), `collectErrorBreakdown()`, `generateErrorBreakdown()`, `computeFlakyRateByBrand()`, `computeCompositeScores()`, and `CompositeScore` interface. Integrated composite scores into `generateDashboard()` as a leaderboard section. Timeout is checked before locator because Playwright timeout messages often contain "locator." — order matters.
+
+**Files changed:**
+- `scripts/brand-chart-generator.ts` — added `ErrorCategory` type, `ERROR_CATEGORIES`, `ERROR_COLORS`, `ERROR_LABELS` constants; added `classifyError`, `collectErrorBreakdown`, `generateErrorBreakdown`, `CompositeScore`, `computeFlakyRateByBrand`, `computeCompositeScores`; updated `generateDashboard` to call `computeCompositeScores` and render a ranked stability leaderboard
+- `playwright.config.ts` — imported `generateErrorBreakdown`; added call in `onEnd`
+- `package.json` — added `report:errors` script; updated `report:all` to open all 8 pages
+- `NAV_PAGES` — updated to 8 entries (added `error-breakdown.html`)
+- `CLAUDE.md` — updated report pages table, npm scripts, data flow diagram
+- `docs/dev-journal.md` — this entry
+
+**Error classification formula:**
+- `timeout`: contains "timeout", "timed out", "timeouterror"
+- `network`: contains "net::", "navigation failed", "failed to load"
+- `locator`: strict mode violations, "no elements matching", "waiting for selector", "locator.", "getByRole", "getByText"
+- `assertion`: "expect(", "expected"+"received", "assertionerror", "toBeVisible", "toHaveText"
+- `other`: catch-all
+
+**Composite Stability Score formula:** `passRate×0.5 + (1−flakinessRate)×0.3 + (1−skipRate)×0.2`
+
+**Issues hit:** None — `tsc --noEmit` passed clean.
+
+**Next:** Run full suite across all 8 projects with more passing tests to populate error/composite data; investigate PLP-006/007/008/010 failures.

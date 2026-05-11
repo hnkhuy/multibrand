@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { projects } from './config/projects';
 import { env } from './src/core/env';
-import { updateBrandTrend, generateDashboard, generateBrandChart, injectNavIntoMonocartReport, archiveRun, generateSpecBreakdown, updateFlakyTracker, generateFlakyPage, generateDurationPage } from './scripts/brand-chart-generator';
+import { updateBrandTrend, generateDashboard, generateBrandChart, injectNavIntoMonocartReport, archiveRun, generateSpecBreakdown, updateFlakyTracker, generateFlakyPage, generateDurationPage, generateErrorBreakdown } from './scripts/brand-chart-generator';
 
 export default defineConfig({
   testDir: './tests',
@@ -36,6 +36,7 @@ export default defineConfig({
         generateSpecBreakdown(reportData, 'reports/monocart/spec-breakdown.html');
         generateFlakyPage(flakyRuns, 'reports/monocart/flaky-tests.html');
         generateDurationPage(reportData, 'reports/monocart/test-duration.html');
+        generateErrorBreakdown(reportData, 'reports/monocart/error-breakdown.html');
         injectNavIntoMonocartReport('reports/monocart/index.html');
       }
     }]

@@ -24,6 +24,23 @@ const BRANDS_GRID = [
   'drmartens-nz', 'platypus-nz', 'skechers-nz', 'vans-nz',
 ];
 
+type ErrorCategory = 'timeout' | 'locator' | 'assertion' | 'network' | 'other';
+const ERROR_CATEGORIES: ErrorCategory[] = ['timeout', 'locator', 'assertion', 'network', 'other'];
+const ERROR_COLORS: Record<ErrorCategory, string> = {
+  timeout:   '#ef6c00',
+  locator:   '#6a1b9a',
+  assertion: '#1565c0',
+  network:   '#b71c1c',
+  other:     '#546e7a',
+};
+const ERROR_LABELS: Record<ErrorCategory, string> = {
+  timeout:   'Timeout',
+  locator:   'Locator / Element',
+  assertion: 'Assertion',
+  network:   'Network',
+  other:     'Other',
+};
+
 const BRAND_SHORT: Record<string, string> = {
   'drmartens-au': 'DRM<br>AU', 'platypus-au': 'PLT<br>AU',
   'skechers-au':  'SKX<br>AU', 'vans-au':     'VAN<br>AU',
@@ -41,6 +58,7 @@ export const NAV_PAGES = [
   { label: 'Spec Breakdown',  href: 'spec-breakdown.html' },
   { label: 'Flaky Tests',     href: 'flaky-tests.html' },
   { label: 'Test Duration',   href: 'test-duration.html' },
+  { label: 'Error Breakdown', href: 'error-breakdown.html' },
 ];
 
 // ─── Nav bar ─────────────────────────────────────────────────────────────────
@@ -278,6 +296,52 @@ export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPa
       }
     </div>`;
 
+  // Stability scores leaderboard
+  const scores = computeCompositeScores(runs, flakyRuns);
+  const sortedBrands = BRANDS_GRID.filter(b => scores[b]).sort((a, b) => scores[b].score - scores[a].score);
+  const stabilityHtml = sortedBrands.length === 0 ? '' : (() => {
+    const rows = sortedBrands.map((brand, idx) => {
+      const sc = scores[brand];
+      const scoreColor = sc.score >= 80 ? '#2e7d32' : sc.score >= 60 ? '#e65100' : '#c62828';
+      const barBg      = sc.score >= 80 ? '#e8f5e9' : sc.score >= 60 ? '#fff8e1' : '#ffebee';
+      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+      const flakCell = sc.hasFlakData
+        ? `<span style="color:${sc.flakinessRate > 10 ? '#c62828' : sc.flakinessRate > 0 ? '#e65100' : '#2e7d32'}">${sc.flakinessRate}%</span>`
+        : '<span style="color:#bbb" title="Need ≥2 runs">—</span>';
+      return `<tr>
+        <td style="padding:7px 8px 7px 12px;font-size:12px">${medal}</td>
+        <td style="padding:7px 4px">
+          <span style="background:${BRAND_COLORS[brand]??'#888'};color:#fff;padding:2px 8px;border-radius:3px;font-size:11px">${BRAND_SHORT[brand]?.replace('<br>',' ')??brand}</span>
+        </td>
+        <td style="padding:7px 8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:10px;background:#f0f0f0;border-radius:5px;min-width:80px">
+              <div style="width:${sc.score}%;height:100%;background:${scoreColor};border-radius:5px;opacity:.7"></div>
+            </div>
+            <span style="font-weight:bold;font-size:14px;color:${scoreColor};min-width:42px">${sc.score}%</span>
+          </div>
+        </td>
+        <td style="text-align:center;font-size:12px;color:${sc.passRate >= 80 ? '#2e7d32' : sc.passRate >= 60 ? '#e65100' : '#c62828'}">${sc.passRate}%</td>
+        <td style="text-align:center;font-size:12px">${flakCell}</td>
+        <td style="text-align:center;font-size:12px;color:${sc.skipRate > 20 ? '#e65100' : '#555'}">${sc.skipRate}%</td>
+      </tr>`;
+    }).join('');
+    return `<div class="section-title">Stability Scores &nbsp;<span style="font-size:11px;font-weight:normal;color:#aaa">(pass×50% + stability×30% + execution×20%)</span></div>
+    <div class="card incon-card" style="margin-bottom:20px">
+      <table style="font-size:13px">
+        <thead><tr style="background:#1a1a2e">
+          <th style="width:36px;padding:8px 8px 8px 12px;color:#fff">#</th>
+          <th style="text-align:left;padding:8px 4px;color:#fff">Brand</th>
+          <th style="text-align:left;padding:8px;color:#fff;min-width:200px">Score</th>
+          <th style="text-align:center;color:#2e7d32;padding:8px">Pass Rate</th>
+          <th style="text-align:center;color:#ef6c00;padding:8px">Flakiness</th>
+          <th style="text-align:center;color:#757575;padding:8px">Skip Rate</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  })();
+
   // Broken tests alert
   const brokenTests = computeBrokenTests(flakyRuns);
   const brokenHtml = brokenTests.length === 0 ? '' : `
@@ -382,6 +446,8 @@ export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPa
 
     <div class="section-title">Per Brand — Latest Run ${prev ? '(trend vs previous)' : ''}</div>
     <div class="brand-grid">${brandCards}</div>
+
+    ${stabilityHtml}
 
     ${brokenHtml}
 
@@ -1314,4 +1380,240 @@ export function generateDurationPage(reportData: any, outputPath: string): void 
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, html);
+}
+
+// ─── Error Category Breakdown ─────────────────────────────────────────────────
+
+function classifyError(text: string): ErrorCategory {
+  const m = text.toLowerCase();
+  if (m.includes('timeout') || m.includes('timed out') || m.includes('timeouterror')) return 'timeout';
+  if (m.includes('net::') || m.includes('navigation failed') || m.includes('failed to load')) return 'network';
+  if (m.includes('strict mode violation') || m.includes('no elements matching') ||
+      m.includes('waiting for selector') || m.includes('resolve to a single element') ||
+      m.includes('locator.') || m.includes('getbyrole') || m.includes('getbytext')) return 'locator';
+  if (m.includes('expect(') || (m.includes('expected') && m.includes('received')) ||
+      m.includes('assertionerror') || m.includes('tobevisible') || m.includes('tohavetext')) return 'assertion';
+  return 'other';
+}
+
+function collectErrorBreakdown(reportData: any): Record<string, Record<ErrorCategory, number>> {
+  const result: Record<string, Record<ErrorCategory, number>> = {};
+
+  for (const row of reportData.rows ?? []) {
+    if (row.suiteType !== 'project') continue;
+    const brand = row.title as string;
+    if (!result[brand]) result[brand] = { timeout: 0, locator: 0, assertion: 0, network: 0, other: 0 };
+
+    function walk(nodes: any[]): void {
+      for (const node of nodes ?? []) {
+        if (node.caseType === 'failed') {
+          const msgs: string[] = (node.errors ?? [])
+            .map((e: any) => e?.message ?? (typeof e === 'string' ? e : ''))
+            .filter(Boolean);
+          if (node.error?.message) msgs.push(node.error.message);
+          else if (typeof node.error === 'string') msgs.push(node.error);
+          result[brand][classifyError(msgs.join(' ').trim())]++;
+        }
+        walk(node.subs);
+      }
+    }
+    walk(row.subs);
+  }
+
+  return result;
+}
+
+export function generateErrorBreakdown(reportData: any, outputPath: string): void {
+  const breakdown = collectErrorBreakdown(reportData);
+  const brands    = BRANDS_GRID.filter(b => breakdown[b]);
+
+  if (brands.length === 0) {
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Error Breakdown</title>
+    <style>body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}</style></head>
+    <body>${buildStaticNavHtml('error-breakdown.html')}
+    <div style="max-width:800px;margin:40px auto;padding:0 16px">
+      <h2 style="color:#1a1a2e;margin-bottom:12px">Error Breakdown</h2>
+      <p style="color:#888">No failure data available.</p>
+    </div></body></html>`;
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, html);
+    return;
+  }
+
+  const totals: Record<ErrorCategory, number> = { timeout: 0, locator: 0, assertion: 0, network: 0, other: 0 };
+  let grandTotal = 0;
+  for (const b of brands) {
+    for (const cat of ERROR_CATEGORIES) { totals[cat] += breakdown[b][cat]; grandTotal += breakdown[b][cat]; }
+  }
+
+  const chartSeries = ERROR_CATEGORIES.map(cat => ({
+    name: ERROR_LABELS[cat], type: 'bar', stack: 'total',
+    itemStyle: { color: ERROR_COLORS[cat] },
+    label: { show: true, formatter: (p: any) => p.value > 0 ? String(p.value) : '', fontSize: 11, color: '#fff' },
+    data: brands.map(b => breakdown[b][cat] ?? 0),
+  }));
+
+  const chartOption = {
+    title: { text: 'Failure Categories per Brand', left: 'center', top: 12, textStyle: { fontSize: 14 } },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { bottom: 8, type: 'scroll', data: ERROR_CATEGORIES.map(c => ERROR_LABELS[c]) },
+    grid: { top: 52, bottom: 80, left: 72, right: 24 },
+    xAxis: { type: 'category', data: brands.map(b => BRAND_SHORT[b]?.replace('<br>', ' ') ?? b) },
+    yAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { type: 'dashed' } } },
+    series: chartSeries,
+  };
+
+  const sumCards = ERROR_CATEGORIES.map(cat => {
+    const n = totals[cat];
+    const pct = grandTotal > 0 ? ((n / grandTotal) * 100).toFixed(0) : '0';
+    return `<div class="sum-card">
+      <div class="sum-dot" style="background:${ERROR_COLORS[cat]}"></div>
+      <div class="sum-val" style="color:${ERROR_COLORS[cat]}">${n}</div>
+      <div class="sum-pct">${pct}%</div>
+      <div class="sum-lbl">${ERROR_LABELS[cat]}</div>
+    </div>`;
+  }).join('');
+
+  const tableRows = brands.map(b => {
+    const total = ERROR_CATEGORIES.reduce((s, c) => s + (breakdown[b][c] ?? 0), 0);
+    const cells = ERROR_CATEGORIES.map(cat => {
+      const n = breakdown[b][cat] ?? 0;
+      const pct = total > 0 ? ((n / total) * 100).toFixed(0) : '0';
+      return `<td style="text-align:center">${n > 0
+        ? `<span style="font-weight:bold;color:${ERROR_COLORS[cat]}">${n}</span><span style="font-size:10px;color:#888"> (${pct}%)</span>`
+        : '<span style="color:#ddd">—</span>'}</td>`;
+    }).join('');
+    return `<tr>
+      <td style="padding:8px 12px;font-weight:bold">
+        <span style="background:${BRAND_COLORS[b]??'#888'};color:#fff;padding:2px 8px;border-radius:3px;font-size:11px">${BRAND_SHORT[b]?.replace('<br>',' ')??b}</span>
+      </td>${cells}
+      <td style="text-align:center;font-weight:bold;color:#c62828">${total}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Error Breakdown — Multi-Brand Automation</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}
+    .page{max-width:1100px;margin:0 auto;padding:20px 16px;}
+    .page-header{margin-bottom:16px;}
+    .page-title{font-size:22px;font-weight:bold;color:#1a1a2e;}
+    .page-sub{font-size:12px;color:#888;margin-top:4px;}
+    .section-title{font-size:13px;font-weight:bold;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+    .summary{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+    .sum-card{background:#fff;border-radius:8px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.1);text-align:center;min-width:100px;}
+    .sum-dot{width:12px;height:12px;border-radius:50%;margin:0 auto 4px;}
+    .sum-val{font-size:26px;font-weight:bold;}
+    .sum-pct{font-size:12px;color:#888;}
+    .sum-lbl{font-size:10px;color:#aaa;text-transform:uppercase;margin-top:2px;}
+    .card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);padding:16px;margin-bottom:16px;}
+    .card-table{padding:0;overflow:hidden;margin-bottom:16px;}
+    #err-chart{width:100%;height:360px;}
+    table{width:100%;border-collapse:collapse;font-size:13px;}
+    thead th{background:#1a1a2e;color:#fff;padding:9px 12px;text-align:center;font-weight:600;}
+    th.left{text-align:left;}
+    tbody tr:hover{background:#f5f9ff;}
+    td{padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+    .footer{margin-top:12px;font-size:11px;color:#999;text-align:right;}
+  </style>
+</head>
+<body>
+  ${buildStaticNavHtml('error-breakdown.html')}
+  <div class="page">
+    <div class="page-header">
+      <div class="page-title">Error Breakdown</div>
+      <div class="page-sub">Why tests fail — ${grandTotal} failure(s) classified &nbsp;|&nbsp; Last run: ${fmtDate(reportData.date)}</div>
+    </div>
+    <div class="section-title">Failures by Category (total)</div>
+    <div class="summary">${sumCards}</div>
+    <div class="section-title">Per Brand — Stacked Chart</div>
+    <div class="card"><div id="err-chart"></div></div>
+    <div class="section-title">Per Brand — Detail Table</div>
+    <div class="card card-table">
+      <table>
+        <thead><tr>
+          <th class="left" style="min-width:120px">Brand</th>
+          ${ERROR_CATEGORIES.map(c => `<th style="color:${ERROR_COLORS[c]}">${ERROR_LABELS[c]}</th>`).join('')}
+          <th>Total</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    <p class="footer">Generated: ${fmtDate(Date.now())}</p>
+  </div>
+  <script>
+    const chart = echarts.init(document.getElementById('err-chart'));
+    chart.setOption(${JSON.stringify(chartOption)});
+    window.addEventListener('resize', () => chart.resize());
+  </script>
+</body>
+</html>`;
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, html);
+}
+
+// ─── Composite Stability Score ────────────────────────────────────────────────
+
+interface CompositeScore {
+  score: number;
+  passRate: number;
+  flakinessRate: number;
+  skipRate: number;
+  hasFlakData: boolean;
+}
+
+function computeFlakyRateByBrand(flakyRuns: FlakyRunEntry[]): Record<string, number> {
+  if (flakyRuns.length < 2) return {};
+  const allTests = new Set<string>();
+  for (const run of flakyRuns) {
+    for (const name of Object.keys(run.tests)) allTests.add(name);
+  }
+  const flakyCount: Record<string, number> = {};
+  const totalCount: Record<string, number> = {};
+  for (const testName of allTests) {
+    for (const brand of BRANDS_GRID) {
+      const hist = flakyRuns.map(r => r.tests[testName]?.[brand]).filter((s): s is CaseStatus => !!s);
+      if (hist.length < 2) continue;
+      totalCount[brand] = (totalCount[brand] ?? 0) + 1;
+      const isFlaky = hist.some((s, i) => i > 0 &&
+        ((hist[i-1] === 'pass' && s === 'fail') || (hist[i-1] === 'fail' && s === 'pass')));
+      if (isFlaky) flakyCount[brand] = (flakyCount[brand] ?? 0) + 1;
+    }
+  }
+  const result: Record<string, number> = {};
+  for (const brand of BRANDS_GRID) {
+    result[brand] = totalCount[brand] ? (flakyCount[brand] ?? 0) / totalCount[brand] : 0;
+  }
+  return result;
+}
+
+export function computeCompositeScores(runs: RunEntry[], flakyRuns: FlakyRunEntry[]): Record<string, CompositeScore> {
+  if (runs.length === 0) return {};
+  const latest     = runs[runs.length - 1];
+  const flakyRates = computeFlakyRateByBrand(flakyRuns);
+  const hasFlakData = flakyRuns.length >= 2;
+  const result: Record<string, CompositeScore> = {};
+  for (const brand of BRANDS_GRID) {
+    const s = latest.brands[brand];
+    if (!s || s.total === 0) continue;
+    const passR = s.passed / s.total;
+    const skipR = s.skipped / s.total;
+    const flakR = flakyRates[brand] ?? 0;
+    const score = (passR * 0.5) + ((1 - flakR) * 0.3) + ((1 - skipR) * 0.2);
+    result[brand] = {
+      score:         +(score * 100).toFixed(1),
+      passRate:      +(passR * 100).toFixed(1),
+      flakinessRate: +(flakR * 100).toFixed(1),
+      skipRate:      +(skipR * 100).toFixed(1),
+      hasFlakData,
+    };
+  }
+  return result;
 }

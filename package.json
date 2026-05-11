@@ -20,7 +20,8 @@
     "report:spec": "open reports/monocart/spec-breakdown.html",
     "report:flaky": "open reports/monocart/flaky-tests.html",
     "report:duration": "open reports/monocart/test-duration.html",
-    "report:all": "open reports/monocart/dashboard.html && open reports/monocart/archive.html && open reports/monocart/index.html && open reports/monocart/brand-chart.html && open reports/monocart/spec-breakdown.html && open reports/monocart/flaky-tests.html && open reports/monocart/test-duration.html"
+    "report:errors": "open reports/monocart/error-breakdown.html",
+    "report:all": "open reports/monocart/dashboard.html && open reports/monocart/archive.html && open reports/monocart/index.html && open reports/monocart/brand-chart.html && open reports/monocart/spec-breakdown.html && open reports/monocart/flaky-tests.html && open reports/monocart/test-duration.html && open reports/monocart/error-breakdown.html"
   },
   "keywords": [
     "playwright",

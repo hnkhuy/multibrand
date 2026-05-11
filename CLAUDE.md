@@ -97,8 +97,9 @@ All reporting logic lives in `scripts/brand-chart-generator.ts`. Reports are gen
 | `index.html` | `reports/monocart/` | Latest Monocart report (Vue SPA) |
 | `brand-chart.html` | `reports/monocart/` | Bar chart — pass rate per brand across runs |
 | `spec-breakdown.html` | `reports/monocart/` | Pass rate per spec file × brand (table) |
-| `flaky-tests.html` | `reports/monocart/` | Flaky test tracker — pass↔fail flips across runs |
+| `flaky-tests.html` | `reports/monocart/` | Flaky test tracker — pass↔fail flips + broken tests (≥3 consecutive fails) |
 | `test-duration.html` | `reports/monocart/` | Slowest tests + avg duration per spec (chart) |
+| `error-breakdown.html` | `reports/monocart/` | Failure classification: timeout / locator / assertion / network / other |
 | `run-NNN-*/index.html` | `reports/archive/` | Archived copy of each run's Monocart report |
 
 ### npm scripts
@@ -111,7 +112,8 @@ npm run report:chart       # open brand chart
 npm run report:spec        # open spec breakdown
 npm run report:flaky       # open flaky test tracker
 npm run report:duration    # open test duration page
-npm run report:all         # open all 7 at once
+npm run report:errors      # open error breakdown
+npm run report:all         # open all 8 at once
 ```
 
 ### Adding a new report page
@@ -155,7 +157,12 @@ playwright test
         ├── generateSpecBreakdown()         → spec-breakdown.html
         ├── generateFlakyPage()             → flaky-tests.html
         ├── generateDurationPage()          → test-duration.html
+        ├── generateErrorBreakdown()        → error-breakdown.html
         └── injectNavIntoMonocartReport()   → patches index.html
+
+Dashboard also renders:
+  ├── Stability Scores leaderboard (computeCompositeScores from runs + flakyRuns)
+  └── Broken Tests alert (computeBrokenTests from flakyRuns)
 ```
 
 ## Maintenance
