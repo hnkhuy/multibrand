@@ -28,10 +28,10 @@ export default defineConfig({
         return defaultColumns;
       },
       onEnd: async (reportData: any) => {
-        const runs      = updateBrandTrend(reportData, 'reports/monocart/brand-trend.json');
-        const flakyRuns = updateFlakyTracker(reportData, 'reports/monocart/flaky-trend.json');
+        const runs      = updateBrandTrend(reportData, 'reports/brand-trend.json');
+        const flakyRuns = updateFlakyTracker(reportData, 'reports/flaky-trend.json');
         archiveRun(reportData, runs, 'reports/archive', 'reports/monocart');
-        generateDashboard(reportData, runs, 'reports/monocart/dashboard.html');
+        generateDashboard(reportData, runs, 'reports/monocart/dashboard.html', '', flakyRuns);
         generateBrandChart(runs, 'reports/monocart/brand-chart.html');
         generateSpecBreakdown(reportData, 'reports/monocart/spec-breakdown.html');
         generateFlakyPage(flakyRuns, 'reports/monocart/flaky-tests.html');

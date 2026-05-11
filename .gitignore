@@ -5,8 +5,8 @@
 /dist
 /reports
 !reports/monocart/index.json
-!reports/monocart/brand-trend.json
-!reports/monocart/flaky-trend.json
+!reports/brand-trend.json
+!reports/flaky-trend.json
 /test-results
 /playwright-report
 npm-debug.log*

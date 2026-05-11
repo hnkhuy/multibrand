@@ -134,9 +134,11 @@ Archived reports live at `reports/archive/run-NNN/index.html`, two levels below 
 
 **Persistent files — gitignore exceptions required.**
 `/reports` is gitignored. These files must be committed to preserve history:
-- `reports/monocart/index.json` — monocart trend data
-- `reports/monocart/brand-trend.json` — per-brand run history
-- `reports/monocart/flaky-trend.json` — per-test flaky history (last 15 runs)
+- `reports/monocart/index.json` — monocart's own trend data (managed by monocart)
+- `reports/brand-trend.json` — per-brand run history (in `reports/` root, NOT `reports/monocart/`)
+- `reports/flaky-trend.json` — per-test flaky history, last 15 runs
+
+**Why `reports/` root, not `reports/monocart/`?** Monocart has `clean: true` by default — it deletes everything in its output directory (`reports/monocart/`) at the start of each run. Trend files must live in the parent directory to survive across runs. Monocart reads its own `index.json` into memory before cleaning, which is why that file persists despite being in `reports/monocart/`.
 
 `reports/archive/` is local-only (not committed).
 
@@ -145,8 +147,8 @@ Archived reports live at `reports/archive/run-NNN/index.html`, two levels below 
 ```
 playwright test
   └── monocart onEnd
-        ├── updateBrandTrend()              → brand-trend.json
-        ├── updateFlakyTracker()            → flaky-trend.json
+        ├── updateBrandTrend()              → reports/brand-trend.json  (NOT monocart/)
+        ├── updateFlakyTracker()            → reports/flaky-trend.json (NOT monocart/)
         ├── archiveRun()                    → reports/archive/run-NNN/ + archive.html
         ├── generateDashboard()             → dashboard.html
         ├── generateBrandChart()            → brand-chart.html

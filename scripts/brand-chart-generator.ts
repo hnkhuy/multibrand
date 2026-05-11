@@ -181,7 +181,7 @@ export function updateBrandTrend(reportData: any, trendPath: string): RunEntry[]
   return runs;
 }
 
-export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPath: string, hrefPrefix = ''): void {
+export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPath: string, hrefPrefix = '', flakyRuns: FlakyRunEntry[] = []): void {
   const s = reportData.summary ?? {};
   const total   = s.tests?.value  ?? 0;
   const passed  = s.passed?.value ?? 0;
@@ -278,6 +278,32 @@ export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPa
       }
     </div>`;
 
+  // Broken tests alert
+  const brokenTests = computeBrokenTests(flakyRuns);
+  const brokenHtml = brokenTests.length === 0 ? '' : `
+    <div class="section-title" style="color:#c62828">&#9888; Broken Tests — Failed 3+ Consecutive Runs (${brokenTests.length})</div>
+    <div class="card incon-card" style="border-left:4px solid #c62828;margin-bottom:20px">
+      <table class="incon-table">
+        <thead><tr>
+          <th class="tc-name-h">Test Case</th>
+          <th style="min-width:65px;text-align:center">Streak</th>
+          <th style="text-align:left;padding-left:10px">Failing Brands</th>
+        </tr></thead>
+        <tbody>${brokenTests.slice(0, 20).map(({ name, brands, streakLength }) => {
+          const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          const badges = brands.map(b =>
+            `<span style="display:inline-block;background:${BRAND_COLORS[b]??'#888'};color:#fff;padding:1px 6px;border-radius:3px;font-size:10px;margin:1px">${BRAND_SHORT[b]?.replace('<br>',' ')??b}</span>`
+          ).join(' ');
+          return `<tr style="background:#fff8f8">
+            <td class="tc-name" title="${esc(name)}">${esc(name)}</td>
+            <td style="text-align:center;font-weight:bold;color:#c62828">${streakLength}×</td>
+            <td style="padding:4px 8px">${badges}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+      ${brokenTests.length > 20 ? `<p style="padding:8px 12px;font-size:11px;color:#888">…and ${brokenTests.length - 20} more — <a href="${hrefPrefix}flaky-tests.html" style="color:#1565c0">View all in Flaky Tests</a></p>` : ''}
+    </div>`;
+
   // Report link cards
   const reportLinks = NAV_PAGES.filter(p => p.href !== 'dashboard.html').map(({ label, href }) => `
     <a class="report-link" href="${hrefPrefix}${href}">
@@ -357,6 +383,8 @@ export function generateDashboard(reportData: any, runs: RunEntry[], dashboardPa
     <div class="section-title">Per Brand — Latest Run ${prev ? '(trend vs previous)' : ''}</div>
     <div class="brand-grid">${brandCards}</div>
 
+    ${brokenHtml}
+
     ${inconsistentHtml}
 
     <div class="section-title">Reports</div>
@@ -378,27 +406,52 @@ export function generateBrandChart(runs: RunEntry[], chartPath: string): void {
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   });
 
-  const series = activeBrands.map((brand) => ({
-    name: brand,
-    type: 'bar',
-    barMaxWidth: 28,
-    itemStyle: { color: BRAND_COLORS[brand] || '#888' },
-    label: { show: false },
-    data: runs.map((r) => {
-      const s = r.brands[brand];
-      if (!s || s.total === 0) return null;
-      return passRate(s);
-    }),
-  }));
-
-  const option = {
-    title: { text: 'Pass Rate per Brand — Run History', left: 'center', top: 16, textStyle: { fontSize: 16 } },
+  // ── Chart 1: grouped bar — pass rate per brand per run ──────────────────────
+  const barOption = {
+    title: { text: 'Pass Rate per Brand — per Run (bar)', left: 'center', top: 12, textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { bottom: 8, type: 'scroll' },
-    grid: { top: 64, bottom: 80, left: 64, right: 24 },
+    grid: { top: 52, bottom: 80, left: 56, right: 16 },
     xAxis: { type: 'category', data: xLabels, axisLabel: { rotate: 30, fontSize: 11 } },
     yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { type: 'dashed' } } },
-    series,
+    series: activeBrands.map((brand) => ({
+      name: brand, type: 'bar', barMaxWidth: 24,
+      itemStyle: { color: BRAND_COLORS[brand] || '#888' },
+      data: runs.map((r) => { const s = r.brands[brand]; return (!s || s.total === 0) ? null : passRate(s); }),
+    })),
+  };
+
+  // ── Chart 2: line — pass rate trend per brand over time ─────────────────────
+  const lineOption = {
+    title: { text: 'Pass Rate Trend — over Time (line)', left: 'center', top: 12, textStyle: { fontSize: 14 } },
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 8, type: 'scroll' },
+    grid: { top: 52, bottom: 80, left: 56, right: 16 },
+    xAxis: { type: 'category', data: xLabels, axisLabel: { rotate: 30, fontSize: 11 } },
+    yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { type: 'dashed' } } },
+    series: activeBrands.map((brand) => ({
+      name: brand, type: 'line', smooth: true, symbol: 'circle', symbolSize: 6,
+      lineStyle: { color: BRAND_COLORS[brand] || '#888', width: 2 },
+      itemStyle: { color: BRAND_COLORS[brand] || '#888' },
+      data: runs.map((r) => { const s = r.brands[brand]; return (!s || s.total === 0) ? null : passRate(s); }),
+    })),
+  };
+
+  // ── Chart 3: line — skip rate trend per brand over time ─────────────────────
+  const skipRate = (s: BrandStats) => s.total === 0 ? 0 : +((s.skipped / s.total) * 100).toFixed(1);
+  const skipOption = {
+    title: { text: 'Skip Rate Trend — over Time (line)', left: 'center', top: 12, textStyle: { fontSize: 14 } },
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 8, type: 'scroll' },
+    grid: { top: 52, bottom: 80, left: 56, right: 16 },
+    xAxis: { type: 'category', data: xLabels, axisLabel: { rotate: 30, fontSize: 11 } },
+    yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { type: 'dashed' } }, name: 'skip %', nameTextStyle: { fontSize: 11 } },
+    series: activeBrands.map((brand) => ({
+      name: brand, type: 'line', smooth: true, symbol: 'circle', symbolSize: 5,
+      lineStyle: { color: BRAND_COLORS[brand] || '#888', width: 2, type: 'dashed' },
+      itemStyle: { color: BRAND_COLORS[brand] || '#888' },
+      data: runs.map((r) => { const s = r.brands[brand]; return (!s || s.total === 0) ? null : skipRate(s); }),
+    })),
   };
 
   const html = `<!DOCTYPE html>
@@ -410,25 +463,44 @@ export function generateBrandChart(runs: RunEntry[], chartPath: string): void {
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:Arial,sans-serif;background:#f5f5f5;padding-top:38px;}
-    .page-content{padding:16px;}
-    .card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:16px;}
-    #chart{width:100%;height:520px;}
-    .meta{text-align:right;color:#999;font-size:11px;margin-top:8px;}
+    body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}
+    .page{max-width:1100px;margin:0 auto;padding:20px 16px;}
+    .page-header{margin-bottom:20px;}
+    .page-title{font-size:22px;font-weight:bold;color:#1a1a2e;}
+    .page-sub{font-size:12px;color:#888;margin-top:4px;}
+    .section-title{font-size:13px;font-weight:bold;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+    .card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);padding:16px;margin-bottom:20px;}
+    .chart{width:100%;height:420px;}
+    .meta{text-align:right;color:#999;font-size:11px;margin-top:16px;}
   </style>
 </head>
 <body>
   ${buildStaticNavHtml('brand-chart.html')}
-  <div class="page-content">
-    <div class="card">
-      <div id="chart"></div>
-      <p class="meta">Generated: ${fmtDate(Date.now())} &nbsp;|&nbsp; ${runs.length} run(s) tracked</p>
+  <div class="page">
+    <div class="page-header">
+      <div class="page-title">Brand Charts</div>
+      <div class="page-sub">${runs.length} run(s) tracked</div>
     </div>
+
+    <div class="section-title">Pass Rate per Brand per Run</div>
+    <div class="card"><div id="bar-chart" class="chart"></div></div>
+
+    <div class="section-title">Pass Rate Trend over Time</div>
+    <div class="card"><div id="line-chart" class="chart"></div></div>
+
+    <div class="section-title">Skip Rate Trend over Time</div>
+    <div class="card"><div id="skip-chart" class="chart"></div></div>
+
+    <p class="meta">Generated: ${fmtDate(Date.now())}</p>
   </div>
   <script>
-    const chart = echarts.init(document.getElementById('chart'));
-    chart.setOption(${JSON.stringify(option)});
-    window.addEventListener('resize', () => chart.resize());
+    const bar  = echarts.init(document.getElementById('bar-chart'));
+    const line = echarts.init(document.getElementById('line-chart'));
+    const skip = echarts.init(document.getElementById('skip-chart'));
+    bar.setOption(${JSON.stringify(barOption)});
+    line.setOption(${JSON.stringify(lineOption)});
+    skip.setOption(${JSON.stringify(skipOption)});
+    window.addEventListener('resize', () => { bar.resize(); line.resize(); skip.resize(); });
   </script>
 </body>
 </html>`;
@@ -632,6 +704,48 @@ export function archiveRun(
   generateArchiveBrowser(runsIndex, path.join(monocartDir, 'archive.html'));
 }
 
+// ─── Broken Tests helper ─────────────────────────────────────────────────────
+
+export function computeBrokenTests(
+  flakyRuns: FlakyRunEntry[],
+  streak = 3,
+): Array<{ name: string; brands: string[]; streakLength: number }> {
+  if (flakyRuns.length < streak) return [];
+
+  const allTests = new Set<string>();
+  for (const run of flakyRuns) {
+    for (const name of Object.keys(run.tests)) allTests.add(name);
+  }
+
+  const broken: Array<{ name: string; brands: string[]; streakLength: number }> = [];
+
+  for (const testName of allTests) {
+    const brokenBrands: string[] = [];
+    for (const brand of BRANDS_GRID) {
+      let s = 0;
+      for (let i = flakyRuns.length - 1; i >= 0; i--) {
+        if (flakyRuns[i].tests[testName]?.[brand] === 'fail') s++;
+        else break;
+      }
+      if (s >= streak) brokenBrands.push(brand);
+    }
+    if (brokenBrands.length > 0) {
+      let maxStreak = 0;
+      for (const brand of brokenBrands) {
+        let s = 0;
+        for (let i = flakyRuns.length - 1; i >= 0; i--) {
+          if (flakyRuns[i].tests[testName]?.[brand] === 'fail') s++;
+          else break;
+        }
+        if (s > maxStreak) maxStreak = s;
+      }
+      broken.push({ name: testName, brands: brokenBrands, streakLength: maxStreak });
+    }
+  }
+
+  return broken.sort((a, b) => b.brands.length - a.brands.length || b.streakLength - a.streakLength);
+}
+
 // ─── Spec Breakdown ───────────────────────────────────────────────────────────
 
 function collectSpecStatsPerProject(projectSubs: any[]): Record<string, BrandStats> {
@@ -798,7 +912,9 @@ export function updateFlakyTracker(reportData: any, flakyPath: string, maxRuns =
 }
 
 export function generateFlakyPage(runs: FlakyRunEntry[], outputPath: string): void {
-  const navHtml = buildStaticNavHtml('flaky-tests.html');
+  const navHtml  = buildStaticNavHtml('flaky-tests.html');
+  const broken   = computeBrokenTests(runs);
+  const STREAK   = 3;
 
   if (runs.length < 2) {
     const html = `<!DOCTYPE html>
@@ -922,6 +1038,7 @@ export function generateFlakyPage(runs: FlakyRunEntry[], outputPath: string): vo
     .dot-skip{color:#9e9e9e;}
     .dot-na{color:#e0e0e0;}
     .legend{display:flex;gap:16px;padding:10px 12px;font-size:11px;color:#666;border-top:1px solid #f0f0f0;flex-wrap:wrap;}
+    .section-title{font-size:13px;font-weight:bold;color:#444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
     .no-flaky{padding:24px;text-align:center;color:#2e7d32;font-size:13px;}
     .footer{margin-top:12px;font-size:11px;color:#999;text-align:right;}
   </style>
@@ -934,11 +1051,41 @@ export function generateFlakyPage(runs: FlakyRunEntry[], outputPath: string): vo
       <div class="page-sub">Pass↔fail flips across last ${runs.length} run(s) &nbsp;|&nbsp; Score = % of consecutive pairs that flipped between pass and fail</div>
     </div>
     <div class="summary">
+      <div class="sum-card"><div class="sum-val" style="color:${broken.length > 0 ? '#c62828' : '#bdbdbd'}">${broken.length}</div><div class="sum-lbl">Broken ≥${STREAK} runs</div></div>
       <div class="sum-card"><div class="sum-val">${results.length}</div><div class="sum-lbl">Flaky Tests</div></div>
       <div class="sum-card"><div class="sum-val stable">${allTests.size - results.length}</div><div class="sum-lbl">Stable Tests</div></div>
       <div class="sum-card"><div class="sum-val" style="color:#37474f">${allTests.size}</div><div class="sum-lbl">Total Tracked</div></div>
       <div class="sum-card"><div class="sum-val" style="color:#1565c0">${runs.length}</div><div class="sum-lbl">Runs Analysed</div></div>
     </div>
+
+    <div class="section-title" style="color:${broken.length > 0 ? '#c62828' : '#444'}">
+      Consistently Broken — Failed ≥${STREAK} Consecutive Runs (${broken.length})
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      ${broken.length === 0
+        ? `<div class="no-flaky">&#10003; No consistently broken tests detected.</div>`
+        : `<table>
+            <thead><tr>
+              <th style="text-align:left;padding-left:10px;min-width:240px">Test Case</th>
+              <th style="min-width:80px">Streak</th>
+              <th style="text-align:left;padding-left:8px">Failing Brands</th>
+            </tr></thead>
+            <tbody>${broken.map(({ name, brands, streakLength }) => {
+              const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+              const badges = brands.map(b =>
+                `<span style="display:inline-block;background:${BRAND_COLORS[b]??'#888'};color:#fff;padding:1px 7px;border-radius:3px;font-size:10px;margin:1px">${BRAND_SHORT[b]?.replace('<br>',' ')??b}</span>`
+              ).join(' ');
+              return `<tr style="background:#fff8f8">
+                <td style="padding:6px 10px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px" title="${esc(name)}">${esc(name)}</td>
+                <td style="text-align:center;font-weight:bold;color:#c62828">${streakLength}×</td>
+                <td style="padding:4px 8px">${badges}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>`
+      }
+    </div>
+
+    <div class="section-title">Flaky Tests — Pass↔Fail Flips (${results.length})</div>
     <div class="card">
       ${results.length === 0
         ? `<div class="no-flaky">&#10003; No flaky tests detected across the last ${runs.length} run(s). All tests are stable.</div>`

@@ -404,3 +404,27 @@
 **Issues hit:** None — `tsc --noEmit` passed clean first attempt.
 
 **Next:** Run full suite to populate all 3 new pages with real data; verify `flaky-trend.json` accumulates correctly across runs; investigate PLP-006/007/008/010 failures.
+
+---
+## 2026-05-11 — Monocart Report: Pass Rate Trend + Skip Rate Trend + Broken Tests Tracker
+
+**Goal:** Add 3 more stability metrics to the reporting system.
+
+**Approach:** Extended existing pages rather than adding new nav entries — keeps nav compact.
+
+**Files changed:**
+- `scripts/brand-chart-generator.ts` — `generateBrandChart` now renders 3 ECharts (bar + 2 lines); `computeBrokenTests()` helper exported; `generateFlakyPage` gets a "Consistently Broken" section at top; `generateDashboard` accepts optional `flakyRuns` param and shows broken tests alert between brand-grid and inconsistent-tests
+- `playwright.config.ts` — pass `flakyRuns` to `generateDashboard`
+
+**Changes per page:**
+- `brand-chart.html` — 3 charts stacked: (1) grouped bar pass rate per brand per run, (2) line chart pass rate trend, (3) line chart skip rate trend (dashed lines)
+- `flaky-tests.html` — "Consistently Broken" table (streak ≥3) shown at top with brand badges; 5 summary stat cards including broken count
+- `dashboard.html` — red alert section appears between brand-grid and inconsistent-tests when broken tests detected; links to full list in flaky-tests.html
+
+**Broken test definition:** fails in last 3+ consecutive runs for at least one brand. Score = max streak length.
+
+**Issues hit:** None — `tsc --noEmit` clean first attempt.
+
+**Bug fixed:** Trend files (`brand-trend.json`, `flaky-trend.json`) were resetting to 1 run on each test run. Root cause: monocart `clean: true` (default) deletes everything in `reports/monocart/` before generating report. Fix: moved both files to `reports/` parent directory (outside monocart's output folder). Updated `.gitignore` exceptions accordingly. Verified: both files now accumulate correctly (2 runs confirmed after fix).
+
+**Next:** Run full suite to get broader data; investigate PLP-006/007/008/010 failures.
