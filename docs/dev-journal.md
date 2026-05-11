@@ -357,3 +357,26 @@
 **Resolution:** Switched to 2 workers; ATC-dependent failures are confirmed staging instability (not code regressions). MC-007 passes for DRM-AU and Vans brands.
 
 **Next:** Wait for full 2-worker run to complete; capture brand-by-brand pass/fail matrix; run store spec once staging URLs are confirmed; investigate MC-049/MC-058 non-ATC failures for DRM-AU.
+
+---
+## 2026-05-07/08 — Custom Reporting System (Monocart + Archive)
+
+**Goal:** Build a persistent, Jenkins-like reporting system on top of Monocart to track pass rates per brand over time and browse full historical run reports.
+
+**Approach:** Added `monocart-reporter` alongside existing HTML reporter. All custom logic lives in `scripts/brand-chart-generator.ts`, called via monocart's `onEnd` hook. Built 4 report pages: dashboard (hub), run archive browser, brand bar chart, and nav injected into monocart's own index.html.
+
+**Files changed:**
+- `playwright.config.ts` — added monocart reporter + onEnd hook
+- `scripts/brand-chart-generator.ts` — new: all report generation logic
+- `package.json` — added monocart dep + report:* scripts + rm -rf test-results in pretest
+- `.gitignore` — exceptions for `reports/monocart/index.json` and `brand-trend.json`
+
+**Issues hit:**
+- Monocart is a Vue SPA: static nav injected into `<body>` gets wiped on mount → fixed with MutationObserver dynamic script before `</body>`
+- Archived runs at `reports/archive/run-NNN/` have wrong relative paths for nav links → fixed with `../../monocart/` prefix in `buildDynamicNavScript`
+- `archiveRun` must copy `index.html` BEFORE `injectNavIntoMonocartReport` runs, or archived copy gets live nav (wrong paths + duplicate injection)
+- Monocart crashes (exit 1) if screenshot referenced in test result is missing on disk → fixed by adding `rm -rf test-results` to pretest
+
+**Resolution:** All 4 report pages generate cleanly after each run. Nav cross-links work from all locations including archived runs. 2 runs archived successfully (run-001, run-002).
+
+**Next:** Investigate 24 PLP failures (PLP-006/007/008/010 across most brands — likely breadcrumb/category selector issues). Consider adding per-spec breakdown chart as next report page.

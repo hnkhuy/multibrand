@@ -84,6 +84,67 @@ To add a brand override: create a component selector file under `src/selectors/b
 - Prefer `npm run test:safe` over `npx playwright test` directly — it uses `flock` to enforce a system-level lock preventing concurrent runs
 - If you need to run tests for multiple projects/files, chain them sequentially with `&&`, never with `&` or in separate parallel tool calls
 
+## Reporting System
+
+All reporting logic lives in `scripts/brand-chart-generator.ts`. Reports are generated automatically via the monocart `onEnd` hook in `playwright.config.ts` after every test run.
+
+### Report pages
+
+| File | Location | Description |
+|---|---|---|
+| `dashboard.html` | `reports/monocart/` | Hub — overall stats + per-brand cards + links |
+| `archive.html` | `reports/monocart/` | Run History — table of all archived runs |
+| `index.html` | `reports/monocart/` | Latest Monocart report (Vue SPA) |
+| `brand-chart.html` | `reports/monocart/` | Bar chart — pass rate per brand across runs |
+| `run-NNN-*/index.html` | `reports/archive/` | Archived copy of each run's Monocart report |
+
+### npm scripts
+
+```bash
+npm run report:dashboard   # open hub dashboard
+npm run report:archive     # open Run History
+npm run report:monocart    # open latest Monocart report
+npm run report:chart       # open brand chart
+npm run report:all         # open all 4 at once
+```
+
+### Adding a new report page
+
+1. Add entry to `NAV_PAGES` array in `scripts/brand-chart-generator.ts` — nav updates everywhere automatically
+2. Use `buildStaticNavHtml(currentHref)` for regular HTML pages
+3. Call `generateYourPage(...)` inside `onEnd` in `playwright.config.ts`
+4. Add `open reports/monocart/your-page.html` to `package.json` scripts
+
+### Non-obvious design decisions
+
+**Monocart `index.html` requires dynamic nav injection (not static).**
+Monocart is a Vue SPA that fetches its app JS and mounts onto `document.body` after page load, wiping static HTML. Nav must be injected via a `<script>` block using `MutationObserver` placed just before `</body>`. Use `buildDynamicNavScript()` for this — never `buildStaticNavHtml()`.
+
+**Archived runs need a path prefix `../../monocart/`.**
+Archived reports live at `reports/archive/run-NNN/index.html`, two levels below the other pages in `reports/monocart/`. Nav links must use `buildDynamicNavScript('', '../../monocart/')` or they 404.
+
+**`archiveRun` must be called BEFORE `injectNavIntoMonocartReport`.**
+`archiveRun` copies `index.html` before our nav is injected. If order is reversed, the archived copy inherits the live nav (with wrong relative paths) plus gets double-injected.
+
+**Persistent files — gitignore exceptions required.**
+`/reports` is gitignored. These two files must be committed to preserve history:
+- `reports/monocart/index.json` — monocart trend data
+- `reports/monocart/brand-trend.json` — per-brand run history
+
+`reports/archive/` is local-only (not committed).
+
+### Data flow per run
+
+```
+playwright test
+  └── monocart onEnd
+        ├── updateBrandTrend()      → brand-trend.json
+        ├── archiveRun()            → reports/archive/run-NNN/ + archive.html
+        ├── generateDashboard()     → dashboard.html
+        ├── generateBrandChart()    → brand-chart.html
+        └── injectNavIntoMonocartReport() → patches index.html
+```
+
 ## Maintenance
 
 After each architectural change (new brand, new selector layer, new fixture, new page object, changed project structure), suggest updating this file to keep it accurate.

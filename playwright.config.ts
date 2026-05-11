@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { projects } from './config/projects';
 import { env } from './src/core/env';
-import { updateBrandTrend, generateBrandChart, injectNavIntoMonocartReport } from './scripts/brand-chart-generator';
+import { updateBrandTrend, generateDashboard, generateBrandChart, injectNavIntoMonocartReport, archiveRun } from './scripts/brand-chart-generator';
 
 export default defineConfig({
   testDir: './tests',
@@ -21,6 +21,7 @@ export default defineConfig({
       name: 'Multi-Brand Automation Report',
       outputFile: 'reports/monocart/index.html',
       trend: 'reports/monocart/index.json',
+      copyAttachments: false,
       columns: (defaultColumns: any[]) => {
         const projectColumn = defaultColumns.find((c: any) => c.id === 'project');
         if (projectColumn) projectColumn.width = 120;
@@ -28,6 +29,8 @@ export default defineConfig({
       },
       onEnd: async (reportData: any) => {
         const runs = updateBrandTrend(reportData, 'reports/monocart/brand-trend.json');
+        archiveRun(reportData, runs, 'reports/archive', 'reports/monocart');
+        generateDashboard(reportData, runs, 'reports/monocart/dashboard.html');
         generateBrandChart(runs, 'reports/monocart/brand-chart.html');
         injectNavIntoMonocartReport('reports/monocart/index.html');
       }

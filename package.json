@@ -4,7 +4,7 @@
   "description": "Multi-brand Playwright TypeScript automation framework",
   "main": "dist/index.js",
   "scripts": {
-    "pretest": "pkill -f 'node.*playwright.*test' 2>/dev/null ; pkill -f 'playwright/lib/common/process' 2>/dev/null ; pkill -f 'chrome-headless-shell' 2>/dev/null ; pkill -f 'ffmpeg.*playwright' 2>/dev/null ; true",
+    "pretest": "pkill -f 'node.*playwright.*test' 2>/dev/null ; pkill -f 'playwright/lib/common/process' 2>/dev/null ; pkill -f 'chrome-headless-shell' 2>/dev/null ; pkill -f 'ffmpeg.*playwright' 2>/dev/null ; rm -rf test-results ; true",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
@@ -13,9 +13,11 @@
     "kill": "pkill -f 'node.*playwright.*test' ; pkill -f 'playwright/lib/common/process' ; pkill -f 'playwright.*test-server' ; pkill -f 'chrome-headless-shell' ; pkill -f 'ffmpeg.*playwright' ; echo 'Playwright processes killed'",
     "test:safe": "flock /tmp/playwright.lock playwright test",
     "test:safe:headed": "flock /tmp/playwright.lock playwright test --headed",
+    "report:dashboard": "open reports/monocart/dashboard.html",
+    "report:archive": "open reports/monocart/archive.html",
     "report:monocart": "open reports/monocart/index.html",
     "report:chart": "open reports/monocart/brand-chart.html",
-    "report:all": "open reports/monocart/index.html && open reports/monocart/brand-chart.html"
+    "report:all": "open reports/monocart/dashboard.html && open reports/monocart/archive.html && open reports/monocart/index.html && open reports/monocart/brand-chart.html"
   },
   "keywords": [
     "playwright",
