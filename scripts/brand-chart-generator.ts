@@ -58,7 +58,8 @@ export const NAV_PAGES = [
   { label: 'Spec Breakdown',  href: 'spec-breakdown.html' },
   { label: 'Flaky Tests',     href: 'flaky-tests.html' },
   { label: 'Test Duration',   href: 'test-duration.html' },
-  { label: 'Error Breakdown', href: 'error-breakdown.html' },
+  { label: 'Error Breakdown',  href: 'error-breakdown.html' },
+  { label: 'Latest Results',   href: 'latest-results.html' },
 ];
 
 // ─── Nav bar ─────────────────────────────────────────────────────────────────
@@ -1551,6 +1552,274 @@ export function generateErrorBreakdown(reportData: any, outputPath: string): voi
     const chart = echarts.init(document.getElementById('err-chart'));
     chart.setOption(${JSON.stringify(chartOption)});
     window.addEventListener('resize', () => chart.resize());
+  </script>
+</body>
+</html>`;
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, html);
+}
+
+// ─── Latest Results Matrix ────────────────────────────────────────────────────
+
+interface LatestCellEntry {
+  status: CaseStatus;
+  ts: number;
+}
+
+type LatestResults = Record<string, Record<string, Record<string, LatestCellEntry>>>;
+
+function collectCasesWithSpec(projectSubs: any[]): Array<{ spec: string; name: string; status: CaseStatus }> {
+  const cases: Array<{ spec: string; name: string; status: CaseStatus }> = [];
+
+  function walk(nodes: any[], currentSpec: string | null): void {
+    for (const node of nodes ?? []) {
+      let spec = currentSpec;
+      if (spec === null && node.suiteType === 'file') {
+        const t: string = node.title ?? '';
+        spec = (t.split('/').pop() ?? t).replace(/\.spec\.[jt]sx?$/, '');
+      }
+      if (node.caseType) {
+        const status: CaseStatus = node.caseType === 'passed' ? 'pass'
+          : node.caseType === 'failed' ? 'fail' : 'skip';
+        cases.push({ spec: spec ?? 'unknown', name: node.title, status });
+      }
+      walk(node.subs, spec);
+    }
+  }
+
+  walk(projectSubs, null);
+  return cases;
+}
+
+export function updateLatestResults(reportData: any, latestPath: string): LatestResults {
+  let data: LatestResults = {};
+  try { data = JSON.parse(fs.readFileSync(latestPath, 'utf-8')); } catch {}
+
+  const ts = reportData.date ?? Date.now();
+
+  for (const row of reportData.rows ?? []) {
+    if (row.suiteType !== 'project') continue;
+    const project = row.title as string;
+    for (const { spec, name, status } of collectCasesWithSpec(row.subs ?? [])) {
+      if (!data[spec]) data[spec] = {};
+      if (!data[spec][name]) data[spec][name] = {};
+      data[spec][name][project] = { status, ts };
+    }
+  }
+
+  fs.mkdirSync(path.dirname(latestPath), { recursive: true });
+  fs.writeFileSync(latestPath, JSON.stringify(data, null, 2));
+  return data;
+}
+
+export function generateLatestResultsPage(data: LatestResults, outputPath: string): void {
+  const navHtml = buildStaticNavHtml('latest-results.html');
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Summary stats across all specs and all 8 brands
+  let totalTests = 0, totalCells = 0, passCells = 0, failCells = 0, skipCells = 0, naCells = 0;
+  const specs = Object.keys(data).sort();
+  for (const spec of specs) {
+    const tests = Object.keys(data[spec]);
+    totalTests += tests.length;
+    for (const testName of tests) {
+      for (const brand of BRANDS_GRID) {
+        totalCells++;
+        const entry = data[spec][testName][brand];
+        if (!entry)                     naCells++;
+        else if (entry.status === 'pass') passCells++;
+        else if (entry.status === 'fail') failCells++;
+        else                              skipCells++;
+      }
+    }
+  }
+
+  // Column headers (coloured by brand)
+  const colHeaders = BRANDS_GRID.map(b =>
+    `<th class="site-th" style="background:${BRAND_COLORS[b] ?? '#888'};color:#fff">${BRAND_SHORT[b]}</th>`
+  ).join('');
+
+  // Extract ID badge from test name (e.g. "[HP-001]" or "HP-001 |")
+  function fmtTestName(title: string): string {
+    const m = title.match(/^\[?([A-Z]{2,5}-\d{3,4})\]?\s*[·|\-]?\s*/);
+    if (!m) return `<span class="tc-title">${esc(title)}</span>`;
+    const id   = m[1];
+    const rest = title.slice(m[0].length).trim();
+    return `<span class="tc-id">${esc(id)}</span><span class="tc-title">${esc(rest || title)}</span>`;
+  }
+
+  // Build one section per spec file
+  const sections = specs.map(spec => {
+    const tests     = Object.keys(data[spec]).sort();
+    let sPassCells  = 0, sFailCells = 0;
+
+    const rows = tests.map(testName => {
+      const statuses = new Set<string>();
+      const cells = BRANDS_GRID.map(brand => {
+        const entry = data[spec][testName][brand];
+        if (!entry) {
+          statuses.add('na');
+          return `<td class="cell-na" title="Never run">N/A</td>`;
+        }
+        statuses.add(entry.status);
+        const dt = fmtDate(entry.ts);
+        if (entry.status === 'pass') { sPassCells++; return `<td class="cell-pass" title="Passed · ${dt}">PASS</td>`; }
+        if (entry.status === 'fail') { sFailCells++; return `<td class="cell-fail" title="Failed · ${dt}">FAIL</td>`; }
+        return `<td class="cell-skip" title="Skipped · ${dt}">SKIP</td>`;
+      }).join('');
+
+      const hasCls = [...statuses].map(s => `has-${s}`).join(' ');
+      return `<tr class="test-row ${hasCls}" data-name="${esc(testName.toLowerCase())}" data-statuses="${[...statuses].join(',')}">
+        <td class="tc-cell">${fmtTestName(testName)}</td>${cells}
+      </tr>`;
+    }).join('');
+
+    const sectionCells = tests.length * BRANDS_GRID.length;
+    const badge = sFailCells > 0
+      ? `<span class="spec-badge fail">${sFailCells} fail</span>`
+      : `<span class="spec-badge pass">${sPassCells}/${sectionCells} pass</span>`;
+
+    return `<div class="spec-section" id="spec-${esc(spec)}">
+      <div class="spec-header" onclick="toggleSpec('${esc(spec)}')">
+        <span class="spec-chevron" id="chev-${esc(spec)}">▼</span>
+        <span class="spec-name">${esc(spec)}</span>
+        <span class="spec-count">${tests.length} tests</span>
+        ${badge}
+      </div>
+      <div class="spec-body" id="body-${esc(spec)}">
+        <table>
+          <thead><tr><th class="tc-th">Test Case</th>${colHeaders}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+
+  const passRatePct = totalCells > 0 ? ((passCells / totalCells) * 100).toFixed(0) : '0';
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Latest Results — Multi-Brand Automation</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;background:#f0f2f5;padding-top:52px;}
+    .page{max-width:1400px;margin:0 auto;padding:20px 16px;}
+    .page-header{margin-bottom:16px;}
+    .page-title{font-size:22px;font-weight:bold;color:#1a1a2e;}
+    .page-sub{font-size:12px;color:#888;margin-top:4px;}
+    .summary{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+    .sum-card{background:#fff;border-radius:8px;padding:12px 20px;box-shadow:0 1px 4px rgba(0,0,0,.1);text-align:center;min-width:90px;}
+    .sum-val{font-size:24px;font-weight:bold;}
+    .sum-lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+    .filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+    #search-input{padding:7px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;width:240px;outline:none;}
+    #search-input:focus{border-color:#90caf9;}
+    .filter-btn{padding:6px 14px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:12px;cursor:pointer;transition:all .15s;}
+    .filter-btn:hover{background:#e8f0fe;}
+    .filter-btn.active{border-color:#1565c0;background:#1565c0;color:#fff;}
+    .filter-btn.active.fail-btn{background:#c62828;border-color:#c62828;}
+    .filter-btn.active.pass-btn{background:#2e7d32;border-color:#2e7d32;}
+    .filter-btn.active.skip-btn{background:#e65100;border-color:#e65100;}
+    .filter-btn.active.na-btn{background:#757575;border-color:#757575;}
+    .toggle-btn{margin-left:auto;font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;}
+    .toggle-btn:hover{background:#f0f0f0;}
+    .spec-section{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1);margin-bottom:10px;overflow:hidden;}
+    .spec-header{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;user-select:none;border-bottom:1px solid #f0f0f0;}
+    .spec-header:hover{background:#f5f9ff;}
+    .spec-chevron{font-size:11px;color:#888;transition:transform .2s;width:14px;display:inline-block;}
+    .spec-section.collapsed .spec-chevron{transform:rotate(-90deg);}
+    .spec-section.collapsed .spec-body{display:none;}
+    .spec-name{font-weight:bold;font-size:14px;color:#1a1a2e;}
+    .spec-count{font-size:12px;color:#888;}
+    .spec-badge{font-size:11px;padding:2px 10px;border-radius:10px;font-weight:bold;margin-left:auto;}
+    .spec-badge.fail{background:#ffebee;color:#c62828;}
+    .spec-badge.pass{background:#e8f5e9;color:#2e7d32;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    thead th{background:#1a1a2e;color:#fff;padding:8px 6px;font-weight:600;white-space:nowrap;}
+    .tc-th{text-align:left;min-width:260px;padding-left:16px;}
+    .site-th{text-align:center;width:68px;min-width:68px;font-size:11px;}
+    .test-row:hover td{background:#f5f9ff !important;}
+    .test-row:not(:last-child) td{border-bottom:1px solid #f5f5f5;}
+    .tc-cell{padding:6px 8px 6px 16px;vertical-align:middle;}
+    .tc-id{display:inline-block;background:#e8f0fe;color:#1565c0;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:bold;font-family:monospace;margin-right:6px;white-space:nowrap;}
+    .tc-title{font-size:12px;color:#333;}
+    td.cell-pass,td.cell-fail,td.cell-skip,td.cell-na{text-align:center;padding:5px 2px;font-size:11px;font-weight:bold;cursor:default;}
+    td.cell-pass{background:#e8f5e9;color:#2e7d32;}
+    td.cell-fail{background:#ffebee;color:#c62828;}
+    td.cell-skip{background:#fff8e1;color:#e65100;}
+    td.cell-na{background:#fafafa;color:#ccc;font-weight:normal;}
+    .footer{margin-top:14px;font-size:11px;color:#999;text-align:right;}
+  </style>
+</head>
+<body>
+  ${navHtml}
+  <div class="page">
+    <div class="page-header">
+      <div class="page-title">Latest Test Results</div>
+      <div class="page-sub">Most recent result per test case per site — updated incrementally each run. N/A = never run on that site.</div>
+    </div>
+    <div class="summary">
+      <div class="sum-card"><div class="sum-val" style="color:#37474f">${totalTests}</div><div class="sum-lbl">Test Cases</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#2e7d32">${passCells}</div><div class="sum-lbl">Pass</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:${failCells > 0 ? '#c62828' : '#bdbdbd'}">${failCells}</div><div class="sum-lbl">Fail</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#e65100">${skipCells}</div><div class="sum-lbl">Skip</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#9e9e9e">${naCells}</div><div class="sum-lbl">N/A</div></div>
+      <div class="sum-card"><div class="sum-val" style="color:#1565c0">${passRatePct}%</div><div class="sum-lbl">Pass Rate</div></div>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="search-input" placeholder="Search test cases...">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn fail-btn" data-filter="fail">Fail</button>
+      <button class="filter-btn pass-btn" data-filter="pass">Pass</button>
+      <button class="filter-btn skip-btn" data-filter="skip">Skip</button>
+      <button class="filter-btn na-btn" data-filter="na">N/A</button>
+      <button class="toggle-btn" id="toggle-btn">Collapse All</button>
+    </div>
+    <div id="results-container">${sections}</div>
+    <p class="footer">Generated: ${fmtDate(Date.now())}</p>
+  </div>
+  <script>
+    var activeFilter = 'all';
+    var allCollapsed = false;
+
+    function applyFilter() {
+      var search = document.getElementById('search-input').value.toLowerCase().trim();
+      document.querySelectorAll('.test-row').forEach(function(row) {
+        var name     = row.dataset.name || '';
+        var statuses = (row.dataset.statuses || '').split(',');
+        var matchSearch = !search || name.includes(search);
+        var matchStatus = activeFilter === 'all' || statuses.includes(activeFilter);
+        row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+      });
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        applyFilter();
+      });
+    });
+
+    document.getElementById('search-input').addEventListener('input', applyFilter);
+
+    function toggleSpec(spec) {
+      var section = document.getElementById('spec-' + spec);
+      if (section) section.classList.toggle('collapsed');
+    }
+
+    document.getElementById('toggle-btn').addEventListener('click', function() {
+      allCollapsed = !allCollapsed;
+      document.querySelectorAll('.spec-section').forEach(function(s) {
+        allCollapsed ? s.classList.add('collapsed') : s.classList.remove('collapsed');
+      });
+      this.textContent = allCollapsed ? 'Expand All' : 'Collapse All';
+    });
   </script>
 </body>
 </html>`;

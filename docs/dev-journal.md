@@ -456,3 +456,28 @@
 **Issues hit:** None — `tsc --noEmit` passed clean.
 
 **Next:** Run full suite across all 8 projects with more passing tests to populate error/composite data; investigate PLP-006/007/008/010 failures.
+
+---
+## 2026-05-11 — Latest Results Matrix (Persistent Test Status Page)
+
+**Goal:** Build a persistent page showing the most recent pass/fail/skip/N/A status per test case × per site, updated incrementally on every run (even partial runs).
+
+**Approach:** Added `LatestCellEntry` interface and `LatestResults` type (specName → testTitle → projectName → {status, ts}). Persistent store at `reports/latest-results.json` (outside `reports/monocart/` to survive monocart clean). `updateLatestResults()` reads the file, merges in only the projects present in the current run, then writes back — so running a subset of projects updates only those cells and leaves others unchanged. `generateLatestResultsPage()` renders a full-page matrix grouped by spec file with filter buttons (All/Fail/Pass/Skip/N/A), text search, and collapsible spec sections.
+
+**Files changed:**
+- `scripts/brand-chart-generator.ts` — added `collectCasesWithSpec`, `updateLatestResults`, `generateLatestResultsPage`; updated `NAV_PAGES` to 9 entries
+- `playwright.config.ts` — imported and called both new functions in `onEnd`
+- `package.json` — added `report:latest`; updated `report:all` to open 9 pages
+- `.gitignore` — added exception for `reports/latest-results.json`
+- `CLAUDE.md` — updated report pages table, npm scripts, persistent files note, data flow diagram
+- `docs/dev-journal.md` — this entry
+
+**Key design decisions:**
+- Test identity key = exact test title string (not ID alone) — unique within spec file, same as monocart's own key
+- Final status after retries (if retried and passed, record "pass")
+- N/A = key absent in JSON (never run on that site), not a stored value
+- Grouped by spec file, collapsible, with pass/fail badge per section
+
+**Issues hit:** None — `tsc --noEmit` clean first attempt.
+
+**Next:** Run a partial subset to verify incremental update works correctly (only updated cells change, others stay).

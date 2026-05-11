@@ -100,6 +100,7 @@ All reporting logic lives in `scripts/brand-chart-generator.ts`. Reports are gen
 | `flaky-tests.html` | `reports/monocart/` | Flaky test tracker — pass↔fail flips + broken tests (≥3 consecutive fails) |
 | `test-duration.html` | `reports/monocart/` | Slowest tests + avg duration per spec (chart) |
 | `error-breakdown.html` | `reports/monocart/` | Failure classification: timeout / locator / assertion / network / other |
+| `latest-results.html` | `reports/monocart/` | Persistent matrix — latest pass/fail/skip/N/A per test case × site, updated incrementally each run |
 | `run-NNN-*/index.html` | `reports/archive/` | Archived copy of each run's Monocart report |
 
 ### npm scripts
@@ -113,7 +114,8 @@ npm run report:spec        # open spec breakdown
 npm run report:flaky       # open flaky test tracker
 npm run report:duration    # open test duration page
 npm run report:errors      # open error breakdown
-npm run report:all         # open all 8 at once
+npm run report:latest      # open latest results matrix
+npm run report:all         # open all 9 at once
 ```
 
 ### Adding a new report page
@@ -139,6 +141,7 @@ Archived reports live at `reports/archive/run-NNN/index.html`, two levels below 
 - `reports/monocart/index.json` — monocart's own trend data (managed by monocart)
 - `reports/brand-trend.json` — per-brand run history (in `reports/` root, NOT `reports/monocart/`)
 - `reports/flaky-trend.json` — per-test flaky history, last 15 runs
+- `reports/latest-results.json` — persistent test matrix (specName → testTitle → projectName → {status, ts})
 
 **Why `reports/` root, not `reports/monocart/`?** Monocart has `clean: true` by default — it deletes everything in its output directory (`reports/monocart/`) at the start of each run. Trend files must live in the parent directory to survive across runs. Monocart reads its own `index.json` into memory before cleaning, which is why that file persists despite being in `reports/monocart/`.
 
@@ -158,6 +161,8 @@ playwright test
         ├── generateFlakyPage()             → flaky-tests.html
         ├── generateDurationPage()          → test-duration.html
         ├── generateErrorBreakdown()        → error-breakdown.html
+        ├── updateLatestResults()           → reports/latest-results.json  (NOT monocart/)
+        ├── generateLatestResultsPage()     → latest-results.html
         └── injectNavIntoMonocartReport()   → patches index.html
 
 Dashboard also renders:

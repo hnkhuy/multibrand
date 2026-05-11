@@ -7,6 +7,7 @@
 !reports/monocart/index.json
 !reports/brand-trend.json
 !reports/flaky-trend.json
+!reports/latest-results.json
 /test-results
 /playwright-report
 npm-debug.log*
