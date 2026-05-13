@@ -1,0 +1,28 @@
+{
+  "spec": "my-account",
+  "file": "tests/regression/my-account.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 61,
+  "totals": {
+    "total_tests": 512,
+    "passed": 74,
+    "failed": 139,
+    "skipped": 299,
+    "actual_ran": 213,
+    "pass_rate_total": 14,
+    "pass_rate_ran": 35
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 10, "failed": 21, "skipped": 33, "pass_rate": 32 },
+    "drmartens-nz":  { "passed": 10, "failed": 19, "skipped": 35, "pass_rate": 34 },
+    "platypus-au":   { "passed": 11, "failed": 17, "skipped": 36, "pass_rate": 39 },
+    "platypus-nz":   { "passed": 10, "failed": 20, "skipped": 34, "pass_rate": 33 },
+    "skechers-au":   { "passed": 9,  "failed": 16, "skipped": 39, "pass_rate": 36 },
+    "skechers-nz":   { "passed": 8,  "failed": 16, "skipped": 40, "pass_rate": 33 },
+    "vans-au":       { "passed": 8,  "failed": 15, "skipped": 41, "pass_rate": 35 },
+    "vans-nz":       { "passed": 8,  "failed": 15, "skipped": 41, "pass_rate": 35 }
+  },
+  "health": "POOR",
+  "error_pattern": "Consistent 32-39% across all sites — no outliers. High skip rate (58%).",
+  "notes": "Most consistent spec across brands — all 8 sites within a 7% band (32-39%). platypus-au slightly best (39%), vans/skechers-nz slightly worst (33-35%). 58% skipped indicates most flows require real login credentials. The 35% pass rate of tests that ran suggests basic account page loads work but profile/order/address management flows fail. Run duration of 1 hour is the longest of regression specs."
+}

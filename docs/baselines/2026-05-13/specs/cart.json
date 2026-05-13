@@ -1,0 +1,28 @@
+{
+  "spec": "cart",
+  "file": "tests/smoke/cart.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 52,
+  "totals": {
+    "total_tests": 160,
+    "passed": 24,
+    "failed": 136,
+    "skipped": 0,
+    "actual_ran": 160,
+    "pass_rate_total": 15,
+    "pass_rate_ran": 15
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "drmartens-nz":  { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "platypus-au":   { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "platypus-nz":   { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "skechers-au":   { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "skechers-nz":   { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "vans-au":       { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 },
+    "vans-nz":       { "passed": 3, "failed": 17, "skipped": 0, "pass_rate": 15 }
+  },
+  "health": "CRITICAL",
+  "error_pattern": "Uniform 3/20 pass per site — identical pattern across all brands/regions",
+  "notes": "Perfectly uniform failure rate (15%) across all 8 sites. The 3 passing tests per site are likely the basic structural ones (CART-001 loads, CART-004 region content, CART-005 HTTPS). The 17 failing tests all require a product to be in cart first. Root cause: add-to-cart prerequisite is broken (confirmed by add-to-cart spec). Fix add-to-cart → expect significant cart pass rate improvement."
+}

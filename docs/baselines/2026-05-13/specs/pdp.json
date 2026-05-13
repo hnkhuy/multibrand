@@ -1,0 +1,28 @@
+{
+  "spec": "pdp",
+  "file": "tests/smoke/pdp.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 34,
+  "totals": {
+    "total_tests": 576,
+    "passed": 327,
+    "failed": 1,
+    "skipped": 248,
+    "actual_ran": 328,
+    "pass_rate_total": 57,
+    "pass_rate_ran": 100
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 48, "failed": 0, "skipped": 24, "pass_rate": 100 },
+    "drmartens-nz":  { "passed": 36, "failed": 0, "skipped": 36, "pass_rate": 100 },
+    "platypus-au":   { "passed": 43, "failed": 1, "skipped": 28, "pass_rate": 98  },
+    "platypus-nz":   { "passed": 38, "failed": 0, "skipped": 34, "pass_rate": 100 },
+    "skechers-au":   { "passed": 36, "failed": 0, "skipped": 36, "pass_rate": 100 },
+    "skechers-nz":   { "passed": 36, "failed": 0, "skipped": 36, "pass_rate": 100 },
+    "vans-au":       { "passed": 45, "failed": 0, "skipped": 27, "pass_rate": 100 },
+    "vans-nz":       { "passed": 45, "failed": 0, "skipped": 27, "pass_rate": 100 }
+  },
+  "health": "EXCELLENT",
+  "error_pattern": "Single failure on platypus-au only. All other 7 sites 100%.",
+  "notes": "Best-performing spec overall (99.7% of tests that ran). PDP display and content tests are fully stable. 43% skip rate means data-dependent tests (size selector, color swatch, etc.) are appropriately skipped when data not available. platypus-au has 1 isolated failure — likely a transient issue or minor selector mismatch. Baseline to protect: any regression here is significant."
+}

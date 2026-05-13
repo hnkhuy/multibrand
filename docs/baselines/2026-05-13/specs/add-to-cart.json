@@ -1,0 +1,28 @@
+{
+  "spec": "add-to-cart",
+  "file": "tests/smoke/add-to-cart.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 5,
+  "totals": {
+    "total_tests": 8,
+    "passed": 0,
+    "failed": 8,
+    "skipped": 0,
+    "actual_ran": 8,
+    "pass_rate_total": 0,
+    "pass_rate_ran": 0
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "drmartens-nz":  { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "platypus-au":   { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "platypus-nz":   { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "skechers-au":   { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "skechers-nz":   { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "vans-au":       { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 },
+    "vans-nz":       { "passed": 0, "failed": 1, "skipped": 0, "pass_rate": 0 }
+  },
+  "health": "CRITICAL",
+  "error_pattern": "expect(locator).toBeVisible() failed (drm/platypus/vans); TimeoutError locator.click (skechers)",
+  "notes": "100% failure across all 8 sites. Single test case (can add a product to the mini cart). Failure is systematic — add-to-cart flow or mini-cart visibility selector broken globally. skechers has different error (click timeout) vs others (visibility assertion), suggesting SPA-specific selector issue for skechers."
+}

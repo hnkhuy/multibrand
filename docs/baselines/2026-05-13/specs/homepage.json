@@ -1,0 +1,28 @@
+{
+  "spec": "homepage",
+  "file": "tests/smoke/homepage.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 29,
+  "totals": {
+    "total_tests": 416,
+    "passed": 200,
+    "failed": 173,
+    "skipped": 43,
+    "actual_ran": 373,
+    "pass_rate_total": 48,
+    "pass_rate_ran": 54
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 27, "failed": 18, "skipped": 7,  "pass_rate": 60 },
+    "drmartens-nz":  { "passed": 29, "failed": 17, "skipped": 6,  "pass_rate": 63 },
+    "platypus-au":   { "passed": 25, "failed": 23, "skipped": 4,  "pass_rate": 52 },
+    "platypus-nz":   { "passed": 20, "failed": 28, "skipped": 4,  "pass_rate": 42 },
+    "skechers-au":   { "passed": 29, "failed": 18, "skipped": 5,  "pass_rate": 62 },
+    "skechers-nz":   { "passed": 19, "failed": 29, "skipped": 4,  "pass_rate": 40 },
+    "vans-au":       { "passed": 27, "failed": 19, "skipped": 6,  "pass_rate": 59 },
+    "vans-nz":       { "passed": 24, "failed": 21, "skipped": 7,  "pass_rate": 53 }
+  },
+  "health": "MODERATE",
+  "error_pattern": "NZ sites consistently underperform AU counterparts. platypus-nz (42%) and skechers-nz (40%) are worst.",
+  "notes": "Clear AU > NZ pattern: drm-au 60% vs drm-nz 63% (exception), platypus-au 52% vs platypus-nz 42%, skechers-au 62% vs skechers-nz 40%, vans-au 59% vs vans-nz 53%. NZ staging sites appear less stable or have more region-specific content mismatches. Overall ~54% pass rate of tests that ran — basic page loads work but interactive/content-specific tests fail."
+}

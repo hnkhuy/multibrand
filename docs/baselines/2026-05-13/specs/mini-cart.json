@@ -1,0 +1,28 @@
+{
+  "spec": "mini-cart",
+  "file": "tests/smoke/mini-cart.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 528,
+  "totals": {
+    "total_tests": 600,
+    "passed": 45,
+    "failed": 395,
+    "skipped": 160,
+    "actual_ran": 440,
+    "pass_rate_total": 7.5,
+    "pass_rate_ran": 10
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 3,  "failed": 52, "skipped": 20, "pass_rate": 5  },
+    "drmartens-nz":  { "passed": 3,  "failed": 52, "skipped": 20, "pass_rate": 5  },
+    "platypus-au":   { "passed": 3,  "failed": 52, "skipped": 20, "pass_rate": 5  },
+    "platypus-nz":   { "passed": 3,  "failed": 52, "skipped": 20, "pass_rate": 5  },
+    "skechers-au":   { "passed": 3,  "failed": 52, "skipped": 20, "pass_rate": 5  },
+    "skechers-nz":   { "passed": 3,  "failed": 53, "skipped": 19, "pass_rate": 5  },
+    "vans-au":       { "passed": 6,  "failed": 51, "skipped": 18, "pass_rate": 11 },
+    "vans-nz":       { "passed": 21, "failed": 31, "skipped": 23, "pass_rate": 40 }
+  },
+  "health": "CRITICAL",
+  "error_pattern": "Uniform 5% for 7 sites. vans-nz anomaly: 40% — significantly better than others.",
+  "notes": "Worst-performing spec and slowest run (8.8h). Root cause: add-to-cart flow is broken (confirmed by add-to-cart spec), causing cascading failures in all tests requiring items in mini-cart. The 3 passing tests per site are likely page-load / structural tests that don't need cart state. vans-nz outlier (40%) is unexplained — may have different product availability on staging or slightly different selector that works. Fix add-to-cart → expect dramatic improvement. Run time of 8.8h due to timeout waits on failing tests."
+}

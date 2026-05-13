@@ -1,0 +1,28 @@
+{
+  "spec": "search",
+  "file": "tests/smoke/search.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 51,
+  "totals": {
+    "total_tests": 720,
+    "passed": 671,
+    "failed": 15,
+    "skipped": 34,
+    "actual_ran": 686,
+    "pass_rate_total": 93,
+    "pass_rate_ran": 98
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 86, "failed": 0, "skipped": 4, "pass_rate": 100 },
+    "drmartens-nz":  { "passed": 85, "failed": 1, "skipped": 4, "pass_rate": 99  },
+    "platypus-au":   { "passed": 85, "failed": 1, "skipped": 4, "pass_rate": 99  },
+    "platypus-nz":   { "passed": 85, "failed": 1, "skipped": 4, "pass_rate": 99  },
+    "skechers-au":   { "passed": 80, "failed": 4, "skipped": 6, "pass_rate": 95  },
+    "skechers-nz":   { "passed": 84, "failed": 2, "skipped": 4, "pass_rate": 98  },
+    "vans-au":       { "passed": 81, "failed": 5, "skipped": 4, "pass_rate": 94  },
+    "vans-nz":       { "passed": 85, "failed": 1, "skipped": 4, "pass_rate": 99  }
+  },
+  "health": "EXCELLENT",
+  "error_pattern": "skechers-au (4 fails) and vans-au (5 fails) slightly worse. drmartens-au perfect (100%).",
+  "notes": "Best overall spec alongside pdp. 98% pass rate of tests that ran — search functionality is stable across all brands. skechers-au and vans-au have slightly more failures (4-5 each) — likely related to search result rendering or autocomplete behavior differences. Only 5% skip rate means most tests can run without special data setup. Strong baseline: any drop below 90% would be a regression signal."
+}

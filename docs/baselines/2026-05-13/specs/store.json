@@ -1,0 +1,28 @@
+{
+  "spec": "store",
+  "file": "tests/smoke/store.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 33,
+  "totals": {
+    "total_tests": 672,
+    "passed": 488,
+    "failed": 152,
+    "skipped": 32,
+    "actual_ran": 640,
+    "pass_rate_total": 73,
+    "pass_rate_ran": 76
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "drmartens-nz":  { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "platypus-au":   { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "platypus-nz":   { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "skechers-au":   { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "skechers-nz":   { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "vans-au":       { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 },
+    "vans-nz":       { "passed": 61, "failed": 19, "skipped": 4, "pass_rate": 76 }
+  },
+  "health": "GOOD",
+  "error_pattern": "Perfectly uniform: exactly 61 pass / 19 fail / 4 skip on ALL 8 sites.",
+  "notes": "Perfectly uniform results — exactly the same 19 tests fail on every site. This is a clear signal that the 19 failing tests have a systematic issue (not site-specific): either testing a feature not available on staging, or a test implementation bug. The 61 passing tests are consistently stable. Priority investigation: identify the common 19 failing test IDs — if they test a feature unavailable on staging, they should be marked @data-dependent or skipped."
+}

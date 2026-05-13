@@ -1,0 +1,28 @@
+{
+  "spec": "plp",
+  "file": "tests/smoke/plp.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 104,
+  "totals": {
+    "total_tests": 688,
+    "passed": 298,
+    "failed": 207,
+    "skipped": 183,
+    "actual_ran": 505,
+    "pass_rate_total": 43,
+    "pass_rate_ran": 59
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 42, "failed": 22, "skipped": 22, "pass_rate": 66 },
+    "drmartens-nz":  { "passed": 36, "failed": 23, "skipped": 27, "pass_rate": 61 },
+    "platypus-au":   { "passed": 33, "failed": 33, "skipped": 20, "pass_rate": 50 },
+    "platypus-nz":   { "passed": 35, "failed": 26, "skipped": 25, "pass_rate": 57 },
+    "skechers-au":   { "passed": 35, "failed": 28, "skipped": 23, "pass_rate": 56 },
+    "skechers-nz":   { "passed": 31, "failed": 30, "skipped": 25, "pass_rate": 51 },
+    "vans-au":       { "passed": 44, "failed": 22, "skipped": 20, "pass_rate": 67 },
+    "vans-nz":       { "passed": 42, "failed": 23, "skipped": 21, "pass_rate": 65 }
+  },
+  "health": "MODERATE",
+  "error_pattern": "vans best (65-67%), platypus-au worst (50%), skechers-nz close to 50%.",
+  "notes": "vans leads in PLP stability (65-67%), drmartens second (61-66%). platypus-au and skechers-nz worst at 50-51%. The 27% skip rate comes from data-dependent tests (tracking, pagination, filter interactions). 1h44m run duration — second slowest after mini-cart. Slowness likely from product listing page loads and quick-add interactions. platypus-au 50% suggests PLP has more platform-specific issues."
+}

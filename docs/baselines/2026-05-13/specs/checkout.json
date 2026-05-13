@@ -1,0 +1,28 @@
+{
+  "spec": "checkout",
+  "file": "tests/regression/checkout.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 9,
+  "totals": {
+    "total_tests": 320,
+    "passed": 8,
+    "failed": 3,
+    "skipped": 309,
+    "actual_ran": 11,
+    "pass_rate_total": 2.5,
+    "pass_rate_ran": 73
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 1, "failed": 3, "skipped": 36, "pass_rate": 25  },
+    "drmartens-nz":  { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 },
+    "platypus-au":   { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 },
+    "platypus-nz":   { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 },
+    "skechers-au":   { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 },
+    "skechers-nz":   { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 },
+    "vans-au":       { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 },
+    "vans-nz":       { "passed": 1, "failed": 0, "skipped": 39, "pass_rate": 100 }
+  },
+  "health": "LOW_COVERAGE",
+  "error_pattern": "drmartens-au anomaly: 3 extra failures vs 0 for other 7 sites.",
+  "notes": "96.6% of tests skipped — checkout flows require full auth + cart setup not available in staging baseline. Only 1 test runs per site (likely the basic checkout page load). drmartens-au has 3 additional failures not seen on other sites — possible drm-specific checkout page regression. Low coverage means this spec needs @requires-auth setup to be meaningful. Priority: investigate drmartens-au 3 failures."
+}

@@ -1,0 +1,28 @@
+{
+  "spec": "wishlist",
+  "file": "tests/smoke/wishlist.spec.ts",
+  "baseline_date": "2026-05-13",
+  "run_duration_minutes": 16,
+  "totals": {
+    "total_tests": 160,
+    "passed": 22,
+    "failed": 36,
+    "skipped": 102,
+    "actual_ran": 58,
+    "pass_rate_total": 14,
+    "pass_rate_ran": 38
+  },
+  "by_project": {
+    "drmartens-au":  { "passed": 3, "failed": 3, "skipped": 14, "pass_rate": 50 },
+    "drmartens-nz":  { "passed": 3, "failed": 2, "skipped": 15, "pass_rate": 60 },
+    "platypus-au":   { "passed": 3, "failed": 2, "skipped": 15, "pass_rate": 60 },
+    "platypus-nz":   { "passed": 3, "failed": 2, "skipped": 15, "pass_rate": 60 },
+    "skechers-au":   { "passed": 1, "failed": 19, "skipped": 0,  "pass_rate": 5  },
+    "skechers-nz":   { "passed": 3, "failed": 3,  "skipped": 14, "pass_rate": 50 },
+    "vans-au":       { "passed": 3, "failed": 2,  "skipped": 15, "pass_rate": 60 },
+    "vans-nz":       { "passed": 3, "failed": 3,  "skipped": 14, "pass_rate": 50 }
+  },
+  "health": "POOR",
+  "error_pattern": "skechers-au outlier: 0 skips, 5% pass — SPA/styled-components selector issue. Other sites: 50-60% of tests that ran.",
+  "notes": "skechers-au is a major outlier — 0 tests skipped vs 14-15 for others, and only 1/20 passes. skechers is a SPA with hash CSS classes; wishlist selectors likely don't account for this. Other 7 sites show consistent 50-60% for tests that ran. High skip rate (64%) means most wishlist flows require auth/data setup not available in staging."
+}
