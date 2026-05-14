@@ -1,7 +1,7 @@
 import type { Brand, ProjectMeta, Region } from '../src/core/types';
 import { getEnv } from '../src/core/env';
 
-const defaultBaseUrls: Record<Brand, Record<Region, string>> = {
+const stagingBaseUrls: Record<Brand, Record<Region, string>> = {
   drmartens: {
     au: 'https://stag-drmartens-au.accentgra.com/',
     nz: 'https://stag-drmartens-nz.accentgra.com/'
@@ -19,6 +19,28 @@ const defaultBaseUrls: Record<Brand, Record<Region, string>> = {
     nz: 'https://stag-vans-nz.accentgra.com/'
   }
 };
+
+const productionBaseUrls: Record<Brand, Record<Region, string>> = {
+  drmartens: {
+    au: 'https://www.drmartens.com.au/',
+    nz: 'https://www.drmartens.co.nz/'
+  },
+  platypus: {
+    au: 'https://www.platypusshoes.com.au/',
+    nz: 'https://www.platypusshoes.co.nz/'
+  },
+  skechers: {
+    au: 'https://www.skechers.com.au/',
+    nz: 'https://www.skechers.co.nz/'
+  },
+  vans: {
+    au: 'https://www.vans.com.au/',
+    nz: 'https://www.vans.co.nz/'
+  }
+};
+
+const isProduction = getEnv('ENVIRONMENT', 'staging').toLowerCase() === 'production';
+const defaultBaseUrls = isProduction ? productionBaseUrls : stagingBaseUrls;
 
 export const PROJECTS: ProjectMeta[] = [
   createProjectMeta('drmartens', 'au'),
