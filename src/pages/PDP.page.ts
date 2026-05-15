@@ -170,53 +170,278 @@ export class PDPPage extends BasePage {
     await size.click();
   }
 
+  /**
+   * Primary add-to-cart flow.
+   *
+   * Strategy (in order):
+   *   1. Select size via evaluate (bypasses React event delegation issues)
+   *   2. API path: read variant info from window.dataLayer → call GraphQL directly
+   *   3. UI fallback: evaluate-click ATC + waitForResponse (no fixed timers)
+   *   4. Last resort: Playwright locator click + 4s wait (original behaviour)
+   */
   async addToCart(): Promise<void> {
-    await this.selectFirstAvailableSizeIfPossible();
+    // ── Step 1: Select size via evaluate ──────────────────────────────────
+    await this.selectSizeViaEvaluate();
+    // Allow React state update + dataLayer push to settle
+    await this.page.waitForTimeout(1_500);
 
-    const clickAtc = async () => {
-      try {
-        await this.addToCartButton.click({ timeout: 10_000 });
-      } catch {
-        // Normal click can time out if the button is briefly covered (e.g. React re-render
-        // overlay after size selection). Force-click fires the event immediately.
-        await this.addToCartButton.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+    // ── Step 2: Try GraphQL API path ──────────────────────────────────────
+    const payload = await this.extractAtcPayload().catch(() => null);
+
+    if (payload) {
+      const ok = await this.addToCartViaApi(
+        payload.parentSku,
+        payload.childSku,
+        payload.optionName,
+        payload.optionValue
+      ).catch(() => false);
+
+      if (ok) {
+        await this.page.waitForLoadState('domcontentloaded').catch(() => undefined);
+        // API call adds item server-side but doesn't open the mini cart drawer — open it now.
+        await this.miniCart.open();
+        return;
       }
-    };
-
-    await clickAtc();
-
-    // Detect size validation (Vans shows "Size was not chosen" immediately after ATC)
-    await this.page.waitForTimeout(500);
-    const sizeValidation = await this.page
-      .locator(':text("Size was not chosen"), :text("Please select a size")')
-      .isVisible()
-      .catch(() => false);
-    if (sizeValidation) {
-      // Native btn.click() doesn't work for Vans (parent container handles the event).
-      // Playwright coordinate-based click dispatches full mouse event sequence which the
-      // parent container listens for, so use force:true to bypass any overlay.
-      const sizeBtn = this.page
-        .locator('button')
-        .filter({ hasText: /^\d{1,3}(\.\d+)?$/ })
-        .first();
-      await sizeBtn.scrollIntoViewIfNeeded().catch(() => undefined);
-      await sizeBtn.click({ force: true, timeout: 5_000 }).catch(() => undefined);
-      await this.page.waitForTimeout(500);
-      await clickAtc();
     }
 
-    // Wait for the AJAX add-to-cart request to complete — staging can be slow,
-    // and domcontentloaded fires instantly on SPAs.
-    await this.page.waitForTimeout(4000);
+    // ── Step 3: UI fallback — Playwright click (fires full pointer events → mini cart opens) ──
+    // Register response listener BEFORE firing the click to avoid race.
+    const gqlResponsePromise = this.page
+      .waitForResponse(
+        (res) =>
+          res.url().endsWith('/graphql') &&
+          res.request().method() === 'POST' &&
+          (res.request().postData()?.includes('addConfigurableProduct') ?? false),
+        { timeout: 15_000 }
+      )
+      .catch(() => null);
 
-    // If the cart count still shows 0, the AJAX may have failed on staging — retry once.
-    const count = await this.miniCart.readHeaderCartCount().catch(() => null);
-    if (count === 0 || count === null) {
-      await clickAtc();
-      await this.page.waitForTimeout(4000);
+    // Scroll ATC button into view (it may be below the fold), then Playwright-click.
+    // force:true bypasses Playwright's strict visibility checks while still dispatching the
+    // full pointer-event sequence that React's synthetic event system needs to update state
+    // and open the mini cart drawer.
+    const atcLocator = this.page.locator('button').filter({
+      hasText: /^add\s+to\s+(cart|bag|trolley)$/i,
+    }).first();
+    await atcLocator.scrollIntoViewIfNeeded({ timeout: 5_000 }).catch(() => undefined);
+    let clicked = await atcLocator.click({ force: true, timeout: 8_000 }).then(() => true).catch(() => false);
+
+    if (clicked) {
+      // Check for size-not-chosen validation (Vans) and retry
+      await this.page.waitForTimeout(400);
+      const sizeValidation = await this.page
+        .locator(':text("Size was not chosen"), :text("Please select a size")')
+        .isVisible()
+        .catch(() => false);
+
+      if (sizeValidation) {
+        await this.selectSizeViaEvaluate();
+        await this.page.waitForTimeout(600);
+        clicked = await atcLocator.click({ force: true, timeout: 8_000 }).then(() => true).catch(() => false);
+      }
+
+      await gqlResponsePromise;
+
+      // Wait for mini cart to open (React state update after ATC response).
+      // If it hasn't opened, fall back to explicit cart-icon click.
+      await this.page.waitForTimeout(1_500);
+      const drawerVisible = await this.miniCart.drawer.isVisible().catch(() => false);
+      if (!drawerVisible) await this.miniCart.open();
+    } else {
+      // Last resort: force-click via locator + explicit open
+      await this.addToCartButton.click({ force: true, timeout: 5_000 }).catch(() => undefined);
+      await this.page.waitForTimeout(4_000);
+      const drawerVisible = await this.miniCart.drawer.isVisible().catch(() => false);
+      if (!drawerVisible) await this.miniCart.open();
     }
 
     await this.page.waitForLoadState('domcontentloaded').catch(() => undefined);
+  }
+
+  /**
+   * Poll for numeric size buttons to appear — handles SPA hydration delay.
+   * Silently no-ops if timeout expires (accessory products have no size buttons).
+   */
+  private async waitForSizeButtons(): Promise<void> {
+    await this.page
+      .waitForFunction(
+        () =>
+          Array.from(document.querySelectorAll('button')).some((b) =>
+            /^\d{1,3}(\.\d+)?$/.test((b.textContent ?? '').trim())
+          ),
+        { timeout: 8_000 }
+      )
+      .catch(() => undefined);
+  }
+
+  /**
+   * Click the first in-stock numeric size button on the current page.
+   * GRA platform marks in-stock sizes with the CSS class "available";
+   * OOS sizes have only hashed styled-component classes (no "available").
+   * Falls back to <select> elements and then to any non-disabled button.
+   * Returns the selected size text, or null if no size could be selected.
+   */
+  private async pickFirstAvailableSize(): Promise<string | null> {
+    return this.page
+      .evaluate(() => {
+        const SIZE_RE = /^\d{1,3}(\.\d)?$/;
+        const SKIP_LABEL_RE =
+          /menu|guide|chart|toggle|wishlist|cart|checkout|bag|store|search|phone|country|code/i;
+
+        const isSizeAvailable = (btn: HTMLButtonElement) => {
+          if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') return false;
+          const cls = btn.className ?? '';
+          if (/out.of.stock|unavailable|sold.out/i.test(cls)) return false;
+          return true;
+        };
+
+        const isNumericSizeBtn = (btn: HTMLButtonElement) => {
+          const text = (btn.textContent ?? '').trim();
+          if (!SIZE_RE.test(text)) return false;
+          const label = (btn.getAttribute('aria-label') ?? '').toLowerCase();
+          if (SKIP_LABEL_RE.test(label)) return false;
+          const r = btn.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) return false;
+          if (btn.closest('[class*="phone" i], [class*="country" i], [class*="dial" i]')) return false;
+          return true;
+        };
+
+        const allSizeBtns = Array.from(
+          document.querySelectorAll<HTMLButtonElement>('button')
+        ).filter(isNumericSizeBtn);
+
+        // Prefer buttons explicitly marked available (GRA "available" CSS class)
+        const hasAvailableClass = allSizeBtns.some((b) => b.className.includes('available'));
+        const candidates = hasAvailableClass
+          ? allSizeBtns.filter((b) => b.className.includes('available'))
+          : allSizeBtns.filter(isSizeAvailable);
+
+        const target = candidates[0] ?? null;
+        if (target) {
+          target.scrollIntoView({ block: 'center' });
+          target.click();
+          return (target.textContent ?? '').trim();
+        }
+
+        // <select> fallback (exclude phone/country pickers)
+        for (const sel of Array.from(document.querySelectorAll<HTMLSelectElement>('select'))) {
+          if (/phone|country|dial|code/i.test((sel.name ?? '') + (sel.id ?? ''))) continue;
+          const opts = Array.from(sel.options).filter((o) => !o.disabled && o.value);
+          if (opts.length > 0) {
+            sel.value = opts[0].value;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            return opts[0].text;
+          }
+        }
+
+        return null;
+      })
+      .catch(() => null);
+  }
+
+  /**
+   * Select the first available size, trying alternate color variants if the
+   * current color has no in-stock sizes.
+   *
+   * GRA color swatches are anchor links inside a Swiper carousel
+   * (.swiper-slide a[href$=".html"]) — each link navigates to a different
+   * color variant URL. We iterate them until we find an available size.
+   */
+  private async selectSizeViaEvaluate(): Promise<string | null> {
+    await this.waitForSizeButtons();
+
+    // Try the current color variant first
+    const result = await this.pickFirstAvailableSize();
+    if (result !== null) return result;
+
+    // No available sizes on this color — collect swatch links and try others.
+    const swatchHrefs = await this.page
+      .evaluate(() => {
+        const SOCIAL_RE = /facebook|twitter|pinterest|instagram|mailto/i;
+        return Array.from(
+          document.querySelectorAll<HTMLAnchorElement>('.swiper-slide a[href$=".html"]')
+        )
+          .map((a) => a.getAttribute('href') ?? '')
+          .filter((href) => href.length > 0 && !SOCIAL_RE.test(href));
+      })
+      .catch((): string[] => []);
+
+    const currentUrl = this.page.url();
+    for (const href of swatchHrefs.slice(0, 6)) {
+      const targetUrl = new URL(href, currentUrl).href;
+      if (targetUrl === currentUrl) continue;
+
+      await this.page
+        .goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20_000 })
+        .catch(() => undefined);
+      await this.waitForSizeButtons();
+      const r = await this.pickFirstAvailableSize();
+      if (r !== null) return r;
+    }
+
+    return null;
+  }
+
+  /**
+   * Read the GRA add-to-cart payload from window.dataLayer.
+   * Must be called AFTER selectSizeViaEvaluate() and a short wait so the
+   * product_size_select event has been pushed.
+   *
+   * Returns null when:
+   *   - dataLayer is not available (headless GTM block)
+   *   - product is one-size (no size-select event fired)
+   *   - required fields are missing
+   */
+  private async extractAtcPayload(): Promise<{
+    parentSku: string;
+    childSku: string;
+    optionName: string;
+    optionValue: string;
+  } | null> {
+    return this.page
+      .evaluate(() => {
+        const dl: unknown[] = (window as any).dataLayer ?? [];
+        if (dl.length === 0) return null;
+
+        // parentSku comes from the product_view event fired on page load
+        const pvEvent = dl.find((e: any) => e.event === 'product_view') as any;
+        const parentSku: string | null = pvEvent?.products?.[0]?.child_sku ?? null;
+        if (!parentSku) return null;
+
+        // childSku + size: from product_size_select (fires after size button click)
+        const sizeEvent = dl
+          .slice()
+          .reverse()
+          .find((e: any) => e.event === 'product_size_select') as any;
+
+        // Support both possible event shapes the GRA analytics layer may use
+        const item: any =
+          sizeEvent?.products?.[0] ?? sizeEvent?.cart_items?.[0] ?? sizeEvent?.items?.[0] ?? null;
+
+        if (!item) return null;
+
+        const childSku: string | null = item.sku_by_size ?? null;
+        const sizeStr: string = item.size ?? ''; // e.g. "3:UK", "36:EU", "22:CM"
+
+        if (!childSku || !sizeStr) return null;
+
+        // Parse "3:UK" → optionValue="3", optionName="size_uk"
+        const colonIdx = sizeStr.lastIndexOf(':');
+        let optionValue: string;
+        let optionName: string;
+
+        if (colonIdx > 0) {
+          optionValue = sizeStr.slice(0, colonIdx);
+          optionName = 'size_' + sizeStr.slice(colonIdx + 1).toLowerCase();
+        } else {
+          // No system suffix — default to size_uk (the predominant GRA display system)
+          optionValue = sizeStr;
+          optionName = 'size_uk';
+        }
+
+        return { parentSku, childSku, optionName, optionValue };
+      })
+      .catch(() => null);
   }
 
   async getPrimaryImageSignature(): Promise<string> {

@@ -510,3 +510,59 @@
 - WL-006 scoped to `drm,pla,skx` (excludes van) since Vans has guest localStorage wishlist
 
 **Next:** Rewrite automation spec files for each module based on the new TC CSVs (same pattern as homepage.spec.ts rewrite).
+
+---
+## 2026-05-15 — ATC Flakiness Fix + GraphQL API Path
+
+**Goal:** Replace flaky UI-based Add-to-Cart flow with a hybrid approach: GraphQL API path first, UI fallback second.
+
+**Approach:**
+- Added `addToCartViaApi()` on `BasePage` — fires `createEmptyCart` + `addConfigurableProductsToCart` mutations via `page.evaluate(fetch(...))` (inherits PHPSESSID)
+- Added `extractAtcPayload()` on `PDPPage` — reads `window.dataLayer` `product_view` event for parentSku and `product_size_select` event for childSku + size format (e.g. "3:UK" → optionValue="3", optionName="size_uk")
+- Rewrote `addToCart()` in `PDPPage` with 4-strategy cascade: size-via-evaluate → API → Playwright click → last-resort locator click
+- Created diagnostic specs: `atc-api-inspect.spec.ts`, `capture-full-atc-body.spec.ts`, `pdp-window-inspect.spec.ts`
+
+**Issues hit:**
+1. `selectSizeViaEvaluate()` returned null — size buttons below viewport fold were filtered out (viewport `r.top >= innerHeight` check); removed it
+2. OOS sizes selected first — Platypus uses CSS class `available` for in-stock sizes; added pass-1 preference for `available`-class buttons
+3. React hydration delay — size buttons not in DOM at `expectLoaded()` time; added `waitForFunction` polling for numeric buttons (6s timeout)
+4. Mini cart didn't open after ATC — Platypus mini cart uses `div.mini-cart-wrapper` (sliding panel), not `aside[coords]` which is a small widget always `visibility:hidden`; fixed `expectOpen()` to check ALL matching drawer candidates, not just `.first()`
+5. `expectOpen()` was using wrong element — `aside[coords="0"]` is a tiny cart widget, never changes; actual visible drawer is `[class*="mini-cart-wrapper"]`; fixed by iterating candidates
+
+**Resolution:** `tests/smoke/add-to-cart.spec.ts` passes on platypus-au (25s) and drmartens-au (27s).
+
+**Key decisions:**
+- After API path succeeds: always call `miniCart.open()` explicitly (API adds server-side, doesn't trigger React state)
+- After UI ATC click: wait 1.5s, check `drawer.isVisible()`, call `miniCart.open()` if not open (Platypus doesn't auto-open)
+- `drawer.isVisible()` still uses `.first()` (checking drawer state, not expectation) — fine because `open()` is idempotent via cart icon
+
+**Next:** Test on remaining 6 brands (pla-nz, skx-au/nz, van-au/nz, drm-nz). Clean up diagnostic spec files.
+
+---
+## 2026-05-16 — ATC All-8-Brand Validation + Color/Size Available Detection
+
+**Goal:** Verify the hybrid ATC flow works correctly across all 8 brands, with correct available-color and available-size selection.
+
+**Approach:**
+- Inspected size button structure on DRM-AU, Skechers-AU via headless Playwright scripts
+- Confirmed: all GRA brands use CSS class `available` on in-stock size buttons; OOS sizes have only hashed styled-component classes (e.g., `sc-kNiDFA kdpUpy  ` with trailing space, no `available`)
+- Skechers AU: US sizes (5–11), buttons appear after SPA hydration (need `waitForFunction`)
+- Skechers AU/NZ: staging was blocking on `productName` inside card — removed `productName` from Skechers PLP selector override (Skechers SPA uses styled-component hash classes; common selector's `a[href*=".html"]` fallback handles it)
+
+**Refactored `selectSizeViaEvaluate()` into 3 methods:**
+- `waitForSizeButtons()` — polls for numeric size buttons (8s timeout, handles SPA hydration)
+- `pickFirstAvailableSize()` — picks first button with `available` class; falls back to any enabled button; then `<select>` elements
+- `selectSizeViaEvaluate()` — tries current color; if no available sizes, collects `.swiper-slide a[href$=".html"]` color swatch links and navigates to each until an available size is found
+
+**Color swatch pattern confirmed across all GRA brands:**
+- Color variants = separate URLs (`product-COLORCODE.html`), shown as `.swiper-slide a[href$=".html"]` links
+- No in-page color state change — clicking a swatch navigates to a new URL
+- No OOS marker at swatch level; OOS detection only possible by checking size availability after navigation
+
+**Results:** All 8 brands pass — drm-au/nz, pla-au/nz, skx-au/nz, van-au/nz.
+
+**Files changed:**
+- `src/pages/PDP.page.ts` — refactored size selection into 3 methods; added color swatch fallback
+- `src/selectors/brands/skechers/plp.sel.ts` — removed `productName` override
+
+**Next:** Clean up diagnostic spec files in `tests/diagnostic/`.

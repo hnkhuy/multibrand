@@ -148,7 +148,19 @@ export class MiniCartComponent {
   }
 
   async expectOpen(): Promise<void> {
-    await expect(this.drawer).toBeVisible();
+    // Use toPass because we need to check multiple candidates (the selector returns a
+    // compound result; `.first()` may land on the wrong element — e.g. Platypus renders
+    // the mini-cart as a sliding `div.mini-cart-wrapper` while `aside[coords]` is an
+    // unrelated small widget that stays visibility:hidden regardless of drawer state).
+    await expect(async () => {
+      const candidates = this.page.locator(this.selectors.minicart.drawer);
+      const count = await candidates.count();
+      for (let i = 0; i < count; i++) {
+        const el = candidates.nth(i);
+        if (await el.isVisible().catch(() => false)) return;
+      }
+      throw new Error('Mini cart drawer is not visible');
+    }).toPass({ timeout: 40_000 });
   }
 
   async expectClosed(): Promise<void> {
