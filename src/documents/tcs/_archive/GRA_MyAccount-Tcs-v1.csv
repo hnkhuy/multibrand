@@ -1,0 +1,93 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+ACC-001,Entry Point,Verify My Account entry point is displayed,Site is accessible,1. Open website 2. Observe header,Account icon/link is visible,High
+ACC-002,Entry Point,Verify guest user can open sign-in page,User is guest,1. Click account icon/link,Sign-in page/panel opens correctly,High
+ACC-003,Login,Verify login with valid credentials,User has valid account,1. Open sign-in page 2. Enter valid email/password 3. Submit,User logs in successfully and is redirected as designed,Critical
+ACC-004,Login,Verify login with invalid password,User has valid email,1. Enter valid email and invalid password 2. Submit,Error message is displayed and user is not logged in,High
+ACC-005,Login,Verify login with unregistered email,User is guest,1. Enter unregistered email and password 2. Submit,Error message is displayed,High
+ACC-006,Login,Verify required field validation on login form,User is guest,1. Submit empty login form,Required field validation is displayed,High
+ACC-007,Login,Verify email format validation on login form,User is guest,1. Enter invalid email format 2. Submit,Email validation message is displayed,Medium
+ACC-008,Login,Verify password masking/unmasking if available,Login page opened,1. Enter password 2. Toggle show/hide password,Password visibility changes correctly,Low
+ACC-009,Login,Verify user remains logged in after page refresh,User is logged in,1. Refresh page,User remains logged in,High
+ACC-010,Login,Verify logged-in state is reflected in header,User is logged in,1. Observe header/account area,Header shows logged-in account state correctly,High
+ACC-011,Logout,Verify user can log out successfully,User is logged in,1. Open account menu 2. Click logout,User is logged out and redirected as designed,Critical
+ACC-012,Logout,Verify protected account page is not accessible after logout,User logged out,1. Try to open My Account URL directly,User is redirected to login page or access is blocked,High
+ACC-013,Registration,Verify registration page opens correctly,User is guest,1. Open registration page,Registration form is displayed correctly,High
+ACC-014,Registration,Verify account can be created with valid details,New valid email available,1. Fill required fields 2. Submit registration,Account is created successfully,Critical
+ACC-015,Registration,Verify duplicate email registration is blocked,Email already registered,1. Register with existing email,Error message is displayed,High
+ACC-016,Registration,Verify required field validation on registration form,User is guest,1. Submit empty registration form,Required field validation is displayed,High
+ACC-017,Registration,Verify invalid email format validation on registration form,User is guest,1. Enter invalid email 2. Submit,Email validation message is displayed,Medium
+ACC-018,Registration,Verify password rule validation,User is guest,1. Enter password not meeting rule 2. Submit,Password rule validation is displayed,High
+ACC-019,Registration,Verify confirm password validation,User is guest,1. Enter different password and confirm password 2. Submit,Confirm password validation is displayed,High
+ACC-020,Registration,Verify marketing/newsletter opt-in behavior during registration,Registration form has opt-in checkbox,1. Register with checkbox selected/unselected,Marketing preference is saved according to selection,Medium
+ACC-021,Forgot Password,Verify forgot password page opens correctly,User is guest,1. Click Forgot Password,Forgot password form is displayed,High
+ACC-022,Forgot Password,Verify forgot password with registered email,Registered email exists,1. Enter registered email 2. Submit,Password reset confirmation message is displayed,High
+ACC-023,Forgot Password,Verify forgot password with invalid email format,User is guest,1. Enter invalid email 2. Submit,Email validation message is displayed,Medium
+ACC-024,Forgot Password,Verify forgot password required field validation,User is guest,1. Submit empty forgot password form,Required field validation is displayed,Medium
+ACC-025,Account Dashboard,Verify account dashboard loads successfully,User is logged in,1. Open My Account,Account dashboard loads without error or broken layout,High
+ACC-026,Account Dashboard,Verify customer name/email is displayed correctly,User is logged in,1. Open dashboard,Customer information is displayed correctly,High
+ACC-027,Account Dashboard,Verify account navigation menu is displayed,User is logged in,1. Open My Account,Account navigation links are visible,High
+ACC-028,Account Dashboard,Verify account navigation links redirect correctly,User is logged in,1. Click each account navigation link,Correct account section opens,High
+ACC-029,Account Details,Verify personal information page loads correctly,User is logged in,1. Open Account Details,Personal information form is displayed,High
+ACC-030,Account Details,Verify customer can update first name/last name,User is logged in,1. Edit name fields 2. Save,Updated name is saved successfully,High
+ACC-031,Account Details,Verify required field validation for personal info,User is logged in,1. Clear required field 2. Save,Required field validation is displayed,Medium
+ACC-032,Account Details,Verify email change flow if supported,User is logged in,1. Edit email 2. Save,Email update flow behaves as designed,Medium
+ACC-033,Account Details,Verify invalid email validation when updating email,User is logged in,1. Enter invalid email 2. Save,Email validation message is displayed,Medium
+ACC-034,Change Password,Verify change password section opens correctly,User is logged in,1. Open Change Password,Change password fields are displayed,High
+ACC-035,Change Password,Verify password can be changed with valid current password,User is logged in,1. Enter current password 2. Enter new valid password 3. Save,Password is changed successfully,Critical
+ACC-036,Change Password,Verify change password fails with incorrect current password,User is logged in,1. Enter incorrect current password 2. Save,Error message is displayed and password is not changed,High
+ACC-037,Change Password,Verify new password rule validation,User is logged in,1. Enter weak/invalid new password 2. Save,Password rule validation is displayed,High
+ACC-038,Change Password,Verify confirm new password validation,User is logged in,1. Enter mismatched new password and confirmation 2. Save,Confirm password validation is displayed,High
+ACC-039,Address Book,Verify address book page loads correctly,User is logged in,1. Open Address Book,Address book loads correctly,High
+ACC-040,Address Book,Verify empty address book state,User has no saved address,1. Open Address Book,Empty state or add address CTA is displayed,Medium
+ACC-041,Address Book,Verify user can add a new address,User is logged in,1. Open Address Book 2. Add valid address 3. Save,Address is saved successfully,Critical
+ACC-042,Address Book,Verify required field validation when adding address,User is logged in,1. Submit empty address form,Required field validation is displayed,High
+ACC-043,Address Book,Verify AU/NZ address fields display correctly by region,Site configured for AU/NZ,1. Open add address form,Region-specific fields such as state/suburb/postcode display correctly,High
+ACC-044,Address Book,Verify postcode validation,User is logged in,1. Enter invalid postcode 2. Save,Postcode validation is displayed,Medium
+ACC-045,Address Book,Verify phone number validation,User is logged in,1. Enter invalid phone number 2. Save,Phone validation is displayed,Medium
+ACC-046,Address Book,Verify user can edit saved address,User has saved address,1. Edit address 2. Save,Address is updated successfully,Critical
+ACC-047,Address Book,Verify user can delete saved address,User has saved address,1. Delete address,Address is removed successfully,High
+ACC-048,Address Book,Verify default billing address can be set,User has multiple addresses,1. Set address as default billing,Default billing address updates correctly,High
+ACC-049,Address Book,Verify default shipping address can be set,User has multiple addresses,1. Set address as default shipping,Default shipping address updates correctly,High
+ACC-050,Order History,Verify order history page loads correctly,User is logged in,1. Open Order History,Order history page loads correctly,High
+ACC-051,Order History,Verify empty order history state,User has no orders,1. Open Order History,Empty order history message is displayed,Medium
+ACC-052,Order History,Verify order list displays correctly,User has previous orders,1. Open Order History,"Order number, date, status, total, and actions are displayed",High
+ACC-053,Order History,Verify order details page opens correctly,User has previous orders,1. Click View Order,Correct order details page opens,High
+ACC-054,Order History,Verify order details display correct products,User has previous order,1. Open order details,"Product name, SKU/variant, quantity, price, and totals are correct",High
+ACC-055,Order History,Verify order summary totals are correct,User has previous order,1. Open order details,"Subtotal, shipping, discounts, tax/GST, and grand total are correct",High
+ACC-056,Order History,Verify tracking link is displayed if available,Order has tracking info,1. Open order details,Tracking link/info is displayed correctly,Medium
+ACC-057,Order History,Verify reorder button works if available,Reorder feature enabled,1. Click Reorder,Items are added to cart or reorder flow starts correctly,Medium
+ACC-058,Wishlist,Verify wishlist page is accessible from My Account,User is logged in,1. Open My Account 2. Click Wishlist,Wishlist page opens correctly,High
+ACC-059,Wishlist,Verify wishlist products display correctly in account area,Wishlist has products,1. Open account wishlist,Wishlist products are displayed correctly,High
+ACC-060,Newsletter,Verify newsletter subscription section loads correctly,User is logged in,1. Open newsletter preference page,Newsletter preferences are displayed,Medium
+ACC-061,Newsletter,Verify user can subscribe to newsletter,User is logged in; Not subscribed,1. Select subscribe 2. Save,Newsletter subscription is saved,Medium
+ACC-062,Newsletter,Verify user can unsubscribe from newsletter,User is logged in; Subscribed,1. Unselect subscription 2. Save,Newsletter subscription is removed,Medium
+ACC-063,Store Credit / Rewards,Verify rewards/store credit section loads if applicable,Feature enabled,1. Open rewards/store credit section,Section loads correctly,Low
+ACC-064,Payment Methods,Verify saved payment methods section loads if applicable,Feature enabled,1. Open saved payment methods,Saved payment section loads correctly,Low
+ACC-065,Security,Verify account pages require authentication,User is guest,1. Open protected account URL directly,User is redirected to login page,Critical
+ACC-066,Security,Verify user cannot access another customer’s account/order,User is logged in,1. Attempt to access another user’s account/order URL,Access is blocked or redirected,Critical
+ACC-067,Security,Verify session expiry behavior,User session expired,1. Open account page or submit account form,User is redirected to login or asked to re-authenticate,High
+ACC-068,Security,Verify sensitive fields are not exposed in UI,User is logged in,1. Inspect account pages,Password/payment-sensitive data is masked or not exposed,Critical
+ACC-069,UI,Verify My Account layout is displayed correctly,User is logged in,1. Open My Account,Account content and navigation are aligned correctly,High
+ACC-070,UI,Verify no overlapping UI elements on account pages,User is logged in,1. Scroll account pages,"No overlap between header, account menu, forms, messages, chat widget, and footer",High
+ACC-071,UI,Verify account text is readable,User is logged in,"1. Inspect labels, messages, links, form fields","No text is truncated, hidden, or unreadable",Medium
+ACC-072,Responsive,Verify My Account layout on desktop viewport,Desktop viewport; User logged in,1. Open My Account,Desktop layout is correct,High
+ACC-073,Responsive,Verify My Account layout on tablet viewport,Tablet viewport; User logged in,1. Open My Account,Tablet layout adapts correctly,Medium
+ACC-074,Responsive,Verify My Account layout on mobile viewport,Mobile viewport; User logged in,1. Open My Account,Mobile layout adapts correctly without horizontal overflow,High
+ACC-075,Mobile,Verify account navigation works on mobile,Mobile viewport; User logged in,1. Open account menu 2. Tap account section,Selected section opens correctly,High
+ACC-076,Mobile,Verify account forms work on mobile,Mobile viewport; User logged in,1. Edit account/address form 2. Save,Form can be completed and saved correctly,High
+ACC-077,Performance,Verify My Account page load performance is acceptable,User is logged in,1. Open My Account,Page loads within acceptable threshold,Medium
+ACC-078,Performance,Verify account form submission performance is acceptable,User is logged in,1. Submit account/address form,Save action completes within acceptable threshold,Medium
+ACC-079,Stability,Verify repeated navigation between account sections does not break page,User is logged in,1. Navigate between account sections repeatedly,Account area remains stable,Medium
+ACC-080,Error Handling,Verify failed login request is handled gracefully,Login API failure simulated if possible,1. Attempt login,User-friendly error is shown and page remains stable,High
+ACC-081,Error Handling,Verify failed registration request is handled gracefully,Registration API failure simulated if possible,1. Attempt registration,User-friendly error is shown and account is not created incorrectly,High
+ACC-082,Error Handling,Verify failed account update is handled gracefully,Account update API failure simulated if possible,1. Save account detail changes,User-friendly error is shown and old data remains stable,High
+ACC-083,Error Handling,Verify failed address update is handled gracefully,Address update API failure simulated if possible,1. Save address changes,User-friendly error is shown and address data remains stable,High
+ACC-084,Accessibility,Verify keyboard navigation on login/register/account forms,Account page available,1. Use Tab/Shift+Tab through forms,Focus order is logical and controls are reachable,Medium
+ACC-085,Accessibility,Verify form fields have accessible labels,Account forms available,1. Inspect form fields,Fields have meaningful labels and validation messages,Medium
+ACC-086,Accessibility,Verify error messages are accessible,Validation errors triggered,1. Submit invalid form,Error messages are visible and associated with fields,Medium
+ACC-087,Analytics,Verify login tracking is fired,Analytics/debug tools available,1. Login successfully,Expected login event is triggered with correct metadata,Medium
+ACC-088,Analytics,Verify registration tracking is fired,Analytics/debug tools available,1. Create account successfully,Expected registration event is triggered with correct metadata,Medium
+ACC-089,Analytics,Verify account update tracking is fired if applicable,Analytics/debug tools available,1. Update account details,Expected account update event is triggered if required,Low
+ACC-090,Analytics,Verify address update tracking is fired if applicable,Analytics/debug tools available,1. Add/edit/delete address,Expected address-related event is triggered if required,Low
+ACC-091,Analytics,Verify order history interaction tracking is fired if applicable,Analytics/debug tools available,1. Open order details/tracking link,Expected account/order interaction event is triggered if required,Low
+ACC-092,Analytics,Verify My Account event metadata is correct,Analytics/debug tools available,1. Trigger account interactions 2. Inspect payload,"Event metadata such as customer state, region, action type, and source page are correct",Medium

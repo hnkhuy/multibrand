@@ -481,3 +481,32 @@
 **Issues hit:** None — `tsc --noEmit` clean first attempt.
 
 **Next:** Run a partial subset to verify incremental update works correctly (only updated cells change, others stay).
+
+---
+## 2026-05-15 — TC Manual CSV v2 Rewrite (All Modules)
+
+**Goal:** Rewrite all manual TC CSVs for 9 modules (MiniCart, Cart, PDP, PLP, Search, Wishlist, MyAccount, Store, Checkout) using the Hybrid approach decided in the previous session: brand-aware, automatable-focused, consolidated from bloated v1 templates.
+
+**Approach:** Archived v1 files to `src/documents/tcs/_archive/`. Each new CSV uses 13 columns (ID, Component, Brand Scope, Region Scope, Priority, Automatable, Description, Preconditions, Steps, Expected Result, Test Data, Linked Spec File, Notes). Applied `drm/pla/skx/van` abbreviation convention for IDs and Brand Scope. Brand-specific TCs use scoped IDs (e.g. `MC-skx-001`, `WL-van-001`). Multi-brand exclusions use comma-separated values (e.g. `"drm,pla,skx"` for Vans-excluded tests).
+
+**Files changed:**
+- `src/documents/tcs/GRA_MiniCart-Tcs.csv` — 28 TCs (from 75); 3 brand-specific
+- `src/documents/tcs/GRA_Cart-Tcs.csv` — 28 TCs (from 77); 4 brand-specific
+- `src/documents/tcs/GRA_PDP-Tcs.csv` — 24 TCs (from 73); 4 brand-specific
+- `src/documents/tcs/GRA_PLP-Tcs.csv` — 21 TCs (from 86); 1 brand-specific (skx SPA hydration)
+- `src/documents/tcs/GRA_SearchPage-Tcs.csv` — 21 TCs (from 90); 1 brand-specific (skx SPA)
+- `src/documents/tcs/GRA_Wishlist-Tcs.csv` — 18 TCs (from 62); 1 brand-specific (van localStorage)
+- `src/documents/tcs/GRA_MyAccount-Tcs.csv` — 18 TCs (from 92); 2 brand-specific (van modal login + QFF page)
+- `src/documents/tcs/GRA_Store-Tcs.csv` — 14 TCs (from 84); brand scope `drm,skx,van`; pla has no store locator
+- `src/documents/tcs/GRA_Checkout-Tcs.csv` — 20 TCs (from 124); 1 brand-specific (van PayPal options)
+
+**Issues hit:** None — CSV-only work, no TypeScript compilation involved.
+
+**Key design decisions:**
+- Dropped performance, layout/UI visual, accessibility keyboard nav, error simulation, and analytics payload-depth TCs — these require non-automatable tooling or staging API manipulation
+- Analytics TCs kept as Low/Partial to verify event fires without payload schema validation
+- @data-dependent flag used for TCs requiring sale products, OOS products, or valid coupons
+- Platypus excluded from Store TCs (brand scope `drm,skx,van`) — Platypus has no physical stores
+- WL-006 scoped to `drm,pla,skx` (excludes van) since Vans has guest localStorage wishlist
+
+**Next:** Rewrite automation spec files for each module based on the new TC CSVs (same pattern as homepage.spec.ts rewrite).

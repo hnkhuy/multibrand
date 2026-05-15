@@ -1,0 +1,87 @@
+No.,Test Group,Test Case Description,Preconditions,Steps,Expected Result,Priority
+PLP-001,Page Load,Verify PLP loads successfully,PLP/category URL is accessible,1. Open a valid PLP URL,"PLP loads without error, blank page, or broken layout",High
+PLP-002,Page Load,Verify correct category is displayed,PLP URL is accessible,1. Open PLP,Category title/content matches selected category,High
+PLP-003,Page Load,Verify region-specific content is displayed correctly,Site environment is configured for AU/NZ,1. Open PLP,"Currency, delivery/promo messaging, and regional content are correct",High
+PLP-004,Page Load,Verify PLP loads over HTTPS,PLP URL is accessible,1. Open PLP,Page loads securely without browser warning,Medium
+PLP-005,Page Load,Verify no visible application error is shown,PLP URL is accessible,1. Open PLP,No visible application error or major JS crash UI is shown,High
+PLP-006,Breadcrumb,Verify breadcrumb is displayed,PLP loaded,1. Observe breadcrumb,Breadcrumb is visible and structured correctly,Medium
+PLP-007,Breadcrumb,Verify breadcrumb links redirect correctly,Breadcrumb exists,1. Click breadcrumb links,User is redirected to correct parent category/homepage,Medium
+PLP-008,Category Header,Verify category title is displayed,PLP loaded,1. Observe category header,Category title is visible and correct,High
+PLP-009,Category Header,Verify category description/banner is displayed if configured,Category has description/banner,1. Observe category header area,Description/banner displays correctly,Medium
+PLP-010,Product Grid,Verify product grid is displayed,PLP has products,1. Open PLP,Product grid is visible,High
+PLP-011,Product Grid,Verify product cards are displayed correctly,PLP has products,1. Inspect product cards,"Product image, name, price, and basic info are displayed",High
+PLP-012,Product Grid,Verify product card image is rendered correctly,PLP has products,1. Inspect product image,"Image is not broken, distorted, or incorrectly cropped",High
+PLP-013,Product Grid,Verify product name is displayed,PLP has products,1. Inspect product card,Product name is visible and readable,High
+PLP-014,Product Grid,Verify product price is displayed,PLP has products,1. Inspect product card,Price is visible and formatted correctly,High
+PLP-015,Product Grid,Verify sale price presentation is correct,PLP contains sale products,1. Inspect sale product card,Sale price and original price are displayed correctly,High
+PLP-016,Product Grid,Verify product badge/label is displayed correctly,Product has badge/label,1. Inspect product card,Badge/label is visible and correct,Medium
+PLP-017,Product Grid,Verify clicking product card redirects to PDP,PLP has products,1. Click product card,Correct PDP opens,Critical
+PLP-018,Product Grid,Verify product card hover behavior on desktop if applicable,Desktop viewport,1. Hover product card,Hover state/secondary image/quick actions display correctly,Low
+PLP-019,Product Grid,Verify product count is displayed correctly if available,Product count feature enabled,1. Observe PLP count,Product count is visible and consistent with listed products,Medium
+PLP-020,Product Grid,Verify empty PLP state,Category/search result has no products,1. Open empty PLP/search result,Empty state is displayed correctly without layout break,Medium
+PLP-021,Pagination / Load More,Verify pagination or load-more control is displayed when product list exceeds page limit,PLP has more products than first page limit,1. Open PLP,Pagination/load-more control is visible,Medium
+PLP-022,Pagination / Load More,Verify load more displays additional products,Load More enabled,1. Click Load More,Additional products are loaded without duplicates or layout issue,High
+PLP-023,Pagination / Load More,Verify pagination redirects or updates product list correctly,Pagination enabled,1. Click next page,Next set of products is displayed correctly,High
+PLP-024,Pagination / Load More,Verify browser back behavior after pagination/load more,Pagination/load-more used,1. Load more products or go next page 2. Open PDP 3. Click browser Back,User returns to expected PLP state,High
+PLP-025,Sorting,Verify sort dropdown is displayed,Sorting enabled,1. Observe sort control,Sort dropdown/control is visible,High
+PLP-026,Sorting,Verify sorting by price low to high,Sorting enabled,1. Select Price Low to High,Products are sorted from lowest to highest price,High
+PLP-027,Sorting,Verify sorting by price high to low,Sorting enabled,1. Select Price High to Low,Products are sorted from highest to lowest price,High
+PLP-028,Sorting,Verify sorting by newest/relevance/default if applicable,Sorting option exists,1. Select sort option,Product order updates according to selected option,Medium
+PLP-029,Sorting,Verify selected sort option persists after page refresh,Sorting enabled,1. Select sort option 2. Refresh page,Selected sort option and product order behave as designed,Medium
+PLP-030,Filtering,Verify filter panel is displayed,Filtering enabled,1. Open PLP,Filter panel or filter button is visible,High
+PLP-031,Filtering,Verify filter panel opens and closes correctly,Filtering enabled,1. Open filter panel 2. Close filter panel,Filter panel opens/closes correctly,High
+PLP-032,Filtering,Verify applying single filter updates product list,Filter options available,1. Select one filter option,Product list updates according to selected filter,Critical
+PLP-033,Filtering,Verify applying multiple filters updates product list,Multiple filter options available,1. Select multiple filters,Product list updates according to combined filters,Critical
+PLP-034,Filtering,Verify selected filters are displayed as active chips/tags if applicable,Filters applied,1. Apply filters,Selected filters are shown as active,Medium
+PLP-035,Filtering,Verify removing one selected filter updates product list,Multiple filters applied,1. Remove one active filter,Removed filter is cleared and product list updates correctly,High
+PLP-036,Filtering,Verify Clear All filters works correctly,Filters applied,1. Click Clear All,All filters are removed and product list resets correctly,High
+PLP-037,Filtering,Verify filter result count updates correctly,Filters applied,1. Apply filter,Result count updates according to filtered results,Medium
+PLP-038,Filtering,Verify filter options with zero products are handled correctly,Filter with zero result exists,1. Apply zero-result filter,Empty state or disabled option behavior is correct,Medium
+PLP-039,Filtering,Verify size filter works correctly,Size filter available,1. Select a size filter,Products shown match selected size availability,High
+PLP-040,Filtering,Verify colour filter works correctly,Colour filter available,1. Select a colour filter,Products shown match selected colour,High
+PLP-041,Filtering,Verify brand filter works correctly if applicable,Brand filter available,1. Select brand filter,Products shown match selected brand,Medium
+PLP-042,Filtering,Verify price filter works correctly,Price filter available,1. Select price range/filter,Products shown match selected price condition,High
+PLP-043,Filtering,Verify category/subcategory filter works correctly,Category filter available,1. Select subcategory filter,Products shown match selected subcategory,High
+PLP-044,Filtering,Verify filters persist after opening PDP and returning to PLP,Filters applied,1. Apply filter 2. Open PDP 3. Click browser Back,User returns to PLP with selected filters retained as designed,High
+PLP-045,Filtering,Verify filter state persists after page refresh,Filters applied,1. Apply filter 2. Refresh page,Filter state is retained or reset according to expected design,Medium
+PLP-046,Filtering,Verify filter URL/query parameters are updated correctly if applicable,Filters applied,1. Apply filter 2. Observe URL,URL updates correctly where applicable,Medium
+PLP-047,Search Result PLP,Verify search result PLP displays searched keyword,Search results page accessible,1. Search for valid keyword,Search keyword/result title is displayed correctly,High
+PLP-048,Search Result PLP,Verify search result products match searched keyword,Search results page accessible,1. Search valid keyword 2. Inspect products,Products are relevant to searched keyword,High
+PLP-049,Search Result PLP,Verify no-result search state,Search feature available,1. Search invalid keyword,No-result message is displayed correctly,Medium
+PLP-050,Quick Add,Verify quick add entry point is displayed if enabled,Quick Add enabled,1. Hover/tap product card,Quick Add button is visible,Medium
+PLP-051,Quick Add,Verify quick add opens size/variant selector if required,Configurable product; Quick Add enabled,1. Click Quick Add,Size/variant selector opens correctly,High
+PLP-052,Quick Add,Verify product can be added to cart from PLP,In-stock product; Quick Add enabled,1. Select required option 2. Click Add to Cart,Product is added to cart successfully,Critical
+PLP-053,Quick Add,Verify correct variant is added to cart from PLP,Configurable product; Quick Add enabled,1. Select size/variant 2. Add to cart 3. Open cart,Correct selected variant is added,Critical
+PLP-054,Quick Add,Verify validation when adding configurable product without required option,Configurable product; Quick Add enabled,1. Click Add to Cart without required option,Validation message is displayed,High
+PLP-055,Wishlist,Verify wishlist icon/button is displayed if enabled,Wishlist enabled,1. Observe product card,Wishlist icon/button is visible,Medium
+PLP-056,Wishlist,Verify product can be added to wishlist from PLP,Wishlist enabled; User logged in if required,1. Click wishlist icon,Product is added to wishlist or login flow is triggered correctly,Medium
+PLP-057,Wishlist,Verify wishlist state updates correctly after action,Wishlist enabled,1. Add product to wishlist,Wishlist icon/state updates correctly,Medium
+PLP-058,Stock,Verify out-of-stock product card state,PLP contains OOS product,1. Inspect OOS product card,OOS state is displayed correctly,Medium
+PLP-059,Stock,Verify unavailable products cannot be added via quick add,OOS product; Quick Add enabled,1. Attempt quick add on OOS product,Add action is disabled or unavailable,High
+PLP-060,Promo / Finance,Verify promotional/payment messaging on product card if applicable,Promo/payment messaging enabled,1. Inspect product card,Promo/payment message is displayed correctly,Low
+PLP-061,UI,Verify no overlapping UI elements on PLP,PLP loaded,1. Scroll through PLP,"No overlap between header, filters, product cards, chat widget, sticky elements, and footer",High
+PLP-062,UI,Verify product grid alignment,PLP loaded,1. Inspect product grid,Product cards are aligned consistently,High
+PLP-063,UI,Verify PLP text is readable,PLP loaded,"1. Inspect category title, filter labels, product names, prices","No text is truncated, hidden, or unreadable",Medium
+PLP-064,UI,Verify images are rendered without distortion,PLP loaded,1. Inspect product images and banners,Images maintain expected aspect ratio and clarity,Medium
+PLP-065,UI,Verify sticky filter/sort behavior if applicable,Sticky filter/sort enabled,1. Scroll PLP,Sticky filter/sort behaves correctly,Low
+PLP-066,Responsive,Verify PLP layout on desktop viewport,Desktop viewport,1. Open PLP,Desktop layout is correct,High
+PLP-067,Responsive,Verify PLP layout on tablet viewport,Tablet viewport,1. Open PLP,Tablet layout adapts correctly,Medium
+PLP-068,Responsive,Verify PLP layout on mobile viewport,Mobile viewport,1. Open PLP,Mobile layout adapts correctly without horizontal overflow,High
+PLP-069,Mobile,Verify mobile filter panel opens and closes correctly,Mobile viewport; Filtering enabled,1. Tap filter button 2. Close filter panel,Mobile filter panel opens/closes correctly,High
+PLP-070,Mobile,Verify mobile sort control works correctly,Mobile viewport; Sorting enabled,1. Open sort control 2. Select sort option,Product list updates correctly,High
+PLP-071,Mobile,Verify applying filters on mobile updates product list correctly,Mobile viewport; Filtering enabled,1. Apply filter on mobile,Product list updates correctly,Critical
+PLP-072,Mobile,Verify mobile product card layout,Mobile viewport,1. Inspect product cards,Product cards display correctly with no overlap or horizontal scroll,High
+PLP-073,Performance,Verify PLP load performance is acceptable,Stable network,1. Open PLP,PLP loads within acceptable threshold,Medium
+PLP-074,Performance,Verify filtering performance is acceptable,Filtering enabled,1. Apply filter,Product list updates within acceptable threshold,Medium
+PLP-075,Performance,Verify sorting performance is acceptable,Sorting enabled,1. Apply sort,Product list updates within acceptable threshold,Medium
+PLP-076,Stability,Verify repeated filter changes do not break PLP,Filtering enabled,1. Apply/remove filters repeatedly,PLP remains stable without broken state,High
+PLP-077,Stability,Verify repeated sort changes do not break PLP,Sorting enabled,1. Change sort options repeatedly,PLP remains stable and product list updates correctly,Medium
+PLP-078,Error Handling,Verify invalid category URL is handled correctly,Invalid category URL,1. Open invalid category URL,"Proper error page, redirect, or unavailable state is shown",Medium
+PLP-079,Error Handling,Verify PLP handles unavailable product data gracefully,Product API/data issue simulated if possible,1. Open PLP with unavailable product data,User-friendly error/empty state is shown without full page crash,Medium
+PLP-080,Analytics,Verify PLP view/list impression tracking is fired,Analytics/debug tools available,1. Open PLP,Expected PLP/list impression event is triggered with correct metadata,High
+PLP-081,Analytics,Verify product card click tracking is fired,Analytics/debug tools available,1. Click product card,Expected product listing click event is triggered,High
+PLP-082,Analytics,Verify filter interaction tracking is fired,Analytics/debug tools available,1. Apply filter,Expected filter event is triggered with correct metadata,Medium
+PLP-083,Analytics,Verify sort interaction tracking is fired,Analytics/debug tools available,1. Apply sort,Expected sort event is triggered with correct metadata,Medium
+PLP-084,Analytics,Verify pagination/load-more tracking is fired,Analytics/debug tools available; Pagination/load more enabled,1. Click Load More or next page,Expected pagination/load-more event is triggered,Low
+PLP-085,Analytics,Verify quick add tracking is fired if applicable,Analytics/debug tools available; Quick Add enabled,1. Add product via Quick Add,Expected add-to-cart event is triggered with correct metadata,High
+PLP-086,Analytics,Verify PLP event metadata is correct,Analytics/debug tools available,1. Trigger PLP interactions 2. Inspect payload,"Event metadata such as category, list name, product ID, position, price, region, and selected filters are correct",High
