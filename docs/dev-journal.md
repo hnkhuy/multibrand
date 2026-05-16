@@ -566,3 +566,33 @@
 - `src/selectors/brands/skechers/plp.sel.ts` — removed `productName` override
 
 **Next:** Clean up diagnostic spec files in `tests/diagnostic/`.
+
+---
+## 2026-05-16 — v2 Smoke Spec Suite (full rebuild)
+
+**Goal:** Replace all old spec files with v2 versions that match the Hybrid TC approach — brand-aware feature flags, no error-swallowing, consistent TC IDs, brand-specific test blocks.
+
+**Approach:** Moved old specs to `tests/smoke/archive/`; rewrote 9 files from scratch following the `mini-cart.spec.ts` pattern. Each file uses `onlyBrand`/`excludeBrand` helpers, feature-flag guards, and `@data-dependent`/`@analytics` tags for unstable tests.
+
+**Files changed:**
+- `tests/smoke/cart.spec.ts` — CT-001..CT-024 + 4 brand-specific
+- `tests/smoke/pdp.spec.ts` — PD-001..PD-020 + 4 brand-specific
+- `tests/smoke/plp.spec.ts` — PL-001..PL-020 + PL-skx-001
+- `tests/smoke/search.spec.ts` — SR-001..SR-020 + SR-skx-001
+- `tests/smoke/wishlist.spec.ts` — WL-001..WL-017 + WL-van-001
+- `tests/smoke/store.spec.ts` — ST-001..ST-013 + ST-pla-001
+- `tests/smoke/account.spec.ts` — MA-001..MA-016 + MA-van-001, MA-van-002 (new file)
+- `tests/smoke/checkout.spec.ts` — CO-001..CO-019 + CO-van-001 (new file)
+
+**Issues hit:**
+- `PLPPage` has no `applyFirstAvailableFilter`, `applySortOption`, `removeFirstActiveFilter`, `sortAnyOption` — those live only on `SearchPage`.
+- `home.page` is a protected BasePage property — inaccessible outside the class.
+- `getAttribute()` returns `string | null` — needed null-coalescence before `.includes()`.
+
+**Resolution:**
+- Added local helpers `applyFirstFilter`, `applySort`, `removeFirstFilter` in `plp.spec.ts` using raw locators.
+- Replaced `home.page` with the `page` Playwright fixture in SR-005.
+- Used `(stateAfter ?? '')` to guard the null case in WL-van-001.
+- `npm run build` passes clean (0 errors).
+
+**Next:** Run live smoke pass against a staging environment to validate all tests execute without unexpected skips.

@@ -5,6 +5,7 @@ import { updateBrandTrend, generateDashboard, generateBrandChart, injectNavIntoM
 
 export default defineConfig({
   testDir: './tests',
+  testIgnore: ['**/_archive/**'],
   globalTeardown: './src/core/teardown.ts',
   timeout: 150_000,
   expect: {
