@@ -398,6 +398,36 @@ test.describe('cart', () => {
     expect(hasRemoveEvent, 'A remove-from-cart dataLayer event should fire.').toBe(true);
   });
 
+  test('CT-025 mini-cart "View or Update Cart" link navigates to cart page', async ({ ctx, home, plp, pdp, cart, page }) => {
+    await home.goto('/');
+    await home.search(searchData[ctx.brand].keyword);
+    await plp.expectLoaded().catch(() => undefined);
+    const ok = await plp.openFirstProductByHref().catch(() => false);
+    if (!ok) await plp.openFirstProduct();
+    await pdp.expectLoaded().catch(() => undefined);
+    await pdp.addToCart().catch(async () => {
+      await pdp.addToCartButton.scrollIntoViewIfNeeded().catch(() => undefined);
+      await pdp.addToCartButton.click({ timeout: 10_000 });
+    });
+    await pdp.dismissInterruptions();
+    await page.waitForTimeout(800);
+    if (!(await pdp.miniCart.drawer.isVisible().catch(() => false))) {
+      await pdp.miniCart.open();
+      await page.waitForTimeout(500);
+    }
+    await pdp.miniCart.expectOpen();
+    const viewCartLink = pdp.miniCart.viewCartButton;
+    await viewCartLink.scrollIntoViewIfNeeded().catch(() => undefined);
+    await expect(viewCartLink).toBeVisible({ timeout: 10_000 });
+    await viewCartLink.click();
+    await page.waitForLoadState('domcontentloaded');
+    expect(
+      /\/(cart|bag|basket)(?:\/|$|\?)/i.test(new URL(page.url()).pathname),
+      '"View or Update Cart" link should navigate to the cart page.'
+    ).toBe(true);
+    await cart.expectLoaded();
+  });
+
   // ─── Brand-specific ───────────────────────────────────────────────────────
 
   test('CT-drm-001 Dr. Martens cart page uses "Bag" terminology', async ({ ctx, cart, page }) => {

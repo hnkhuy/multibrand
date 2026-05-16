@@ -11,7 +11,7 @@ export const minicartSelectors: MiniCartSelectors = {
   closeButton:
     'button[aria-label*="close" i], button[data-testid*="close" i], [class*="close" i] button, button[class*="close" i], button:has-text("×"), button:has-text("✕")',
   viewCartButton:
-    'a:has-text("View Cart"), a:has-text("View Bag"), button:has-text("View Cart"), a:has-text("View your cart"), a[href*="/cart"]:not([href*="checkout"])',
+    'a:has-text("View or Update Cart"), a:has-text("View Cart"), a:has-text("View Bag"), button:has-text("View Cart"), a:has-text("View your cart"), a[href*="/cart"]:not([href*="checkout"])',
   subtotal:
     '[data-testid*="subtotal" i], [class*="subtotal" i], [data-testid*="cart-total" i], [class*="cart-total" i], [class*="order-total" i]',
   itemImage: 'img, picture img',
