@@ -63,7 +63,7 @@ async function removeFirstFilter(page: Page, plp: PLPPage): Promise<void> {
   await page.waitForTimeout(800);
 }
 
-test.describe('plp', () => {
+test.describe('plp', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────

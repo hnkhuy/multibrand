@@ -40,7 +40,7 @@ async function navigateToPdp(
   await pdp.dismissInterruptions();
 }
 
-test.describe('pdp', () => {
+test.describe('pdp', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────

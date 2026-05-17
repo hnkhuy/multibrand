@@ -15,7 +15,7 @@ function onlyBrand(ctx: BrandContext, brands: Brand | Brand[]): void {
   test.skip(!allowed.includes(ctx.brand), `Brand-specific: only runs on ${allowed.join(', ')}.`);
 }
 
-test.describe('search', () => {
+test.describe('search', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────

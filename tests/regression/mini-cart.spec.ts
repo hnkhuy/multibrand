@@ -55,7 +55,7 @@ async function atcAndOpenMiniCart(
   await pdp.miniCart.expectOpen();
 }
 
-test.describe('mini-cart', () => {
+test.describe('mini-cart', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────

@@ -596,3 +596,44 @@
 - `npm run build` passes clean (0 errors).
 
 **Next:** Run live smoke pass against a staging environment to validate all tests execute without unexpected skips.
+
+---
+## 2026-05-17 — Hướng A: Superset test model
+
+**Goal:** Consolidate smoke + regression into a single superset suite under `tests/smoke/`, replacing the dual-directory split.
+
+**Approach:** Hướng A — smoke is the main suite; deeper regression TCs are tagged `@regression` within the same spec files. Old regression files archived to `tests/_archive/`. Tag-based filtering controls run scope.
+
+**Files changed:**
+- `tests/regression/account.spec.ts` → `tests/_archive/account.spec.ts` (trivial framework context test, archived)
+- `tests/regression/checkout.spec.ts` → `tests/_archive/checkout.spec.ts` (40 TCs, archived)
+- `tests/regression/my-account.spec.ts` → `tests/_archive/my-account.spec.ts` (62 TCs, archived)
+- `tests/smoke/checkout.spec.ts` — added 21 regression TCs (CO-020..CO-040) + all required helpers/constants; added `accountData` + `Locator` imports
+- `tests/smoke/account.spec.ts` — added 52 regression TCs (ACC-013..ACC-062, ACC-065, ACC-067) + full helper set (clickRobust, bodyText, login flows, registration, address book, etc.); added `Locator` import
+- `CLAUDE.md` — updated Test Conventions section with superset model counts
+
+**Issues hit:** None — `npm run build` clean on first attempt.
+
+**Resolution:** N/A
+
+**Next:** Run full suite (`npx playwright test`) or smoke-only (`--grep-invert @regression`) against staging to confirm @regression TCs are correctly tagged and skip-guarded. Consider adding tag-based npm scripts for convenience.
+
+---
+## 2026-05-17 — Restructure: regression-as-base + @smoke tag subset
+
+**Goal:** Invert the superset model — make `tests/regression/` the canonical home for ALL TCs; mark the fast subset with `@smoke` instead of `@regression`.
+
+**Approach:** Moved all 10 spec files from `tests/smoke/` → `tests/regression/`. Applied `@smoke` at describe level for pure spec files (cart, homepage, mini-cart, pdp, plp, search, store, wishlist). Tagged individual MA-* and CO-001..CO-019 + CO-van-001 tests as `@smoke` in account/checkout. Removed `tests/smoke/` directory.
+
+**Files changed:**
+- `tests/regression/*.spec.ts` — all 10 spec files moved from tests/smoke/; describe-level or individual @smoke tags applied
+- `tests/regression/account.spec.ts` — MA-001..MA-018 tagged @smoke; ACC-013..ACC-067 untagged (regression-only)
+- `tests/regression/checkout.spec.ts` — CO-001..CO-019 + CO-van-001 tagged @smoke; CO-020..CO-040 untagged (regression-only)
+- `tests/smoke/` — deleted (was empty)
+- `CLAUDE.md` — updated counts and commands for new model
+
+**Issues hit:** Transform script produced duplicate `@smoke` tags (`['@smoke', '@smoke']`) and left `@regression` tags in CO/ACC blocks. Fixed with a cleanup script.
+
+**Resolution:** Deduplication + @regression removal applied; `npm run build` clean. Counts verified: 230 @smoke TCs × 8 = 1840; 329 total × 8 = 2632. Note: old "256 smoke" included 26 diagnostic TCs via --grep-invert; new explicit @smoke = 230 (regression TCs only).
+
+**Next:** Add npm scripts `test:smoke` / `test:regression` for convenience. Begin expanding TC coverage (currently 303 regression TCs per project, more to be added).

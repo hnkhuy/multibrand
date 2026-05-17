@@ -18,7 +18,7 @@ function requiresStoreLocator(ctx: BrandContext): void {
   test.skip(ctx.brand === 'platypus', 'Platypus has no physical stores — store locator absent per site-structure.md.');
 }
 
-test.describe('store', () => {
+test.describe('store', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────

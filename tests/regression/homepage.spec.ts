@@ -21,7 +21,7 @@ function onlyRegion(ctx: BrandContext, region: Region): void {
   test.skip(ctx.region !== region, `Region-specific TC: only runs on ${region.toUpperCase()}.`);
 }
 
-test.describe('homepage', () => {
+test.describe('homepage', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ───────────────────────── Critical (smoke) ─────────────────────────

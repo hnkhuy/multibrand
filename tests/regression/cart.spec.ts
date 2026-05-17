@@ -59,7 +59,7 @@ async function atcAndGoToCart(
   await cart.expectLoaded();
 }
 
-test.describe('cart', () => {
+test.describe('cart', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────

@@ -63,7 +63,7 @@ async function navigateToPdp(
   await pdp.dismissInterruptions();
 }
 
-test.describe('wishlist', () => {
+test.describe('wishlist', { tag: ['@smoke'] }, () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
