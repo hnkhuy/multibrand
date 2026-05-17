@@ -27,6 +27,16 @@ export class CartPage extends BasePage {
     await expect(this.body).toBeVisible();
     await expect(this.body).not.toBeEmpty();
 
+    // SPA brands render cart items asynchronously; wait for items OR empty-state to appear
+    const readySel = `${this.selectors.cart.itemRow}, ${this.selectors.cart.continueShopping ?? 'button:has-text("Continue Shopping")'}`;
+    await this.page
+      .locator(readySel)
+      .first()
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .catch(() => undefined);
+    // Fallback: also wait for spinner to hide if items still haven't appeared
+    await this.page.locator('.loader-root').waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => undefined);
+
     const hasVisibleMainContent = await this.page
       .locator(this.selectors.cart.pageRoot)
       .first()

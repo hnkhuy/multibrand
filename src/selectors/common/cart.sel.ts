@@ -2,7 +2,8 @@ import type { CartSelectors } from '../../core/types';
 
 export const cartSelectors: CartSelectors = {
   pageRoot: 'main, [role="main"], [data-testid*="cart" i], [class*="cart" i]',
-  itemRow: '[data-testid*="cart-item" i], [data-test*="cart-item" i], .cart-item, .bag-item, li[class*="cart" i], article[class*="cart" i]',
+  itemRow:
+    '[data-testid*="cart-item" i], [data-test*="cart-item" i], .cart-item, .bag-item, li[class*="cart" i], article[class*="cart" i], .page-content ul > li, li:has(button:has-text("Remove"))',
   itemImage: 'img, picture img',
   itemName: '[data-testid*="product-name" i], [class*="product-name" i], [class*="item-name" i], a[href*="/product/"], a[href*=".html"], h2, h3',
   itemAttribute:

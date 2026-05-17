@@ -263,13 +263,17 @@ export class PDPPage extends BasePage {
    * Silently no-ops if timeout expires (accessory products have no size buttons).
    */
   private async waitForSizeButtons(): Promise<void> {
+    // Skechers is a SPA with styled-components — JS hydration takes longer than other brands
+    const timeout = this.ctx.brand === 'skechers' ? 20_000 : 8_000;
     await this.page
       .waitForFunction(
         () =>
-          Array.from(document.querySelectorAll('button')).some((b) =>
-            /^\d{1,3}(\.\d+)?$/.test((b.textContent ?? '').trim())
-          ),
-        { timeout: 8_000 }
+          Array.from(document.querySelectorAll('button')).some((b) => {
+            const t = (b.textContent ?? '').trim();
+            // Match bare numbers ("7", "8.5") or US/UK/EU prefixed sizes ("US 7", "UK 8", "EU 41")
+            return /^\d{1,3}(\.\d+)?$/.test(t) || /^(?:us|uk|eu|eur)\s*\d{1,3}(?:\.\d+)?$/i.test(t);
+          }),
+        { timeout }
       )
       .catch(() => undefined);
   }
@@ -284,7 +288,7 @@ export class PDPPage extends BasePage {
   private async pickFirstAvailableSize(): Promise<string | null> {
     return this.page
       .evaluate(() => {
-        const SIZE_RE = /^\d{1,3}(\.\d)?$/;
+        const SIZE_RE = /^(?:(?:us|uk|eu|eur)\s*)?\d{1,3}(?:\.\d+)?$/i;
         const SKIP_LABEL_RE =
           /menu|guide|chart|toggle|wishlist|cart|checkout|bag|store|search|phone|country|code/i;
 

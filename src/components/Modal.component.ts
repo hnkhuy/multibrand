@@ -15,7 +15,7 @@ export class ModalComponent {
 
     const button = this.page.locator(closeButton).first();
     if (await button.isVisible().catch(() => false)) {
-      await button.click();
+      await button.click({ force: true, timeout: 5_000 }).catch(() => undefined);
     }
   }
 }

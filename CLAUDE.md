@@ -71,10 +71,10 @@ To add a brand override: create a component selector file under `src/selectors/b
 - Tests are gated by `test.skip(!env.RUN_LIVE_TESTS, '...')` at the `describe` level
 - Test IDs follow the pattern `HP-001`, `CO-042`, etc. — preserve these in test names
 - **Superset model**: `tests/regression/` is the canonical suite; all TCs live here. Fast smoke subset is triggered by `@smoke` tag
-  - Fast smoke run: `npx playwright test --grep @smoke` (230 TCs × 8 = 1840 tests)
-  - Full suite: `npx playwright test` (329 TCs × 8 = 2632 tests, includes 26 diagnostic TCs)
-  - Regression-only (not smoke): `npx playwright test --grep-invert @smoke` (99 TCs × 8 = 792 tests)
-- Tag strategy: pure spec files (cart, homepage, mini-cart, pdp, plp, search, store, wishlist) have `@smoke` at `test.describe` level; mixed files (account, checkout) tag individual smoke TCs
+  - Fast smoke run: `npx playwright test --grep @smoke` (~19 TCs × 8 = ~152 tests — 2 per module, wide+shallow surface check)
+  - Full suite: `npx playwright test` (all TCs × 8, widest coverage)
+  - Regression-only (not smoke): `npx playwright test --grep-invert @smoke`
+- Tag strategy: `@smoke` is always on **individual TCs** (never at `test.describe` level). Exactly 2 TCs per module are tagged @smoke (the most critical surface-check TCs). All other TCs are regression-only.
 - The 3 old deep regression specs are archived in `tests/_archive/`; their TCs are ported into `account.spec.ts` and `checkout.spec.ts`
 - Tests use regex patterns for flexible assertions on dynamic content (e.g., `ERROR_UI_PATTERN`, `EMPTY_CART_PATTERN`)
 - Skechers is a SPA with styled-components (hash CSS classes) — products render after JS hydration, not at `domcontentloaded`. Use `waitForFunction` polling on the card selector in `expectLoaded()` instead of `innerText` checks.

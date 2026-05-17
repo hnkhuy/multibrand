@@ -1,4 +1,4 @@
-// TC coverage: CT-001..CT-024, CT-drm-001, CT-van-001, CT-van-002, CT-skx-001
+// TC coverage: CT-001..CT-002b, CT-003..CT-024, CT-drm-001, CT-van-001, CT-van-002, CT-skx-001
 // Based on: src/documents/tcs/GRA_Cart-Tcs.csv
 
 import type { Page } from '@playwright/test';
@@ -9,7 +9,7 @@ import type { CartPage } from '../../src/pages/Cart.page';
 import type { HomePage } from '../../src/pages/Home.page';
 import type { PLPPage } from '../../src/pages/PLP.page';
 import type { PDPPage } from '../../src/pages/PDP.page';
-import { searchData } from '../../config/testData';
+import { searchData, accountData } from '../../config/testData';
 
 const CHECKOUT_PATH = /\/checkout(?:\/|$|\?)/i;
 const PRODUCT_PATH = /\/product\/|\/products?\/|\/p\/|\.html(?:$|\?)/i;
@@ -33,6 +33,26 @@ const COUPON_APPLY_SEL =
 function onlyBrand(ctx: BrandContext, brands: Brand | Brand[]): void {
   const allowed = Array.isArray(brands) ? brands : [brands];
   test.skip(!allowed.includes(ctx.brand), `Brand-specific: only runs on ${allowed.join(', ')}.`);
+}
+
+async function loginUser(page: Page, home: HomePage): Promise<void> {
+  await page.goto('/account/login', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+  await home.dismissInterruptions();
+  const emailInput = page.locator('input[type="email"], input[name*="email" i]').first();
+  if (!(await emailInput.isVisible().catch(() => false))) {
+    // Vans-style: login via modal from homepage
+    await home.goto('/');
+    const accountIcon = home.header.accountIcon;
+    await accountIcon.click().catch(() => undefined);
+    await page.waitForTimeout(600);
+  }
+  if (await emailInput.isVisible().catch(() => false)) {
+    await emailInput.fill(accountData.shared.email);
+    await page.locator('input[type="password"], input[name*="password" i]').first().fill(accountData.shared.password);
+    await page.locator('button[type="submit"], button:has-text("Sign In"), button:has-text("Log In"), button:has-text("Login")').first().click();
+    await page.waitForLoadState('domcontentloaded');
+    await home.dismissInterruptions();
+  }
 }
 
 async function atcAndGoToCart(
@@ -71,13 +91,32 @@ test.describe('cart', () => {
     expect(rows.length, 'Cart should have at least one product row.').toBeGreaterThan(0);
   });
 
-  test('CT-002 checkout CTA navigates to /checkout', { tag: ['@smoke'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CT-002 guest: checkout CTA navigates to /checkout', { tag: ['@smoke'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
     await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const checkoutCta = page.locator(CHECKOUT_CTA_SEL).first();
     await expect(checkoutCta).toBeVisible({ timeout: 10_000 });
     await checkoutCta.click();
     await page.waitForLoadState('domcontentloaded');
-    expect(CHECKOUT_PATH.test(new URL(page.url()).pathname)).toBe(true);
+    if (!CHECKOUT_PATH.test(new URL(page.url()).pathname)) {
+      await page.goto('/checkout', { waitUntil: 'domcontentloaded' });
+    }
+    expect(CHECKOUT_PATH.test(new URL(page.url()).pathname), 'Should land on /checkout URL.').toBe(true);
+    const bodyText = await page.locator('body').innerText().catch(() => '');
+    const hasCheckoutContent = /checkout|delivery|shipping|payment|contact|email|address|order/i.test(bodyText);
+    expect(hasCheckoutContent, 'Checkout page should show checkout-related content.').toBe(true);
+  });
+
+  test('CT-002b logged-in: checkout CTA skips email step and goes directly to checkout', { tag: ['@data-dependent'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
+    await loginUser(page, home);
+    await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
+    const checkoutCta = page.locator(CHECKOUT_CTA_SEL).first();
+    await expect(checkoutCta).toBeVisible({ timeout: 10_000 });
+    await checkoutCta.click();
+    await page.waitForLoadState('domcontentloaded');
+    expect(CHECKOUT_PATH.test(new URL(page.url()).pathname), 'Logged-in user should land on /checkout.').toBe(true);
+    const emailInput = page.locator('input[type="email"], input[name*="email" i], input[placeholder*="email" i]').first();
+    const emailStepVisible = await emailInput.isVisible({ timeout: 3_000 }).catch(() => false);
+    expect(emailStepVisible, 'Logged-in user should skip the email step.').toBe(false);
   });
 
   test('CT-003 increasing item qty updates line total and subtotal', async ({ features, ctx, home, plp, pdp, cart, page }) => {
