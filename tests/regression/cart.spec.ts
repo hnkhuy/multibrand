@@ -59,19 +59,19 @@ async function atcAndGoToCart(
   await cart.expectLoaded();
 }
 
-test.describe('cart', { tag: ['@smoke'] }, () => {
+test.describe('cart', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
 
-  test('CT-001 cart page loads with product in cart', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CT-001 cart page loads with product in cart', { tag: ['@smoke'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
     await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     await expect(cart.body).toBeVisible();
     const rows = await cart.getVisibleRows();
     expect(rows.length, 'Cart should have at least one product row.').toBeGreaterThan(0);
   });
 
-  test('CT-002 checkout CTA navigates to /checkout', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CT-002 checkout CTA navigates to /checkout', { tag: ['@smoke'] }, async ({ ctx, home, plp, pdp, cart, page }) => {
     await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const checkoutCta = page.locator(CHECKOUT_CTA_SEL).first();
     await expect(checkoutCta).toBeVisible({ timeout: 10_000 });
@@ -471,5 +471,89 @@ test.describe('cart', { tag: ['@smoke'] }, () => {
       AFTERPAY_PATTERN.test(bodyText),
       'Skechers cart should NOT contain Afterpay messaging.'
     ).toBe(false);
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('CT-026 cart total currency matches site locale (AUD for AU, NZD for NZ)', async ({ ctx, home, plp, pdp, cart, page }) => {
+    await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
+    const body = await page.locator('body').innerText().catch(() => '');
+    const hasAUD = /AU\$|AUD|\$\s?\d/i.test(body);
+    const hasNZD = /NZ\$|NZD/i.test(body);
+    const hasForeignCurrency = /£|€|¥|USD|GBP|EUR/i.test(body);
+    if (ctx.region === 'nz') {
+      expect(hasNZD || hasAUD, 'NZ cart should show NZD or $ currency context.').toBe(true);
+    } else {
+      expect(hasAUD, 'AU cart should show AUD or $ currency context.').toBe(true);
+    }
+    expect(hasForeignCurrency, 'Cart should not display foreign currency symbols.').toBe(false);
+  });
+
+  test('CT-027 continue shopping from empty cart navigates to a valid (non-error) page', async ({ cart, page }) => {
+    await cart.gotoCart();
+    await cart.clearIfPossible();
+    await page.waitForTimeout(500);
+    const isEmptyVisible = await cart.emptyMessage.isVisible({ timeout: 5_000 }).catch(() => false);
+    if (!isEmptyVisible) {
+      test.skip(true, 'Could not clear cart to empty state — skipping continue-shopping test.');
+      return;
+    }
+    const ctaLink = cart.continueShopping;
+    if (!(await ctaLink.isVisible({ timeout: 3_000 }).catch(() => false))) {
+      test.skip(true, 'Continue shopping CTA not found in empty cart.');
+      return;
+    }
+    await ctaLink.click();
+    await page.waitForLoadState('domcontentloaded');
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|404|page not found/i.test(body),
+      'Continue shopping should navigate to a valid page, not an error page.'
+    ).toBe(false);
+    expect(page.url()).not.toContain('/cart');
+  });
+
+  test('CT-028 cart page title is non-empty and does not indicate an error', async ({ ctx, home, plp, pdp, cart, page }) => {
+    await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
+    const title = await page.title();
+    expect(title.trim().length, 'Cart page title should not be empty.').toBeGreaterThan(0);
+    expect(
+      /404|not found|error/i.test(title),
+      'Cart page title should not indicate a 404 or error.'
+    ).toBe(false);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('CT-029 rapid double-click on remove button does not corrupt cart state', async ({ ctx, home, plp, pdp, cart, page }) => {
+    await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
+    const rows = await cart.getVisibleRows();
+    if (rows.length === 0) {
+      test.skip(true, 'No rows in cart to test rapid remove.');
+      return;
+    }
+    const removeBtn = rows[0].locator('button[class*="remove"], button[aria-label*="remove" i], button[aria-label*="delete" i]').first();
+    if (!(await removeBtn.isVisible({ timeout: 3_000 }).catch(() => false))) {
+      test.skip(true, 'Remove button not visible on cart row.');
+      return;
+    }
+    await removeBtn.dblclick({ delay: 50 }).catch(() => removeBtn.click());
+    await page.waitForTimeout(1_500);
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|500/i.test(body),
+      'Double-clicking remove should not cause a server error.'
+    ).toBe(false);
+  });
+
+  test('CT-030 cart page loads without critical uncaught JavaScript errors', async ({ ctx, home, plp, pdp, cart, page }) => {
+    const jsErrors: string[] = [];
+    page.on('pageerror', (err) => jsErrors.push(err.message));
+    await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
+    await page.waitForTimeout(500);
+    const criticalErrors = jsErrors.filter(
+      (e) => !/ChunkLoadError|Loading chunk|ResizeObserver|Non-Error promise/i.test(e)
+    );
+    expect(criticalErrors.length, `Cart page should load without critical JS errors. Found: ${criticalErrors.join('; ')}`).toBe(0);
   });
 });

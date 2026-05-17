@@ -63,19 +63,19 @@ async function removeFirstFilter(page: Page, plp: PLPPage): Promise<void> {
   await page.waitForTimeout(800);
 }
 
-test.describe('plp', { tag: ['@smoke'] }, () => {
+test.describe('plp', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
 
-  test('PL-001 PLP loads with at least one product card visible', async ({ ctx, plp }) => {
+  test('PL-001 PLP loads with at least one product card visible', { tag: ['@smoke'] }, async ({ ctx, plp }) => {
     await openPlp(ctx, plp);
     await expect(plp.productCards.first()).toBeVisible({ timeout: 20_000 });
     const count = await plp.productCards.count();
     expect(count).toBeGreaterThan(0);
   });
 
-  test('PL-002 clicking a product card navigates to that product PDP', async ({ ctx, plp, pdp, page }) => {
+  test('PL-002 clicking a product card navigates to that product PDP', { tag: ['@smoke'] }, async ({ ctx, plp, pdp, page }) => {
     await openPlp(ctx, plp);
     const ok = await plp.openFirstProductByHref().catch(() => false);
     if (!ok) await plp.openFirstProduct();
@@ -444,5 +444,91 @@ test.describe('plp', { tag: ['@smoke'] }, () => {
     await expect(plp.productCards.first()).toBeVisible({ timeout: 15_000 });
     const count = await plp.productCards.count();
     expect(count, 'Skechers SPA PLP should render product cards after JS hydration.').toBeGreaterThan(0);
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('PL-021 filter state persists in URL and survives page refresh', async ({ ctx, plp, page }) => {
+    await openPlp(ctx, plp);
+    await applyFirstFilter(page, plp);
+    const urlWithFilter = page.url();
+    const chips = await plp.activeFilterChips.count();
+    if (urlWithFilter === plpPaths[ctx.brand] && chips === 0) {
+      test.skip(true, 'Filter did not affect URL or chips — no filter options for this brand.');
+      return;
+    }
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await plp.expectLoaded().catch(() => undefined);
+    const urlAfterRefresh = page.url();
+    const chipsAfterRefresh = await plp.activeFilterChips.count();
+    expect(
+      urlAfterRefresh !== plpPaths[ctx.brand] || chipsAfterRefresh > 0,
+      'Filter state should persist in URL after page refresh.'
+    ).toBe(true);
+  });
+
+  test('PL-022 applying two filters narrows results without error', async ({ ctx, plp, page }) => {
+    await openPlp(ctx, plp);
+    const initialCount = await plp.productCards.count();
+    await applyFirstFilter(page, plp);
+    await page.waitForTimeout(500);
+    if (!(await plp.filterPanel.isVisible().catch(() => false))) {
+      await plp.filterToggle.click().catch(() => undefined);
+      await page.waitForTimeout(400);
+    }
+    const unchecked = page.locator(
+      '[class*="filter"] input[type="checkbox"]:not(:checked), [class*="facet"] input[type="checkbox"]:not(:checked)'
+    );
+    if ((await unchecked.count()) > 0) {
+      await unchecked.first().click().catch(() => undefined);
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(500);
+    }
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|service unavailable/i.test(body),
+      'Page should not error after applying two filters.'
+    ).toBe(false);
+    const finalCount = await plp.productCards.count();
+    const emptyState = /no results|no products|0 products|0 items/i.test(body);
+    expect(finalCount <= initialCount || emptyState, 'Double-filter result count should not exceed initial count.').toBe(true);
+  });
+
+  test('PL-023 PLP is not in error state and shows products or empty state after applying a filter', async ({ ctx, plp, page }) => {
+    await openPlp(ctx, plp);
+    await applyFirstFilter(page, plp);
+    await page.waitForTimeout(500);
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|service unavailable/i.test(body),
+      'Page should not error after filter.'
+    ).toBe(false);
+    const cardCount = await plp.productCards.count();
+    const emptyState = /no results|no products|0 products/i.test(body);
+    expect(cardCount > 0 || emptyState, 'After filtering, PLP should show products or an empty state.').toBe(true);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('PL-024 navigating to an out-of-range page number shows graceful state without crashing', async ({ ctx, plp, page }) => {
+    await openPlp(ctx, plp);
+    await page.goto(`${page.url()}?page=9999`, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await page.waitForTimeout(1_000);
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|service unavailable|uncaught/i.test(body),
+      'Navigating to an out-of-range page should not crash the application.'
+    ).toBe(false);
+  });
+
+  test('PL-025 PLP loads without critical uncaught JavaScript errors', async ({ ctx, plp, page }) => {
+    const jsErrors: string[] = [];
+    page.on('pageerror', (err) => jsErrors.push(err.message));
+    await openPlp(ctx, plp);
+    await page.waitForTimeout(1_000);
+    const criticalErrors = jsErrors.filter(
+      (e) => !/ChunkLoadError|Loading chunk|ResizeObserver|Non-Error promise/i.test(e)
+    );
+    expect(criticalErrors.length, `PLP should load without critical JS errors. Found: ${criticalErrors.join('; ')}`).toBe(0);
   });
 });

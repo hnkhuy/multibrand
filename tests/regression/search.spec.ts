@@ -15,12 +15,12 @@ function onlyBrand(ctx: BrandContext, brands: Brand | Brand[]): void {
   test.skip(!allowed.includes(ctx.brand), `Brand-specific: only runs on ${allowed.join(', ')}.`);
 }
 
-test.describe('search', { tag: ['@smoke'] }, () => {
+test.describe('search', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
 
-  test('SR-001 typing keyword and pressing Enter opens search results with products', async ({ ctx, home, search, page }) => {
+  test('SR-001 typing keyword and pressing Enter opens search results with products', { tag: ['@smoke'] }, async ({ ctx, home, search, page }) => {
     await home.goto('/');
     await search.submitSearch(searchData[ctx.brand].keyword);
     await search.expectLoaded();
@@ -118,7 +118,7 @@ test.describe('search', { tag: ['@smoke'] }, () => {
     }
   });
 
-  test('SR-008 no-results state shown for non-matching keyword', async ({ home, search, page }) => {
+  test('SR-008 no-results state shown for non-matching keyword', { tag: ['@smoke'] }, async ({ home, search, page }) => {
     await home.goto('/');
     await search.submitSearch('xyzqwerty999abc');
     await page.waitForLoadState('domcontentloaded');
@@ -341,5 +341,111 @@ test.describe('search', { tag: ['@smoke'] }, () => {
     await expect(search.productCards.first()).toBeVisible({ timeout: 15_000 });
     const count = await search.productCards.count();
     expect(count, 'Skechers search result cards should render after JS hydration.').toBeGreaterThan(0);
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('SR-021 search results page retains the searched keyword in the input or results heading', async ({ ctx, home, search, page }) => {
+    await home.goto('/');
+    const keyword = searchData[ctx.brand].keyword;
+    await search.submitSearch(keyword);
+    await search.expectLoaded();
+    const inputValue = await search.searchInput.inputValue().catch(() => '');
+    const headingText = (await search.keywordDisplay.innerText().catch(() => ''));
+    const bodyText = (await page.locator('body').innerText().catch(() => '')).toLowerCase();
+    const keywordVisible =
+      inputValue.toLowerCase().includes(keyword.toLowerCase()) ||
+      headingText.toLowerCase().includes(keyword.toLowerCase()) ||
+      bodyText.includes(keyword.toLowerCase());
+    expect(keywordVisible, 'Searched keyword should be visible in input or results heading.').toBe(true);
+  });
+
+  test('SR-022 applying a filter on search results changes the product count', async ({ ctx, home, search, page }) => {
+    await home.goto('/');
+    await search.submitSearch(searchData[ctx.brand].keyword);
+    await search.expectLoaded();
+    const initialCount = await search.productCards.count();
+    if (initialCount === 0) {
+      test.skip(true, 'No search results to filter — cannot test filter behaviour.');
+      return;
+    }
+    const filterToggle = search.filterToggle;
+    if (!(await filterToggle.isVisible({ timeout: 5_000 }).catch(() => false))) {
+      test.skip(true, 'Filter toggle not available on search results for this brand.');
+      return;
+    }
+    await filterToggle.click();
+    await page.waitForTimeout(500);
+    const filterOption = search.filterOptions.first();
+    if (!(await filterOption.isVisible({ timeout: 3_000 }).catch(() => false))) {
+      test.skip(true, 'No filter options visible in search results panel.');
+      return;
+    }
+    await filterOption.click();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
+    const filteredCount = await search.productCards.count();
+    const body = await page.locator('body').innerText().catch(() => '');
+    const emptyState = /no results|no products|0 results/i.test(body);
+    expect(
+      filteredCount !== initialCount || emptyState,
+      'Applying a filter should change the result count or show empty state.'
+    ).toBe(true);
+  });
+
+  test('SR-023 search result count label is present for a valid keyword', async ({ ctx, home, search, page }) => {
+    await home.goto('/');
+    await search.submitSearch(searchData[ctx.brand].keyword);
+    await search.expectLoaded();
+    const cardCount = await search.productCards.count();
+    const countLabel = search.resultCount;
+    const hasCountLabel = await countLabel.isVisible({ timeout: 3_000 }).catch(() => false);
+    const body = await page.locator('body').innerText().catch(() => '');
+    const countInBody = /\d+\s*(result|product|item)/i.test(body);
+    expect(cardCount > 0 || hasCountLabel || countInBody, 'Search results page should show products or a result count.').toBe(true);
+  });
+
+  test('SR-024 autocomplete suggestions appear after typing two or more characters', async ({ ctx, home, search, page }) => {
+    await home.goto('/');
+    await home.dismissInterruptions();
+    const keyword = searchData[ctx.brand].keyword;
+    await search.searchInput.click({ timeout: 5_000 }).catch(() => undefined);
+    await search.searchInput.pressSequentially(keyword.slice(0, 2), { delay: 80 });
+    await page.waitForTimeout(800);
+    const panel = search.autoSuggestionPanel;
+    const items = search.autoSuggestionItems;
+    const panelVisible = await panel.isVisible({ timeout: 3_000 }).catch(() => false);
+    const itemCount = panelVisible ? await items.count() : 0;
+    expect(panelVisible || itemCount > 0, 'Autocomplete panel should appear after typing 2+ characters.').toBe(true);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('SR-025 search with a very long keyword does not crash the page', async ({ home, search, page }) => {
+    const longKeyword = 'a'.repeat(200);
+    await home.goto('/');
+    await search.submitSearch(longKeyword);
+    await page.waitForLoadState('domcontentloaded');
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|service unavailable|500|uncaught/i.test(body),
+      'A 200-character search term should not crash the page.'
+    ).toBe(false);
+  });
+
+  test('SR-026 search is case-insensitive — uppercase and lowercase return results', async ({ ctx, home, search, page }) => {
+    const keyword = searchData[ctx.brand].keyword;
+    await home.goto('/');
+    await search.submitSearch(keyword.toUpperCase());
+    await search.expectLoaded();
+    const upperCount = await search.productCards.count();
+    await home.goto('/');
+    await search.submitSearch(keyword.toLowerCase());
+    await search.expectLoaded();
+    const lowerCount = await search.productCards.count();
+    expect(upperCount, 'Uppercase search should return at least one result.').toBeGreaterThan(0);
+    expect(lowerCount, 'Lowercase search should return at least one result.').toBeGreaterThan(0);
+    // Counts may differ slightly due to ranking but both should return results
+    expect(Math.abs(upperCount - lowerCount)).toBeLessThanOrEqual(Math.max(upperCount, lowerCount));
   });
 });

@@ -18,12 +18,12 @@ function requiresStoreLocator(ctx: BrandContext): void {
   test.skip(ctx.brand === 'platypus', 'Platypus has no physical stores — store locator absent per site-structure.md.');
 }
 
-test.describe('store', { tag: ['@smoke'] }, () => {
+test.describe('store', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
 
-  test('ST-001 store locator page loads without error', async ({ features, ctx, store, page }) => {
+  test('ST-001 store locator page loads without error', { tag: ['@smoke'] }, async ({ features, ctx, store, page }) => {
     requiresStoreLocator(ctx);
     test.skip(!features.storeLocatorEnabled, 'Store locator disabled for this brand.');
     await store.goto();
@@ -267,5 +267,97 @@ test.describe('store', { tag: ['@smoke'] }, () => {
       storesUrl === `${new URL(storesUrl).origin}/` ||
       !/\/stores/.test(new URL(storesUrl).pathname);
     expect(isNotFound, 'Platypus /stores URL should 404 or redirect away.').toBe(true);
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('ST-014 store card expands to show additional details without breaking layout', async ({ features, ctx, store, page }) => {
+    requiresStoreLocator(ctx);
+    test.skip(!features.storeLocatorEnabled, 'Store locator disabled for this brand.');
+    await store.goto();
+    await store.expectPageLoaded();
+    const region = ctx.region;
+    const testData = storeData[region];
+    await store.searchInput.fill(testData.searchTermSuburb);
+    await store.searchSubmit.click().catch(() => undefined);
+    await page.waitForTimeout(2_000);
+    const cards = store.storeCards;
+    const cardCount = await cards.count();
+    if (cardCount === 0) {
+      test.skip(true, 'No store results returned — cannot test card expand.');
+      return;
+    }
+    const firstCard = cards.first();
+    await firstCard.click().catch(() => undefined);
+    await page.waitForTimeout(500);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(overflow, 'Store card expand should not cause horizontal layout overflow.').toBe(false);
+    await expect(store.pageContainer).toBeVisible();
+  });
+
+  test('ST-015 store result card shows trading hours information', async ({ features, ctx, store, page }) => {
+    requiresStoreLocator(ctx);
+    test.skip(!features.storeLocatorEnabled, 'Store locator disabled for this brand.');
+    await store.goto();
+    await store.expectPageLoaded();
+    const testData = storeData[ctx.region];
+    await store.searchInput.fill(testData.searchTermSuburb);
+    await store.searchSubmit.click().catch(() => undefined);
+    await page.waitForTimeout(2_000);
+    const cards = store.storeCards;
+    if ((await cards.count()) === 0) {
+      test.skip(true, 'No store results returned — cannot test trading hours.');
+      return;
+    }
+    const cardText = await cards.first().innerText().catch(() => '');
+    const hasHours = /monday|tuesday|wednesday|thursday|friday|saturday|sunday|open|closed|hours|\d{1,2}:\d{2}/i.test(cardText);
+    expect(hasHours, 'Store result card should display trading hours information.').toBe(true);
+  });
+
+  test('ST-016 store locator is accessible via a footer or navigation link', async ({ features, ctx, store, page }) => {
+    requiresStoreLocator(ctx);
+    test.skip(!features.storeLocatorEnabled, 'Store locator disabled for this brand.');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(500);
+    const storeLink = store.storeLocatorLink;
+    const linkVisible = await storeLink.isVisible({ timeout: 5_000 }).catch(() => false);
+    if (!linkVisible) {
+      const fallback = page.locator('footer a[href*="store"], footer a[href*="find"], nav a[href*="store"]').first();
+      const fallbackVisible = await fallback.isVisible({ timeout: 3_000 }).catch(() => false);
+      expect(fallbackVisible, 'Store locator should be accessible via footer or navigation link.').toBe(true);
+      return;
+    }
+    await storeLink.click();
+    await page.waitForLoadState('domcontentloaded');
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(/store|find a store|store locator/i.test(body), 'Store locator page should load after clicking the link.').toBe(true);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('ST-017 store locator renders correctly on mobile viewport', async ({ features, ctx, store, page }) => {
+    requiresStoreLocator(ctx);
+    test.skip(!features.storeLocatorEnabled, 'Store locator disabled for this brand.');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await store.goto();
+    await store.expectPageLoaded();
+    await expect(store.pageContainer).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(overflow, 'Store locator should not overflow horizontally on mobile viewport.').toBe(false);
+  });
+
+  test('ST-018 submitting an empty search on store locator is handled gracefully', async ({ features, ctx, store, page }) => {
+    requiresStoreLocator(ctx);
+    test.skip(!features.storeLocatorEnabled, 'Store locator disabled for this brand.');
+    await store.goto();
+    await store.expectPageLoaded();
+    await store.searchInput.clear();
+    await store.searchSubmit.click().catch(() => undefined);
+    await page.waitForTimeout(1_500);
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|500|NaN/i.test(body),
+      'Empty store search should not cause an error or NaN output.'
+    ).toBe(false);
   });
 });

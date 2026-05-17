@@ -55,12 +55,12 @@ async function atcAndOpenMiniCart(
   await pdp.miniCart.expectOpen();
 }
 
-test.describe('mini-cart', { tag: ['@smoke'] }, () => {
+test.describe('mini-cart', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
 
-  test('MC-001 cart icon click opens mini-cart panel', async ({ home }) => {
+  test('MC-001 cart icon click opens mini-cart panel', { tag: ['@smoke'] }, async ({ home }) => {
     await home.goto('/');
     await home.header.openCart();
     await home.miniCart.expectOpen();
@@ -136,7 +136,7 @@ test.describe('mini-cart', { tag: ['@smoke'] }, () => {
     expect(subtotalAfterDecrease).not.toBe(subtotalAfterIncrease);
   });
 
-  test('MC-005 checkout CTA in mini-cart navigates to checkout', async ({ ctx, home, plp, pdp, page }) => {
+  test('MC-005 checkout CTA in mini-cart navigates to checkout', { tag: ['@smoke'] }, async ({ ctx, home, plp, pdp, page }) => {
     await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
     const rows = await pdp.miniCart.getVisibleRows();
     expect(rows.length, 'Precondition: product in mini-cart.').toBeGreaterThan(0);
@@ -438,5 +438,74 @@ test.describe('mini-cart', { tag: ['@smoke'] }, () => {
     await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
     const drawerText = await pdp.miniCart.drawer.innerText();
     expect(PAYPAL_PATTERN.test(drawerText), 'Vans mini-cart payment messaging should mention PayPal.').toBe(true);
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('MC-024 mini-cart product count updates immediately after ATC without page reload', async ({ features, ctx, home, plp, pdp, page }) => {
+    test.skip(!features.headerCartCount, 'Brand does not expose header cart count.');
+    await home.goto('/');
+    const countBefore = (await pdp.miniCart.readHeaderCartCount()) ?? 0;
+    await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
+    const countAfter = (await pdp.miniCart.readHeaderCartCount()) ?? 0;
+    expect(countAfter, 'Cart count should increment after ATC without page reload.').toBeGreaterThan(countBefore);
+  });
+
+  test('MC-025 mini-cart subtotal reflects quantity changes before navigating to cart', async ({ features, ctx, home, plp, pdp, page }) => {
+    test.skip(!features.miniCartQuantityControls, 'Brand does not expose qty controls in mini-cart.');
+    test.skip(!features.miniCartSubtotal, 'Brand does not display subtotal in mini-cart.');
+    await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
+    const rows = await pdp.miniCart.getVisibleRows();
+    expect(rows.length, 'Precondition: product in mini-cart.').toBeGreaterThan(0);
+    const subtotalBefore = await pdp.miniCart.readSubtotal();
+    const increased =
+      (await pdp.miniCart.clickQuantityButton(rows[0], 'plus')) ||
+      (await pdp.miniCart.setRowQuantity(rows[0], 2));
+    if (!increased) {
+      test.skip(true, 'Could not increase qty in mini-cart for this brand.');
+      return;
+    }
+    await page.waitForTimeout(1_000);
+    const subtotalAfter = await pdp.miniCart.readSubtotal();
+    expect(subtotalAfter, 'Subtotal should be readable after qty change.').not.toBeNull();
+    expect(subtotalAfter).not.toBe(subtotalBefore);
+  });
+
+  test('MC-026 mini-cart panel does not overflow horizontally and renders within viewport', async ({ ctx, home, plp, pdp, page }) => {
+    await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
+    await expect(pdp.miniCart.drawer).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(overflow, 'Mini-cart should not cause horizontal overflow on the page.').toBe(false);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('MC-027 rapid ATC clicks do not duplicate items beyond expected quantity', async ({ features, ctx, home, plp, pdp, page }) => {
+    test.skip(!features.headerCartCount, 'Brand does not expose header cart count.');
+    await home.goto('/');
+    const baseline = (await pdp.miniCart.readHeaderCartCount()) ?? 0;
+    // Add to cart then immediately attempt a second click
+    await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
+    const countAfterFirst = (await pdp.miniCart.readHeaderCartCount()) ?? 0;
+    // Close mini-cart and try a second rapid ATC
+    await pdp.miniCart.close().catch(() => undefined);
+    await pdp.addToCartButton.click({ timeout: 5_000 }).catch(() => undefined);
+    await page.waitForTimeout(300);
+    await pdp.addToCartButton.click({ timeout: 3_000 }).catch(() => undefined);
+    await page.waitForTimeout(1_500);
+    const countAfterRapid = (await pdp.miniCart.readHeaderCartCount()) ?? 0;
+    // Should not have added more than 2 extra items from the 2 extra clicks
+    expect(countAfterRapid - baseline).toBeLessThanOrEqual(3);
+    expect(countAfterRapid, 'Cart count should be greater than initial after rapid clicks.').toBeGreaterThan(baseline);
+  });
+
+  test('MC-028 mini-cart closes automatically when navigating to a new page', async ({ ctx, home, plp, pdp, page }) => {
+    await atcAndOpenMiniCart(page, searchData[ctx.brand].keyword, home, plp, pdp);
+    await expect(pdp.miniCart.drawer).toBeVisible();
+    await home.goto('/');
+    await page.waitForTimeout(500);
+    const drawerAfterNav = await pdp.miniCart.drawer.isVisible({ timeout: 2_000 }).catch(() => false);
+    // Mini-cart should either close on navigation or not be open by default on homepage
+    expect(drawerAfterNav, 'Mini-cart drawer should not persist open after navigating away.').toBe(false);
   });
 });

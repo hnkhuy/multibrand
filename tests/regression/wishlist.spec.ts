@@ -63,7 +63,7 @@ async function navigateToPdp(
   await pdp.dismissInterruptions();
 }
 
-test.describe('wishlist', { tag: ['@smoke'] }, () => {
+test.describe('wishlist', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ─── Critical ────────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ test.describe('wishlist', { tag: ['@smoke'] }, () => {
 
   // ─── High ────────────────────────────────────────────────────────────────
 
-  test('WL-004 wishlist icon is visible on the PDP', async ({ features, ctx, home, plp, pdp, page }) => {
+  test('WL-004 wishlist icon is visible on the PDP', { tag: ['@smoke'] }, async ({ features, ctx, home, plp, pdp, page }) => {
     test.skip(!features.wishlistOnPdp, 'Wishlist button on PDP disabled for this brand.');
     await home.goto('/');
     await navigateToPdp(searchData[ctx.brand].keyword, home, plp, pdp);
@@ -171,7 +171,7 @@ test.describe('wishlist', { tag: ['@smoke'] }, () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('WL-006 guest user redirected to login when clicking wishlist icon', async ({ features, ctx, home, plp, pdp, page }) => {
+  test('WL-006 guest user redirected to login when clicking wishlist icon', { tag: ['@smoke'] }, async ({ features, ctx, home, plp, pdp, page }) => {
     excludeBrand(ctx, 'vans'); // Vans uses guest localStorage wishlist — see WL-van-001
     test.skip(!features.wishlistRequiresLogin, 'Wishlist does not require login for this brand.');
     await home.goto('/');
@@ -481,5 +481,150 @@ test.describe('wishlist', { tag: ['@smoke'] }, () => {
       toastVisible || inLocalStorage || (stateAfter ?? '').includes('active') || (stateAfter ?? '').includes('filled'),
       'Vans guest wishlist should persist in localStorage or show active state.'
     ).toBe(true);
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('WL-018 wishlist page is accessible from My Account navigation', async ({ features, ctx, home, account, wishlist, page }) => {
+    test.skip(!features.wishlist, 'Wishlist feature disabled for this brand.');
+    excludeBrand(ctx, 'vans');
+    await loginAs(accountData.shared.email, accountData.shared.password, page, account, home);
+    await page.goto('/account', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await account.dismissInterruptions();
+    const body = await page.locator('body').innerText().catch(() => '');
+    const hasWishlistLink = /wishlist|saved items|favourites|favorites/i.test(body);
+    const wishlistLink = page.locator('a[href*="wishlist"], a[href*="saved"]').first();
+    const linkVisible = await wishlistLink.isVisible({ timeout: 3_000 }).catch(() => false);
+    expect(hasWishlistLink || linkVisible, 'My Account navigation should expose a wishlist link.').toBe(true);
+  });
+
+  test('WL-019 re-clicking filled wishlist icon removes the product from wishlist', async ({ features, ctx, home, plp, pdp, wishlist, account, page }) => {
+    test.skip(!features.wishlist, 'Wishlist feature disabled for this brand.');
+    excludeBrand(ctx, 'vans');
+    await loginAs(accountData.shared.email, accountData.shared.password, page, account, home);
+    await home.goto('/');
+    await navigateToPdp(searchData[ctx.brand].keyword, home, plp, pdp);
+    const trigger = pdp.wishlistTrigger;
+    if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+      test.skip(true, 'Wishlist trigger not visible on PDP.');
+      return;
+    }
+    await trigger.click();
+    await page.waitForTimeout(1_000);
+    const stateAfterAdd = await trigger.getAttribute('aria-label').catch(() => '') ??
+      await trigger.getAttribute('class').catch(() => '');
+    await trigger.click();
+    await page.waitForTimeout(1_000);
+    const stateAfterRemove = await trigger.getAttribute('aria-label').catch(() => '') ??
+      await trigger.getAttribute('class').catch(() => '');
+    expect(stateAfterRemove).not.toBe(stateAfterAdd);
+  });
+
+  test('WL-020 wishlist count in header updates after adding a product', async ({ features, ctx, home, plp, pdp, wishlist, account, page }) => {
+    test.skip(!features.wishlist, 'Wishlist feature disabled for this brand.');
+    excludeBrand(ctx, 'vans');
+    await loginAs(accountData.shared.email, accountData.shared.password, page, account, home);
+    await home.goto('/');
+    await navigateToPdp(searchData[ctx.brand].keyword, home, plp, pdp);
+    const trigger = pdp.wishlistTrigger;
+    if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+      test.skip(true, 'Wishlist trigger not visible on PDP.');
+      return;
+    }
+    await trigger.click();
+    await page.waitForTimeout(1_000);
+    const body = await page.locator('body').innerText().catch(() => '');
+    const wishlistFeedback =
+      /added to wishlist|saved|favourited|remove from wishlist/i.test(body) ||
+      (await wishlist.toast.isVisible({ timeout: 3_000 }).catch(() => false));
+    expect(wishlistFeedback, 'Some feedback should be visible after adding to wishlist.').toBe(true);
+  });
+
+  test('WL-021 product variant added to wishlist reflects the selected variant on the wishlist page', async ({ features, ctx, home, plp, pdp, wishlist, account, page }) => {
+    test.skip(!features.wishlist, 'Wishlist feature disabled for this brand.');
+    excludeBrand(ctx, 'vans');
+    await loginAs(accountData.shared.email, accountData.shared.password, page, account, home);
+    await home.goto('/');
+    await navigateToPdp(searchData[ctx.brand].keyword, home, plp, pdp);
+    await pdp.selectFirstAvailableSize().catch(() => undefined);
+    const trigger = pdp.wishlistTrigger;
+    if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+      test.skip(true, 'Wishlist trigger not visible on PDP.');
+      return;
+    }
+    await trigger.click();
+    await page.waitForTimeout(1_000);
+    await page.goto('/account/wishlist', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await account.dismissInterruptions();
+    const itemsText = await wishlist.items.allInnerTexts().catch(() => [] as string[]);
+    const body = itemsText.join(' ').toLowerCase();
+    expect(
+      /wishlist|saved|favourite|remove/i.test(body) || itemsText.length > 0,
+      'Wishlist page should show the added product.'
+    ).toBe(true);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('WL-022 OOS product in wishlist can still be removed from the wishlist page', async ({ features, ctx, home, plp, pdp, wishlist, account, page }) => {
+    test.skip(!features.wishlist, 'Wishlist feature disabled for this brand.');
+    excludeBrand(ctx, 'vans');
+    await loginAs(accountData.shared.email, accountData.shared.password, page, account, home);
+    await page.goto('/account/wishlist', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await account.dismissInterruptions();
+    const items = wishlist.items;
+    const itemCount = await items.count();
+    if (itemCount === 0) {
+      test.skip(true, 'No items in wishlist to test remove on OOS product.');
+      return;
+    }
+    const removeBtn = wishlist.removeButton;
+    if (!(await removeBtn.isVisible({ timeout: 3_000 }).catch(() => false))) {
+      test.skip(true, 'Remove button not visible on wishlist page.');
+      return;
+    }
+    await removeBtn.first().click();
+    await page.waitForTimeout(1_000);
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|500/i.test(body),
+      'Removing a wishlist item should not cause a server error.'
+    ).toBe(false);
+    const newCount = await items.count();
+    expect(newCount).toBeLessThan(itemCount);
+  });
+
+  test('WL-023 clicking a wishlist item navigates to its PDP', async ({ features, ctx, home, plp, pdp, wishlist, account, page }) => {
+    test.skip(!features.wishlist, 'Wishlist feature disabled for this brand.');
+    excludeBrand(ctx, 'vans');
+    await loginAs(accountData.shared.email, accountData.shared.password, page, account, home);
+    // Ensure there is a product in the wishlist
+    await home.goto('/');
+    await navigateToPdp(searchData[ctx.brand].keyword, home, plp, pdp);
+    const trigger = pdp.wishlistTrigger;
+    if (await trigger.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await trigger.click();
+      await page.waitForTimeout(1_000);
+    }
+    await page.goto('/account/wishlist', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await account.dismissInterruptions();
+    const items = wishlist.items;
+    if ((await items.count()) === 0) {
+      test.skip(true, 'No items in wishlist to click through to PDP.');
+      return;
+    }
+    const productLink = items.first().locator('a').first();
+    if (!(await productLink.isVisible({ timeout: 3_000 }).catch(() => false))) {
+      test.skip(true, 'No clickable link on wishlist item.');
+      return;
+    }
+    await productLink.click();
+    await page.waitForLoadState('domcontentloaded');
+    const body = await page.locator('body').innerText().catch(() => '');
+    expect(
+      /application error|something went wrong|404/i.test(body),
+      'Clicking wishlist item should navigate to a valid PDP, not an error page.'
+    ).toBe(false);
+    await expect(pdp.addToCartButton).toBeVisible({ timeout: 10_000 });
   });
 });

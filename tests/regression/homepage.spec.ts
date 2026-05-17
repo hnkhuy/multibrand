@@ -1,4 +1,4 @@
-import { searchData } from '../../config/testData';
+import { searchData, accountData } from '../../config/testData';
 import { env } from '../../src/core/env';
 import { test, expect } from '../../src/fixtures/test.fixture';
 import type { Brand, BrandContext, Region } from '../../src/core/types';
@@ -21,12 +21,12 @@ function onlyRegion(ctx: BrandContext, region: Region): void {
   test.skip(ctx.region !== region, `Region-specific TC: only runs on ${region.toUpperCase()}.`);
 }
 
-test.describe('homepage', { tag: ['@smoke'] }, () => {
+test.describe('homepage', () => {
   test.skip(!env.RUN_LIVE_TESTS, 'Set RUN_LIVE_TESTS=true to execute live storefront flows.');
 
   // ───────────────────────── Critical (smoke) ─────────────────────────
 
-  test('HP-001 homepage loads and is interactive', async ({ home, page }) => {
+  test('HP-001 homepage loads and is interactive', { tag: ['@smoke'] }, async ({ home, page }) => {
     await home.goto('/');
     await home.dismissInterruptions();
 
@@ -37,7 +37,7 @@ test.describe('homepage', { tag: ['@smoke'] }, () => {
     await expect(home.header.navigation).toBeVisible();
   });
 
-  test('HP-002 header essential entry points are present', async ({ home }) => {
+  test('HP-002 header essential entry points are present', { tag: ['@smoke'] }, async ({ home }) => {
     await home.goto('/');
 
     await expect(home.header.logo).toBeVisible();
@@ -745,5 +745,88 @@ test.describe('homepage', { tag: ['@smoke'] }, () => {
     await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
     // Featured products / promo tiles may legitimately be missing while AU is under construction —
     // verify only the minimum surface (logo + non-error body) until launch.
+  });
+
+  // ─── Middle ──────────────────────────────────────────────────────────────
+
+  test('HP-026 homepage header reflects logged-in state after login', async ({ home, account, page }) => {
+    await page.goto('/account/login', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await account.dismissInterruptions();
+    if (await account.emailInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await account.emailInput.fill(accountData.shared.email);
+      await account.passwordInput.fill(accountData.shared.password);
+      await account.authSubmit.click();
+      await page.waitForLoadState('domcontentloaded');
+    } else {
+      await home.goto('/');
+      await account.signInTrigger.click().catch(() => undefined);
+      await page.waitForTimeout(500);
+      if (await account.emailInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await account.emailInput.fill(accountData.shared.email);
+        await account.passwordInput.fill(accountData.shared.password);
+        await account.authSubmit.click();
+        await page.waitForLoadState('domcontentloaded');
+      }
+    }
+    await home.goto('/');
+    await home.dismissInterruptions();
+    const body = (await home.body.innerText().catch(() => '')).toLowerCase();
+    const loggedIn =
+      /sign out|log out|logout|my account|welcome/i.test(body) ||
+      !/sign in|log in|create account/i.test(body);
+    expect(loggedIn, 'Homepage header should reflect logged-in state.').toBe(true);
+  });
+
+  test('HP-027 cookie banner is dismissible without breaking page interaction', async ({ home, page }) => {
+    await home.goto('/');
+    await page.waitForTimeout(2_000);
+    const banner = page.locator('#onetrust-banner-sdk, [class*="cookie-banner"], [class*="cookie-consent"]').first();
+    if (await banner.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      const acceptBtn = page
+        .locator('#onetrust-accept-btn-handler, button:has-text("Accept All"), button:has-text("Accept Cookies"), button:has-text("OK")')
+        .first();
+      if (await acceptBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await acceptBtn.click();
+        await page.waitForTimeout(500);
+      }
+      await expect(banner).not.toBeVisible({ timeout: 5_000 });
+    }
+    await expect(home.body).toBeVisible();
+    await expect(home.body).not.toHaveText(ERROR_UI_PATTERN);
+  });
+
+  test('HP-028 page title is non-empty and does not indicate an error state', async ({ home, page }) => {
+    await home.goto('/');
+    const title = await page.title();
+    expect(title.trim().length, 'Page title should not be empty.').toBeGreaterThan(0);
+    expect(
+      /404|not found|error|page not found/i.test(title),
+      'Page title should not indicate a 404 or error state.'
+    ).toBe(false);
+  });
+
+  // ─── Low ─────────────────────────────────────────────────────────────────
+
+  test('HP-029 a non-existent URL shows a graceful 404 error page', async ({ page }) => {
+    await page.goto('/this-page-definitely-does-not-exist-xyz-9999', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    const body = await page.locator('body').innerText().catch(() => '');
+    const title = await page.title();
+    const is404 =
+      /404|not found|page not found|oops|sorry/i.test(body) ||
+      /404|not found/i.test(title) ||
+      page.url().includes('404');
+    expect(is404, 'Non-existent URL should render a graceful 404 error page.').toBe(true);
+    expect(
+      /application error|service unavailable|500/i.test(body),
+      '404 page should not escalate to a 500 server error.'
+    ).toBe(false);
+  });
+
+  test('HP-030 page title and meta description are present for SEO', async ({ home, page }) => {
+    await home.goto('/');
+    const title = await page.title();
+    const metaDesc = await page.locator('meta[name="description"]').getAttribute('content').catch(() => '');
+    expect(title.trim().length, 'Homepage should have a non-empty page title.').toBeGreaterThan(0);
+    expect(metaDesc, 'Homepage should have a meta description tag.').not.toBeNull();
   });
 });
