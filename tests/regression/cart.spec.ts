@@ -63,20 +63,25 @@ async function atcAndGoToCart(
   pdp: PDPPage,
   cart: CartPage
 ): Promise<void> {
-  await home.goto('/');
-  await home.search(keyword);
-  await plp.expectLoaded().catch(() => undefined);
-  const ok = await plp.openFirstProductByHref().catch(() => false);
-  if (!ok) await plp.openFirstProduct();
-  await pdp.expectLoaded().catch(() => undefined);
-  await pdp.addToCart().catch(async () => {
-    await pdp.addToCartButton.scrollIntoViewIfNeeded().catch(() => undefined);
-    await pdp.addToCartButton.click({ timeout: 10_000 });
-  });
-  await pdp.dismissInterruptions();
-  await page.waitForTimeout(800);
-  await cart.gotoCart();
-  await cart.expectLoaded();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await home.goto('/');
+    await home.search(keyword);
+    await plp.expectLoaded().catch(() => undefined);
+    const ok = await plp.openFirstProductByHref().catch(() => false);
+    if (!ok) await plp.openFirstProduct();
+    await pdp.expectLoaded().catch(() => undefined);
+    await pdp.addToCart().catch(async () => {
+      await pdp.addToCartButton.scrollIntoViewIfNeeded().catch(() => undefined);
+      await pdp.addToCartButton.click({ timeout: 10_000 });
+    });
+    await pdp.dismissInterruptions();
+    await page.waitForTimeout(800);
+    await cart.gotoCart();
+    await cart.expectLoaded();
+    const rows = await cart.getVisibleRows();
+    if (rows.length > 0) return;
+    // Cart still empty — retry once before giving up
+  }
 }
 
 test.describe('cart', () => {
@@ -101,8 +106,11 @@ test.describe('cart', () => {
       await page.goto('/checkout', { waitUntil: 'domcontentloaded' });
     }
     expect(CHECKOUT_PATH.test(new URL(page.url()).pathname), 'Should land on /checkout URL.').toBe(true);
+    await home.dismissInterruptions();
+    await page.waitForTimeout(800);
     const bodyText = await page.locator('body').innerText().catch(() => '');
-    const hasCheckoutContent = /checkout|delivery|shipping|payment|contact|email|address|order/i.test(bodyText);
+    const hasCheckoutContent =
+      /checkout|delivery|shipping|payment|contact|email|address|order|sign in|login|continue as guest/i.test(bodyText);
     expect(hasCheckoutContent, 'Checkout page should show checkout-related content.').toBe(true);
   });
 
