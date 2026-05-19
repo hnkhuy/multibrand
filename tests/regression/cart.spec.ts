@@ -477,26 +477,30 @@ test.describe('cart', () => {
 
   // ─── Brand-specific ───────────────────────────────────────────────────────
 
-  test('CT-drm-001 Dr. Martens cart page uses "Bag" terminology', async ({ ctx, cart, page }) => {
+  test('CT-drm-001 Dr. Martens cart page uses "Cart" terminology (not "Bag")', async ({ ctx, cart, page }) => {
     onlyBrand(ctx, 'drmartens');
     await cart.gotoCart();
     await cart.expectLoaded();
     const headingText = (await page.locator('h1').first().innerText().catch(() => '')).toLowerCase();
     const bodyText = (await page.locator('body').innerText().catch(() => '')).toLowerCase();
     expect(
-      BAG_PATTERN.test(headingText) || BAG_PATTERN.test(bodyText.slice(0, 500)),
-      'DRM cart page should contain "bag" terminology.'
+      /\bcart\b/.test(headingText),
+      'DRM cart heading should use "cart" terminology.'
     ).toBe(true);
-    expect(/\bcart\b/.test(headingText), 'DRM cart heading should NOT contain standalone "cart".').toBe(false);
+    expect(
+      BAG_PATTERN.test(headingText) || BAG_PATTERN.test(bodyText.slice(0, 500)),
+      'DRM cart page should NOT use "bag" terminology — "bag" is a regression.'
+    ).toBe(false);
   });
 
-  test('CT-van-001 Vans cart displays Qantas QFF / PlatyPoints loyalty section', async ({ ctx, home, plp, pdp, cart, page }) => {
+  test('CT-van-001 Vans AU cart displays Qantas QFF / PlatyPoints loyalty section', async ({ ctx, home, plp, pdp, cart, page }) => {
     onlyBrand(ctx, 'vans');
+    test.skip(ctx.region !== 'au', 'Qantas / PlatyPoints loyalty is AU-only — not available on NZ sites.');
     await atcAndGoToCart(page, searchData[ctx.brand].keyword, home, plp, pdp, cart);
     const bodyText = await page.locator('body').innerText().catch(() => '');
     expect(
       LOYALTY_PATTERN.test(bodyText),
-      'Vans cart should display Qantas QFF / PlatyPoints loyalty section.'
+      'Vans AU cart should display Qantas QFF / PlatyPoints loyalty section.'
     ).toBe(true);
   });
 

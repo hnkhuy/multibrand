@@ -16,6 +16,8 @@ export const cartSelectors: CartSelectors = {
   qtyPlus: 'button:has-text("+"), button[aria-label*="increase" i], button[aria-label*="plus" i], [data-testid*="increase" i]',
   qtyMinus:
     'button:has-text("-"), button[aria-label*="decrease" i], button[aria-label*="minus" i], [data-testid*="decrease" i]',
-  emptyMessage: '[data-testid*="empty" i], [class*="empty-cart" i], [class*="cart-empty" i], [class*="empty" i]',
+  // GRA platform renders empty-cart state as a .cmsBlock-root CMS block containing "empty" text.
+  // ".page-content:not(:has(li))" catches any brand where cmsBlock pattern differs.
+  emptyMessage: '[class*="cmsBlock" i]:has-text("empty"), [class*="empty-cart" i], [class*="cart-empty" i], [data-testid*="empty" i]',
   continueShopping: 'a:has-text("Continue Shopping"), button:has-text("Continue Shopping"), a:has-text("Shop"), button:has-text("Shop")'
 };
